@@ -1,0 +1,36 @@
+.pf-iframe-background{
+    position: fixed;
+    z-index: 999;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    top: 0;
+    left: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 110000
+}
+.pf-iframe-container{
+    position: relative;
+    z-index: 99999999
+}
+iframe#payfort_merchant_page {
+    width:80% !important;
+    min-height:100% !important;
+}
+.pf-close-container{
+    display:block;
+    text-align:center;
+    margin:1em auto;
+}
+.pf-iframe-close{
+    font-size: 1.7em;
+    color: #fff;
+    cursor: pointer
+}
+.pf-iframe-spin{
+    font-size: 3em;
+    color: #fff;
+    display: block;
+    margin: 1em auto;
+    cursor: default
+}

@@ -1,0 +1,345 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Payfort (FORT)\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: Thu Feb 25 2016 15:48:47 GMT+0200 (Jordan Standard Time)\n"
+"PO-Revision-Date: Sun Sep 04 2016 12:34:41 GMT+0300 (Jordan Standard Time)\n"
+"Last-Translator: dzalloum <dzalloum@payfort.com>\n"
+"Language-Team: \n"
+"Language: English\n"
+"Plural-Forms: nplurals=2; plural=n != 1\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: ..\n"
+"X-Poedit-KeywordsList: _:1;gettext:1;dgettext:2;ngettext:1,2;dngettext:2,3;"
+"__:1;_e:1;_c:1;_n:1,2;_n_noop:1,2;_nc:1,2;__ngettext:1,2;__ngettext_noop:1,2;"
+"_x:1,2c;_ex:1,2c;_nx:1,2,4c;_nx_noop:1,2,3c;_n_js:1,2;_nx_js:1,2,3c;"
+"esc_attr__:1;esc_html__:1;esc_attr_e:1;esc_html_e:1;esc_attr_x:1,2c;"
+"esc_html_x:1,2c;comments_number_link:2,3;t:1;st:1;trans:1;transChoice:1,2\n"
+"X-Generator: Loco - https://localise.biz/\n"
+"X-Loco-Target-Locale: en"
+
+#: ../classes/class-woocommerce-fort.php:264
+msgid "Order Placement"
+msgstr "Order Placement"
+
+#: ../classes/class-woocommerce-fort.php:267
+msgid "All"
+msgstr "All"
+
+#: ../classes/class-woocommerce-fort.php:268
+msgid "Success"
+msgstr "Success"
+
+#: ../classes/class-woocommerce-fort.php:27
+msgid "Credit / Debit Card"
+msgstr "Credit / Debit Card"
+
+#: ../classes/class-woocommerce-fort.php:104
+msgid "Payfort FORT"
+msgstr "Payfort FORT"
+
+#: ../classes/class-woocommerce-fort.php:105
+msgid ""
+"Please fill in the below section to start accepting payments on your site! "
+"You can find all the required information in your <a href=\"https://fort."
+"payfort.com/\" target=\"_blank\">Payfort FORT Dashboard</a>."
+msgstr ""
+"Please fill in the below section to start accepting payments on your site! "
+"You can find all the required information in your <a href=\"https://fort."
+"payfort.com/\" target=\"_blank\">Payfort FORT Dashboard</a>."
+
+#: ../classes/class-woocommerce-fort.php:138
+msgid "Gateway Disabled"
+msgstr "Gateway Disabled"
+
+#: ../classes/class-woocommerce-fort.php:138
+msgid "Payfort FORT does not support your store currency at this time."
+msgstr "Payfort FORT does not support your store currency at this time."
+
+#: ../classes/class-woocommerce-fort.php:153
+msgid "Enable/Disable"
+msgstr "Enable/Disable"
+
+#: ../classes/class-woocommerce-fort.php:155
+msgid "Enable the FORT gateway"
+msgstr "Enable the FORT gateway"
+
+#: ../classes/class-woocommerce-fort.php:159
+msgid "Description"
+msgstr "Description"
+
+#: ../classes/class-woocommerce-fort.php:161
+msgid "This is the description the user sees during checkout."
+msgstr "This is the description the user sees during checkout."
+
+#: ../classes/class-woocommerce-fort.php:162
+msgid "Pay for your items with any Credit or Debit Card"
+msgstr "Pay for your items with any Credit or Debit Card"
+
+#: ../classes/class-woocommerce-fort.php:165
+msgid "Language"
+msgstr "Language"
+
+#: ../classes/class-woocommerce-fort.php:168
+msgid "Stor Language"
+msgstr "Stor Language"
+
+#: ../classes/class-woocommerce-fort.php:169
+msgid "English (en)"
+msgstr "English (en)"
+
+#: ../classes/class-woocommerce-fort.php:170
+msgid "Arabic (ar)"
+msgstr "Arabic (ar)"
+
+#: ../classes/class-woocommerce-fort.php:172
+msgid "The language of the payment page."
+msgstr "The language of the payment page."
+
+#: ../classes/class-woocommerce-fort.php:179
+msgid "Merchant Identifier"
+msgstr "Merchant Identifier"
+
+#: ../classes/class-woocommerce-fort.php:181
+msgid "Your MID, you can find in your FORT account security settings."
+msgstr "Your MID, you can find in your FORT account security settings."
+
+#: ../classes/class-woocommerce-fort.php:187
+msgid "Access Code"
+msgstr "Access Code"
+
+#: ../classes/class-woocommerce-fort.php:189
+msgid "Your access code, you can find in your FORT account security settings."
+msgstr "Your access code, you can find in your FORT account security settings."
+
+#: ../classes/class-woocommerce-fort.php:195
+msgid "Command"
+msgstr "Command"
+
+#: ../classes/class-woocommerce-fort.php:198
+msgid "AUTHORIZATION"
+msgstr "AUTHORIZATION"
+
+#: ../classes/class-woocommerce-fort.php:199
+msgid "PURCHASE"
+msgstr "PURCHASE"
+
+#: ../classes/class-woocommerce-fort.php:201
+msgid "Order operation to be used in the payment page."
+msgstr "Order operation to be used in the payment page."
+
+#: ../classes/class-woocommerce-fort.php:208
+msgid "SHA Algorithm"
+msgstr "SHA Algorithm"
+
+#: ../classes/class-woocommerce-fort.php:211
+msgid "SHA1"
+msgstr "SHA1"
+
+#: ../classes/class-woocommerce-fort.php:212
+msgid "SHA-256"
+msgstr "SHA-256"
+
+#: ../classes/class-woocommerce-fort.php:213
+msgid "SHA-512"
+msgstr "SHA-512"
+
+#: ../classes/class-woocommerce-fort.php:215
+msgid "The hash algorithm used for the signature"
+msgstr "The hash algorithm used for the signature"
+
+#: ../classes/class-woocommerce-fort.php:222
+msgid "Request SHA phrase"
+msgstr "Request SHA phrase"
+
+#: ../classes/class-woocommerce-fort.php:224
+msgid "Your request SHA phrase, you can find in your FORT account security settings."
+msgstr "Your request SHA phrase, you can find in your FORT account security settings."
+
+#: ../classes/class-woocommerce-fort.php:230
+msgid "Response SHA phrase"
+msgstr "Response SHA phrase"
+
+#: ../classes/class-woocommerce-fort.php:232
+msgid ""
+"Your response SHA phrase, you can find in your FORT account security "
+"settings."
+msgstr ""
+"Your response SHA phrase, you can find in your FORT account security "
+"settings."
+
+#: ../classes/class-woocommerce-fort.php:251
+msgid "Debug Mode"
+msgstr "Debug Mode"
+
+#: ../classes/class-woocommerce-fort.php:254
+msgid "enabled"
+msgstr "Enabled"
+
+#: ../classes/class-woocommerce-fort.php:255
+msgid "disabled"
+msgstr "Disabled"
+
+#: ../classes/class-woocommerce-fort.php:259
+#, php-format
+msgid "Logs additional information. <br>Log file path: %s"
+msgstr "Logs additional information. <br>Log file path: %s"
+
+#: ../classes/class-woocommerce-fort.php:275
+msgid "Credit \\ Debit Card"
+msgstr "Credit \\ Debit Card"
+
+#: ../classes/class-woocommerce-fort.php:277
+msgid "Enable Credit \\ Debit Card Payment Method"
+msgstr "Enable Credit \\ Debit Card Payment Method"
+
+#: ../classes/class-woocommerce-fort.php:281 ../classes/class-woocommerce-fort.
+#: php:291
+msgid "Integration Type"
+msgstr "Integration Type"
+
+#: ../classes/class-woocommerce-fort.php:284
+msgid "Redirection"
+msgstr "Redirection"
+
+#: ../classes/class-woocommerce-fort.php:285
+msgid "Merchant Page"
+msgstr "Merchant Page"
+
+#: ../classes/class-woocommerce-fort.php:286
+msgid "Merchant Page 2.0"
+msgstr "Merchant Page 2.0"
+
+#: ../classes/class-woocommerce-fort.php:288
+msgid "Credit \\ Debit Card Integration Type"
+msgstr "Credit \\ Debit Card Integration Type"
+
+#: ../classes/class-woocommerce-fort.php:295 ../classes/class-woocommerce-fort.
+#: php:424
+msgid "SADAD"
+msgstr "SADAD"
+
+#: ../classes/class-woocommerce-fort.php:297
+msgid "Enable SADAD Payment Method"
+msgstr "Enable SADAD Payment Method"
+
+#: ../classes/class-woocommerce-fort.php:301 ../classes/class-woocommerce-fort.
+#: php:439
+msgid "NAPS"
+msgstr "NAPS"
+
+#: ../classes/class-woocommerce-fort.php:303
+msgid "Enable NAPS Payment Method"
+msgstr "Enable NAPS Payment Method"
+
+#: ../classes/class-woocommerce-fort.php:307
+msgid "Sandbox mode"
+msgstr "Sandbox mode"
+
+#: ../classes/class-woocommerce-fort.php:309
+msgid "Enable Sandbox mode"
+msgstr "Enable Sandbox mode"
+
+#: ../classes/class-woocommerce-fort.php:427
+msgid "Pay for your items with using SADAD payment method"
+msgstr "Pay for your items with using SADAD payment method"
+
+#: ../classes/class-woocommerce-fort.php:442
+msgid "Pay for your items with using NAPS payment method"
+msgstr "Pay for your items with using NAPS payment method"
+
+#: ../classes/class-woocommerce-fort.php:472
+msgid "error_invalid_card_number"
+msgstr "Invalid card number."
+
+#: ../classes/class-woocommerce-fort.php:473
+msgid "error_invalid_card_holder_name"
+msgstr "Invalid card holder name."
+
+#: ../classes/class-woocommerce-fort.php:474
+msgid "error_invalid_expiry_date"
+msgstr "Invalid card expiry date."
+
+#: ../classes/class-woocommerce-fort.php:475
+msgid "error_invalid_cvc_code"
+msgstr "Invalid CVC Code."
+
+#: ../classes/class-woocommerce-fort.php:476
+msgid "error_invalid_cc_details"
+msgstr ""
+"Invalid credit card details, Please check you credit card details and try "
+"again."
+
+#: ../classes/class-woocommerce-fort.php:484
+msgid "text_card_number"
+msgstr "Card Number"
+
+#: ../classes/class-woocommerce-fort.php:488
+msgid "text_card_holder_name"
+msgstr "Card Holder Name"
+
+#: ../classes/class-woocommerce-fort.php:492
+msgid "text_expiry_date"
+msgstr "Expiry Date (mm/yy)"
+
+#: ../classes/class-woocommerce-fort.php:498
+msgid "text_cvc_code"
+msgstr "CVC Code"
+
+#: ../classes/class-woocommerce-fort.php:500
+msgid "help_cvc_code"
+msgstr "You can find the code on the back of the card."
+
+#: ../lib/payfortFort/classes/Payment.php:94
+msgid "error_transaction_error_1"
+msgstr "An error occurred while making the transaction. Please try again"
+
+#: ../lib/payfortFort/classes/Payment.php:130
+msgid "error_invalid_signature"
+msgstr "Invalid response signature."
+
+#: ../lib/payfortFort/classes/Payment.php:168 ../lib/payfortFort/classes/Payment.
+#: php:265
+msgid "text_payment_canceled"
+msgstr "You have canceled the payment, please try again."
+
+#: ../lib/payfortFort/classes/Payment.php:180 ../lib/payfortFort/classes/Payment.
+#: php:201
+msgid "error_transaction_error_2"
+msgstr ""
+"An error occurred while making the transaction. Please try again. (Error "
+"message: %s)"
+
+#: ../lib/payfortFort/classes/Payment.php:201
+msgid "error_response_unknown"
+msgstr "Response Unknown"
+
+#. Name of the plugin
+msgid "Payfort (FORT)"
+msgstr "Payfort (FORT)"
+
+#. URI of the plugin
+msgid "https://github.com/payfort/woocommerce-payfort"
+msgstr "https://github.com/payfort/woocommerce-payfort"
+
+#. Description of the plugin
+msgid ""
+"Payfort makes it really easy to start accepting online payments (credit &amp;"
+" debit cards) in the Middle East. Sign up is instant, at https://www.payfort."
+"com"
+msgstr ""
+"Payfort makes it really easy to start accepting online payments (credit &amp;"
+" debit cards) in the Middle East. Sign up is instant, at https://www.payfort."
+"com"
+
+#. Author of the plugin
+msgid "Payfort"
+msgstr "Payfort"
+
+#. URI of the plugin
+msgid "https://www.payfort.com"
+msgstr "https://www.payfort.com"
