@@ -10,6 +10,7 @@
 $active_plugins = apply_filters('active_plugins', get_option('active_plugins'));
 if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
 
+    
     if (!defined('PAYFORT_FORT')) {
         define('PAYFORT_FORT', true);
     }
@@ -33,6 +34,8 @@ if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
     function add_payfort_fort_gateway($gateways)
     {
         $gateways[] = 'WC_Gateway_Payfort';
+        $gateways[] = 'WC_Gateway_Payfort_Fort_Sadad';
+        $gateways[] = 'WC_Gateway_Payfort_Fort_Qpay';
         return $gateways;
     }
 
@@ -41,6 +44,10 @@ if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
     function init_payfort_fort_payment_gateway()
     {
         require 'classes/class-woocommerce-fort.php';
+        require 'classes/class-woocommerce-fort-sadad.php';
+        require 'classes/class-woocommerce-fort-naps.php';
+        
+        add_filter( 'woocommerce_get_sections_checkout', function($sections){unset($sections['payfort_fort_sadad']);unset($sections['payfort_fort_qpay']);return $sections;}, 500 );
     }
 
     add_action('plugins_loaded', 'payfort_fort_load_plugin_textdomain');
@@ -74,6 +81,6 @@ if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
             }
         }
     }
-
+    
     add_action('init', 'woocommerce_payfort_fort_actions', 500);
 }

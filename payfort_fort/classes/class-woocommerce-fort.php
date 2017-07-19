@@ -36,10 +36,11 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
             $this->enable_naps  = false;
         }
         $this->enable_credit_card  = $this->get_option('enable_credit_card') == 'yes' ? true : false;
-
+        
         // Actions
         add_action('woocommerce_receipt_' . $this->id, array($this, 'receipt_page'));
         add_action('wp_enqueue_scripts', array($this, 'payment_scripts'));
+        
         // Save options
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         if (!$this->is_valid_for_use()) {
@@ -56,6 +57,22 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
         add_action('woocommerce_wc_gateway_payfort_fort_merchantPageCancel', array(&$this, 'merchantPageCancel'));
     }
 
+    function process_admin_options() {
+        $result = parent::process_admin_options();
+        $post_data = $this->get_post_data();
+        $settings = $this->settings;
+        
+        $sadadSettings = array();
+        $qpaySettings = array();
+        
+        $sadadSettings['enabled'] = isset($settings['enable_sadad']) ? $settings['enable_sadad'] : "no";
+        $qpaySettings['enabled']  = isset($settings['enable_naps']) ? $settings['enable_naps'] : "no";
+        
+        update_option( 'woocommerce_payfort_fort_sadad_settings', apply_filters( 'woocommerce_settings_api_sanitized_fields_sadad', $sadadSettings ) );
+        update_option( 'woocommerce_payfort_fort_qpay_settings', apply_filters( 'woocommerce_settings_api_sanitized_fields_qpay', $qpaySettings ) );
+        return $result;
+    }
+    
     function payment_scripts()
     {
         global $woocommerce;
@@ -318,17 +335,15 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
         if (!isset($_GET['response_code'])) {
             $paymentMethod   = PAYFORT_FORT_PAYMENT_METHOD_CC;
             $integrationType = PAYFORT_FORT_INTEGRATION_TYPE_REDIRECTION;
-            $isSADAD         = isset($_POST['SADAD']) ? $_POST['SADAD'] : false;
-            $isSADAD         = $isSADAD == 'true' ? true : false;
-            $isNaps          = isset($_POST['NAPS']) ? $_POST['NAPS'] : false;
-            $isNaps          = $isNaps == 'true' ? true : false;
-            if ($isSADAD) {
+            $payment_method  = $_POST['payment_method'];
+            if($payment_method == PAYFORT_FORT_PAYMENT_METHOD_SADAD) {
                 $paymentMethod = PAYFORT_FORT_PAYMENT_METHOD_SADAD;
             }
-            elseif ($isNaps) {
+            elseif($payment_method == PAYFORT_FORT_PAYMENT_METHOD_NAPS) {
                 $paymentMethod = PAYFORT_FORT_PAYMENT_METHOD_NAPS;
             }
-            if ($paymentMethod == PAYFORT_FORT_PAYMENT_METHOD_CC) {
+            else{
+                $paymentMethod = PAYFORT_FORT_PAYMENT_METHOD_CC;
                 $integrationType = $this->pfConfig->getCcIntegrationType();
             }
             $postData   = array();
@@ -406,37 +421,8 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
         // Access the global object
         echo "<input type='hidden' id='payfort_fort_cc_integration_type' value='" . $this->pfConfig->getCcIntegrationType() . "'>";
         echo "<input type='hidden' id='payfort_cancel_url' value='" . get_site_url() . '?wc-api=wc_gateway_payfort_fort_merchantPageCancel' . "'>";
-
-        if ($this->enable_sadad) {
-            echo preg_replace('/^\s+|\n|\r|\s+$/m', '', '<script>
-                    jQuery(".payment_method_payfort").eq(0).after(\'
-                    <li class="payment_method_payfort">
-                        <input id="payment_method_payfort" data-method="SADAD" type="radio" class="input-radio" name="payment_method" value="payfort" data-order_button_text="">
-                        <label onclick="setTimeout(function(){jQuery(\\\'[data-method=SADAD]\\\').click().focus();},10)" for="payment_method_payfort">
-                            ' . __('SADAD', 'payfort_fort') . ' <img src="' . get_site_url() . '/wp-content/plugins/payfort_fort/assets/images/SADAD-logo.png" alt="SADAD">
-                        </label>
-                        <div class="payment_box payment_method_payfort">
-                            <p>' . __('Pay for your items with using SADAD payment method', 'payfort_fort') . '</p>
-                        </div>
-                    </li>\');
-                </script>');
-        }
-
-        if ($this->enable_naps) {
-            echo preg_replace('/^\s+|\n|\r|\s+$/m', '', '<script>
-                    jQuery(".payment_method_payfort").eq(0).after(\'\
-                    <li class="payment_method_payfort_naps">\
-                        <input id="payment_method_payfort" data-method="NAPS" type="radio" class="input-radio" name="payment_method" value="payfort" data-order_button_text="">\
-                        <label onclick="setTimeout(function(){jQuery(\\\'[data-method=NAPS]\\\').click().focus();},10)" for="payment_method_payfort">\
-                            ' . __('NAPS', 'payfort_fort') . ' <img src="' . get_site_url() . '/wp-content/plugins/payfort_fort/assets/images/qpay-logo.png" alt="NAPS">\
-                        </label>\
-                        <div class="payment_box payment_method_payfort">\
-                            <p>' . __('Pay for your items with using NAPS payment method', 'payfort_fort') . '</p>\
-                        </div>\
-                    </li>\');
-                </script>');
-        }
-        if ($this->enable_credit_card == "yes" && $this->pfConfig->getCcIntegrationType() == 'merchantPage') {
+        
+        if ($this->enable_credit_card && $this->pfConfig->getCcIntegrationType() == 'merchantPage') {
             echo preg_replace('/^\s+|\n|\r|\s+$/m', '', '<script>
                     jQuery(".payment_method_payfort").eq(0).after(\'\
                     <div class="pf-iframe-background" id="div-pf-iframe" style="display:none">
@@ -450,7 +436,7 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
                     </div>\');
                 </script>');
         }
-        if ($this->enable_credit_card != "yes") {
+        if (!$this->enable_credit_card) {
             echo preg_replace('/^\s+|\n|\r|\s+$/m', '', '<script>
                     jQuery(".payment_method_payfort").eq(0).remove();
                 </script>');
