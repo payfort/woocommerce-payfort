@@ -1,7 +1,8 @@
 
 
 jQuery('form.checkout').on('submit', function (e){
-    if(jQuery('input[name=payment_method]:checked').val() == 'payfort') {
+    var paymentMethod = jQuery('input[name=payment_method]:checked').val();
+    if("payfort" === paymentMethod || "payfort_fort_sadad" === paymentMethod || "payfort_fort_qpay" === paymentMethod) {
         e.preventDefault();
         return fortFormHandler(jQuery(this));
     }
@@ -30,12 +31,12 @@ function showError(form, data) {
     }, 1000 );
 }
 var form = jQuery("form.checkout");
-form.length ? (form.bind("checkout_place_order_payfort", function() {
+form.length ? (form.bind("checkout_place_order_payfort checkout_place_order_payfort_fort_sadad checkout_place_order_qpay", function() {
     //return fortFormHandler(jQuery(this));
     return !1;
 })) : jQuery("form#order_review").submit(function() {
     var paymentMethod = jQuery("#order_review input[name=payment_method]:checked").val();
-    return "payfort" === paymentMethod ? fortFormHandler(jQuery(this)) : void 0;
+    return "payfort" === paymentMethod || "payfort_fort_sadad" === paymentMethod || "payfort_fort_qpay" === paymentMethod ? fortFormHandler(jQuery(this)) : void 0;
 });
 
 function fortFormHandler(form) {
@@ -43,17 +44,17 @@ function fortFormHandler(form) {
     return initPayfortFortPayment(form);
 }
 
-function isMerchantPageMethod() {
-    if(!jQuery('[data-method=NAPS]').is(':checked') && !jQuery('[data-method=SADAD]').is(':checked')
-            && jQuery('#payfort_fort_cc_integration_type').val() == 'merchantPage') {
+function isMerchantPageMethod(pament_method) {
+    var isCc = pament_method == 'payfort' ? true : false;
+    if(isCc && jQuery('#payfort_fort_cc_integration_type').val() == 'merchantPage') {
         return true;
     }
     return false;
 }
 
-function isMerchantPage2Method() {
-    if(!jQuery('[data-method=NAPS]').is(':checked') && !jQuery('[data-method=SADAD]').is(':checked')
-            && jQuery('#payfort_fort_cc_integration_type').val() == 'merchantPage2') {
+function isMerchantPage2Method(pament_method) {
+    var isCc = pament_method == 'payfort' ? true : false;
+    if(isCc && jQuery('#payfort_fort_cc_integration_type').val() == 'merchantPage2') {
         return true;
     }
     return false;
@@ -61,9 +62,10 @@ function isMerchantPage2Method() {
 
 function initPayfortFortPayment(form) {
     var data = jQuery(form).serialize();
-    var isSadad = jQuery('[data-method=SADAD]').is(':checked');
-    var isNAPS = jQuery('[data-method=NAPS]').is(':checked');
-    if(isMerchantPage2Method()) {
+    var pament_method = form.find('input[name="payment_method"]:checked').val();
+    var isSadad = pament_method == 'payfort_fort_sadad' ? true : false;
+    var isNAPS = pament_method == 'payfort_fort_qpay' ? true : false;
+    if(isMerchantPage2Method(pament_method)) {
         //validate credit card form
         var isValid = payfortFortMerchantPage2.validateCcForm(form);
         if(!isValid) {
@@ -109,10 +111,10 @@ function initPayfortFortPayment(form) {
             jQuery('#frm_payfort_fort_payment').remove();
             jQuery('body').append(data.form);
             window.success = true;
-            if(isMerchantPage2Method()) {
+            if(isMerchantPage2Method(pament_method)) {
                 payfortFortMerchantPage2.submitMerchantPage();
             }
-            else if(isMerchantPageMethod()) {
+            else if(isMerchantPageMethod(pament_method)) {
                 payfortFortMerchantPage.showMerchantPage(jQuery('#frm_payfort_fort_payment').attr('action'));
             }
             else{                   
