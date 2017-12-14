@@ -2,7 +2,7 @@
 
 jQuery('form.checkout').on('submit', function (e){
     var paymentMethod = jQuery('input[name=payment_method]:checked').val();
-    if("payfort" === paymentMethod || "payfort_fort_sadad" === paymentMethod || "payfort_fort_qpay" === paymentMethod) {
+    if("payfort" === paymentMethod || "payfort_fort_sadad" === paymentMethod || "payfort_fort_qpay" === paymentMethod || "payfort_fort_installments" === paymentMethod) {
         e.preventDefault();
         return fortFormHandler(jQuery(this));
     }
@@ -31,12 +31,12 @@ function showError(form, data) {
     }, 1000 );
 }
 var form = jQuery("form.checkout");
-form.length ? (form.bind("checkout_place_order_payfort checkout_place_order_payfort_fort_sadad checkout_place_order_qpay", function() {
+form.length ? (form.bind("checkout_place_order_payfort checkout_place_order_payfort_fort_sadad checkout_place_order_qpay checkout_place_order_payfort_fort_installments", function() {
     //return fortFormHandler(jQuery(this));
     return !1;
 })) : jQuery("form#order_review").submit(function() {
     var paymentMethod = jQuery("#order_review input[name=payment_method]:checked").val();
-    return "payfort" === paymentMethod || "payfort_fort_sadad" === paymentMethod || "payfort_fort_qpay" === paymentMethod ? fortFormHandler(jQuery(this)) : void 0;
+    return "payfort" === paymentMethod || "payfort_fort_sadad" === paymentMethod || "payfort_fort_qpay" === paymentMethod || "payfort_fort_installments" === paymentMethod ? fortFormHandler(jQuery(this)) : void 0;
 });
 
 function fortFormHandler(form) {
@@ -45,8 +45,9 @@ function fortFormHandler(form) {
 }
 
 function isMerchantPageMethod(pament_method) {
-    var isCc = pament_method == 'payfort' ? true : false;
-    if(isCc && jQuery('#payfort_fort_cc_integration_type').val() == 'merchantPage') {
+    var isCc            = pament_method == 'payfort' ? true : false;
+    var isInstallments  = pament_method == 'payfort_fort_installments' ? true : false;
+    if((isCc && jQuery('#payfort_fort_cc_integration_type').val() == 'merchantPage') || (isInstallments && jQuery('#payfort_fort_installments_integration_type').val() == 'merchantPage')) {
         return true;
     }
     return false;
@@ -65,6 +66,7 @@ function initPayfortFortPayment(form) {
     var pament_method = form.find('input[name="payment_method"]:checked').val();
     var isSadad = pament_method == 'payfort_fort_sadad' ? true : false;
     var isNAPS = pament_method == 'payfort_fort_qpay' ? true : false;
+    var isInstallments = pament_method == 'payfort_fort_installments' ? true : false;
     if(isMerchantPage2Method(pament_method)) {
         //validate credit card form
         var isValid = payfortFortMerchantPage2.validateCcForm(form);

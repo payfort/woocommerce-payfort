@@ -126,7 +126,7 @@ var payfortFortMerchantPage = (function () {
             if(jQuery("#payfort_merchant_page").size()) {
                 jQuery( "#payfort_merchant_page" ).remove();
             }
-            jQuery('<iframe  name="payfort_merchant_page" id="payfort_merchant_page"height="550px" frameborder="0" scrolling="no" onload="payfortFortMerchantPage.iframeLoaded(this)" style="display:none"></iframe>').appendTo('#pf_iframe_content');
+            jQuery('<iframe  name="payfort_merchant_page" id="payfort_merchant_page"height="650px" frameborder="0" scrolling="no" onload="payfortFortMerchantPage.iframeLoaded(this)" style="display:none"></iframe>').appendTo('#pf_iframe_content');
             jQuery('.pf-iframe-spin').show();
             jQuery('.pf-iframe-close').hide();
             jQuery( "#payfort_merchant_page" ).attr("src", gatewayUrl);

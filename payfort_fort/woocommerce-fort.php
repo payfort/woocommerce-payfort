@@ -36,6 +36,7 @@ if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
         $gateways[] = 'WC_Gateway_Payfort';
         $gateways[] = 'WC_Gateway_Payfort_Fort_Sadad';
         $gateways[] = 'WC_Gateway_Payfort_Fort_Qpay';
+        $gateways[] = 'WC_Gateway_Payfort_Fort_Installments';
         return $gateways;
     }
 
@@ -46,8 +47,9 @@ if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
         require 'classes/class-woocommerce-fort.php';
         require 'classes/class-woocommerce-fort-sadad.php';
         require 'classes/class-woocommerce-fort-naps.php';
+        require 'classes/class-woocommerce-fort-installments.php';
         
-        add_filter( 'woocommerce_get_sections_checkout', function($sections){unset($sections['payfort_fort_sadad']);unset($sections['payfort_fort_qpay']);return $sections;}, 500 );
+        add_filter( 'woocommerce_get_sections_checkout', function($sections){unset($sections['payfort_fort_installments']);unset($sections['payfort_fort_sadad']);unset($sections['payfort_fort_qpay']);return $sections;}, 500 );
     }
 
     add_action('plugins_loaded', 'payfort_fort_load_plugin_textdomain');

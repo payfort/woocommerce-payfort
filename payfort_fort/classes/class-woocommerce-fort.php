@@ -31,6 +31,13 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
         if($this->pfHelper->getFortCurrency($baseCurrency, $frontCurrency) != 'SAR') {
             $this->enable_sadad  = false;
         }
+        
+        
+        
+//        $this->enable_installments         = $this->get_option('enable_installments') == 'yes' ? true : false;
+        
+        
+        
         $this->enable_naps         = $this->get_option('enable_naps') == 'yes' ? true : false;
         if($this->pfHelper->getFortCurrency($baseCurrency, $frontCurrency) != 'QAR') {
             $this->enable_naps  = false;
@@ -62,14 +69,17 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
         $post_data = $this->get_post_data();
         $settings = $this->settings;
         
-        $sadadSettings = array();
-        $qpaySettings = array();
+        $sadadSettings           = array();
+        $qpaySettings            = array();
+        $installmentsSettings    = array();
         
-        $sadadSettings['enabled'] = isset($settings['enable_sadad']) ? $settings['enable_sadad'] : "no";
-        $qpaySettings['enabled']  = isset($settings['enable_naps']) ? $settings['enable_naps'] : "no";
+        $sadadSettings['enabled']           = isset($settings['enable_sadad']) ? $settings['enable_sadad'] : "no";
+        $qpaySettings['enabled']            = isset($settings['enable_naps']) ? $settings['enable_naps'] : "no";
+        $installmentsSettings['enabled']    = isset($settings['enable_installments']) ? $settings['enable_installments'] : "no";
         
         update_option( 'woocommerce_payfort_fort_sadad_settings', apply_filters( 'woocommerce_settings_api_sanitized_fields_sadad', $sadadSettings ) );
         update_option( 'woocommerce_payfort_fort_qpay_settings', apply_filters( 'woocommerce_settings_api_sanitized_fields_qpay', $qpaySettings ) );
+        update_option( 'woocommerce_payfort_fort_installments_settings', apply_filters( 'woocommerce_settings_api_sanitized_fields_installments', $installmentsSettings ) );
         return $result;
     }
     
@@ -300,6 +310,36 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
                 'placeholder' => __('Integration Type', 'payfort_fort'),
                 'class'       => 'wc-enhanced-select',
             ),
+            
+            
+            
+            
+            
+            
+            'enable_installments'  => array(
+                'title'   => __('Installments', 'payfort_fort'),
+                'type'    => 'checkbox',
+                'label'   => __('Enable Installments Payment Option', 'payfort_fort'),
+                'default' => 'no'
+            ),
+            'installments_integration_type' => array(
+                'title'          => __('Installments Integration Type', 'payfort_fort'),
+                'type'           => 'select',
+                'options'        => array(
+                    'redirection'    => __('Redirection', 'payfort_fort'),
+                    'merchantPage'   => __('Merchant Page', 'payfort_fort'),
+                ),
+                'description'    => __('Installments Integration Type', 'payfort_fort'),
+                'default'        => 'redirection',
+                'desc_tip'       => true,
+                'class'          => 'wc-enhanced-select',
+            ),
+            
+            
+            
+            
+            
+            
             'enable_sadad'        => array(
                 'title'   => __('SADAD', 'payfort_fort'),
                 'type'    => 'checkbox',
@@ -341,6 +381,10 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
             }
             elseif($payment_method == PAYFORT_FORT_PAYMENT_METHOD_NAPS) {
                 $paymentMethod = PAYFORT_FORT_PAYMENT_METHOD_NAPS;
+            } 
+            elseif($payment_method == PAYFORT_FORT_PAYMENT_METHOD_INSTALLMENTS){
+                $paymentMethod = PAYFORT_FORT_PAYMENT_METHOD_INSTALLMENTS;
+                $integrationType = $this->pfConfig->getInstallmentsIntegrationType();
             }
             else{
                 $paymentMethod = PAYFORT_FORT_PAYMENT_METHOD_CC;
@@ -357,6 +401,10 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
                 else if ($paymentMethod == PAYFORT_FORT_PAYMENT_METHOD_NAPS) {
                     update_post_meta($order->id, '_payment_method_title', 'NAPS');
                     update_post_meta($order->id, '_payment_method', PAYFORT_FORT_PAYMENT_METHOD_NAPS);
+                }
+                else if($paymentMethod == PAYFORT_FORT_PAYMENT_METHOD_INSTALLMENTS) {
+                    update_post_meta($order->id, '_payment_method_title', 'INSTALLMENTS');
+                    update_post_meta($order->id, '_payment_method', PAYFORT_FORT_PAYMENT_METHOD_INSTALLMENTS);                    
                 }
             }
             elseif ($paymentMethod == PAYFORT_FORT_PAYMENT_METHOD_CC && $integrationType == PAYFORT_FORT_INTEGRATION_TYPE_MERCAHNT_PAGE2) {
@@ -385,9 +433,14 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
         $this->_handleResponse('online');
     }
 
-    public function merchantPageResponse()
+    public function merchantPageResponse() 
     {
-        $this->_handleResponse('online', $this->pfConfig->getCcIntegrationType());
+        $response_params = array_merge($_GET, $_POST);
+        $order = new WC_Order($response_params['merchant_reference']);
+        if ($order->payment_method == PAYFORT_FORT_PAYMENT_METHOD_INSTALLMENTS)
+            $this->_handleResponse('online', $this->pfConfig->getInstallmentsIntegrationType());
+        else
+            $this->_handleResponse('online', $this->pfConfig->getCcIntegrationType());
     }
 
     private function _handleResponse($response_mode = 'online', $integration_type = PAYFORT_FORT_INTEGRATION_TYPE_REDIRECTION)
