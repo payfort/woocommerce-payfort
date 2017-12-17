@@ -6,6 +6,7 @@ define('PAYFORT_FORT_INTEGRATION_TYPE_MERCAHNT_PAGE2', 'merchantPage2');
 define('PAYFORT_FORT_PAYMENT_METHOD_CC', 'payfort');
 define('PAYFORT_FORT_PAYMENT_METHOD_NAPS', 'payfort_fort_qpay');
 define('PAYFORT_FORT_PAYMENT_METHOD_SADAD', 'payfort_fort_sadad');
+define('PAYFORT_FORT_PAYMENT_METHOD_INSTALLMENTS', 'payfort_fort_installments');
 define('PAYFORT_FORT_FLASH_MSG_ERROR', 'error');
 define('PAYFORT_FORT_FLASH_MSG_SUCCESS', 'success');
 define('PAYFORT_FORT_FLASH_MSG_INFO', 'info');
@@ -37,6 +38,11 @@ class Payfort_Fort_Config extends Payfort_Fort_Super
     private $gatewaySandboxHost;
     private $logFileDir;
     
+    // installments
+    private $installmentsStatus;
+    private $installmentsIntegrationType;
+
+
     public function __construct()
     {
         parent::__construct();
@@ -46,24 +52,28 @@ class Payfort_Fort_Config extends Payfort_Fort_Super
         $this->logFileDir         = WC_LOG_DIR. 'payfort_fort.log';
         
         $this->init_settings();
-        $this->language             = $this->_getShoppingCartConfig('language');
-        $this->merchantIdentifier   = $this->_getShoppingCartConfig('merchant_identifier');
-        $this->accessCode           = $this->_getShoppingCartConfig('access_code');
-        $this->command              = $this->_getShoppingCartConfig('command');
-        $this->hashAlgorithm        = $this->_getShoppingCartConfig('hash_algorithm');
-        $this->requestShaPhrase     = $this->_getShoppingCartConfig('request_sha');
-        $this->responseShaPhrase    = $this->_getShoppingCartConfig('response_sha');
-        $this->sandboxMode          = $this->_getShoppingCartConfig('sandbox_mode');
-        $this->gatewayCurrency      = 'base';
-        $this->debugMode            = $this->_getShoppingCartConfig('debug_mode');
+        $this->language                              = $this->_getShoppingCartConfig('language');
+        $this->merchantIdentifier                    = $this->_getShoppingCartConfig('merchant_identifier');
+        $this->accessCode                            = $this->_getShoppingCartConfig('access_code');
+        $this->command                               = $this->_getShoppingCartConfig('command');
+        $this->hashAlgorithm                         = $this->_getShoppingCartConfig('hash_algorithm');
+        $this->requestShaPhrase                      = $this->_getShoppingCartConfig('request_sha');
+        $this->responseShaPhrase                     = $this->_getShoppingCartConfig('response_sha');
+        $this->sandboxMode                           = $this->_getShoppingCartConfig('sandbox_mode');
+        $this->gatewayCurrency                       = 'base';
+        $this->debugMode                             = $this->_getShoppingCartConfig('debug_mode');
         //$this->hostUrl = $this->_getShoppingCartConfig('hostUrl');
         $this->successOrderStatusId = '';
-        $this->orderPlacement       = $this->_getShoppingCartConfig('order_placement');
-        $this->status               = $this->enabled;
-        $this->ccStatus             = $this->_getShoppingCartConfig('enable_credit_card');
-        $this->ccIntegrationType    = $this->_getShoppingCartConfig('integration_type');
-        $this->sadadStatus          = $this->_getShoppingCartConfig('enable_sadad');
-        $this->napsStatus           = $this->_getShoppingCartConfig('enable_naps');
+        $this->orderPlacement                        = $this->_getShoppingCartConfig('order_placement');
+        $this->status                                = $this->enabled;
+        $this->ccStatus                              = $this->_getShoppingCartConfig('enable_credit_card');
+        $this->ccIntegrationType                     = $this->_getShoppingCartConfig('integration_type');
+        $this->sadadStatus                           = $this->_getShoppingCartConfig('enable_sadad');
+        $this->napsStatus                            = $this->_getShoppingCartConfig('enable_naps');
+        // installments
+        $this->installmentsStatus                    = $this->_getShoppingCartConfig('enable_installments');
+        $this->installmentsIntegrationType           = $this->_getShoppingCartConfig('installments_integration_type');
+        
     }
 
     /**
@@ -216,6 +226,10 @@ class Payfort_Fort_Config extends Payfort_Fort_Super
     {
         return $this->ccIntegrationType;
     }
+    
+    public function getInstallmentsIntegrationType(){
+        return $this->installmentsIntegrationType;
+    }
 
     public function isCcMerchantPage()
     {
@@ -241,6 +255,17 @@ class Payfort_Fort_Config extends Payfort_Fort_Super
     public function isSadadActive()
     {
         if ($this->sadadStatus) {
+            return true;
+        }
+        return false;
+    }
+    
+    public function getInstallmentsStatus(){
+        $this->installmentsStatus;
+    }
+    
+    public function isInstallmentsActive(){
+         if ($this->installmentsStatus) {
             return true;
         }
         return false;
