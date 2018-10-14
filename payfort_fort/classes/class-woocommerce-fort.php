@@ -514,7 +514,7 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
                 <div class="payfort-fort-cc" >
                     <p id="payfort_fort_card_number_field" class="form-row">
                         <label class="" for="payfort_fort_card_number"><?php echo __('text_card_number', 'payfort_fort');?> <span class="required">*</span></label>
-                        <input type="text" value="" autocomplete="off" maxlength="16" placeholder="" id="payfort_fort_card_number" class="input-text">
+                        <input type="text" value="" autocomplete="off" maxlength="19" placeholder="" id="payfort_fort_card_number" class="input-text">
                     </p>
                     <p id="payfort_fort_card_holder_name_field" class="form-row clear">
                         <label class="" for="payfort_fort_card_holder_name"><?php echo __('text_card_holder_name', 'payfort_fort');?></label>
