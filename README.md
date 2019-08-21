@@ -21,6 +21,9 @@ On the Checkout Options Click on Payfort .
 
 ## Changelog
 
+`v1.2.1`
+- Fix a bug where some specific amounts would cause a signature mismatch error.
+
 `v1.2.0`
 - Rearrange payment methods configuration in admin panel.
 - Added option for order placement.
