@@ -342,3 +342,6 @@ msgstr "Payfort"
 #. URI of the plugin
 msgid "https://www.payfort.com"
 msgstr "https://www.payfort.com"
+
+msgid "Credit Card / mada Bank Card"
+msgstr "بطاقة إئتمانية ‫/‬ بطاقة مدى البنكية"
