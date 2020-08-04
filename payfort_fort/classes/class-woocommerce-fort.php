@@ -229,7 +229,9 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
                 'options'     => array(
                     'SHA1'   => __('SHA1', 'payfort_fort'),
                     'SHA256' => __('SHA-256', 'payfort_fort'),
-                    'SHA512' => __('SHA-512', 'payfort_fort')
+                    'SHA512' => __('SHA-512', 'payfort_fort'),
+                    'HMAC256' => __('HMAC-256', 'payfort_fort'),
+                    'HMAC512' => __('HMAC-512', 'payfort_fort'),
                 ),
                 'description' => __('The hash algorithm used for the signature', 'payfort_fort'),
                 'default'     => '',
