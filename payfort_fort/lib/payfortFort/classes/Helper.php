@@ -46,7 +46,7 @@ class Payfort_Fort_Helper extends Payfort_Fort_Super
 
     public function getReturnUrl($path)
     {
-        return get_site_url().'?wc-api=wc_gateway_payfort_fort_'.$path;
+        return get_site_url().'/?wc-api=wc_gateway_payfort_fort_'.$path;
     }
 
     public function getUrl($path)
