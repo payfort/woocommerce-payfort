@@ -3,7 +3,7 @@
 /* Plugin Name: Payfort (FORT)
  * Plugin URI:  https://github.com/payfort/woocommerce-payfort
  * Description: Payfort makes it really easy to start accepting online payments (credit &amp; debit cards) in the Middle East. Sign up is instant, at https://www.payfort.com/
- * Version:     0.1.4
+ * Version:     1.2.1
  * Author:      Payfort
  * Author URI:  https://www.payfort.com/
  */
@@ -18,7 +18,7 @@ if (in_array('woocommerce/woocommerce.php', $active_plugins)) {
     if (defined('PAYFORT_FORT_VERSION'))
         return;
 
-    define('PAYFORT_FORT_VERSION', '1.2.0');
+    define('PAYFORT_FORT_VERSION', '1.2.1');
 
 
     if (!defined('PAYFORT_FORT_DIR')) {

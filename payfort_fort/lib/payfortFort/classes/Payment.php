@@ -303,9 +303,7 @@ class Payfort_Fort_Payment extends Payfort_Fort_Super
         curl_setopt($ch, CURLOPT_URL, $gatewayUrl);
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_FAILONERROR, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         curl_setopt($ch, CURLOPT_ENCODING, "compress, gzip");
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // allow redirects		
         //curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return into a variable
