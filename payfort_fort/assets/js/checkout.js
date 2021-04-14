@@ -93,7 +93,12 @@ function initPayfortFortPayment(form) {
         }
         else{
             var code = response.responseText;
-            var newstring = code.replace(/<script[^>]*>(.*)<\/script>/, "");
+            var newstring; 
+            try {
+              newstring = code.replace(/<script[^>]*>(.*)<\/script>/, "");
+            } catch (error) {
+              //error catched
+            }
             if (newstring.indexOf("<!--WC_START-->") >= 0) {
                     newstring = newstring.split("<!--WC_START-->")[1];
             }
