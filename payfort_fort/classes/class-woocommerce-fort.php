@@ -13,21 +13,40 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
 
         $this->has_fields = false;
         $this->load_plugin_textdomain();
-        $this->icon       = apply_filters('woocommerce_FORT_icon', PAYFORT_FORT_URL . 'assets/images/cards.png');
+        
+        $this->pfConfig            = Payfort_Fort_Config::getInstance();
+        $this->pfHelper            = Payfort_Fort_Helper::getInstance();
+        $this->pfPayment           = Payfort_Fort_Payment::getInstance();
+        $baseCurrency = $this->pfHelper->getBaseCurrency();
+        $frontCurrency = $this->pfHelper->getFrontCurrency();
+        
+        $this->enable_mada = $this->get_option('enable_mada') == 'yes' ? true : false;
+        if ($this->enable_mada == false || $this->pfHelper->getFortCurrency($baseCurrency, $frontCurrency) != 'SAR') {
+            $this->icon = apply_filters('woocommerce_FORT_icon', PAYFORT_FORT_URL . 'assets/images/cards.png');
+        }
+        else {
+            if (get_locale()=='ar') {
+                $this->icon = apply_filters('woocommerce_FORT_icon', PAYFORT_FORT_URL . 'assets/images/cardsWithMadaAR.png');
+            }
+            else {
+                $this->icon = apply_filters('woocommerce_FORT_icon', PAYFORT_FORT_URL . 'assets/images/cardsWithMada.png');
+            }
+                    
+        }
         if(is_admin()) {
             $this->has_fields = true;
             $this->init_form_fields();
         }
         
         // Define user set variables
-        $this->title               = Payfort_Fort_Language::__('Credit / Debit Card');
+        if ($this->enable_mada == false || $this->pfHelper->getFortCurrency($baseCurrency, $frontCurrency) != 'SAR') {
+            $this->title               = Payfort_Fort_Language::__('Credit / Debit Card');
+        }
+        else {
+            $this->title               = Payfort_Fort_Language::__('Credit Card / mada Bank Card');
+        }
         $this->description         = $this->get_option('description');
-        $this->pfConfig            = Payfort_Fort_Config::getInstance();
-        $this->pfHelper            = Payfort_Fort_Helper::getInstance();
-        $this->pfPayment           = Payfort_Fort_Payment::getInstance();
         $this->enable_sadad        = $this->get_option('enable_sadad') == 'yes' ? true : false;
-        $baseCurrency = $this->pfHelper->getBaseCurrency();
-        $frontCurrency = $this->pfHelper->getFrontCurrency();
         if($this->pfHelper->getFortCurrency($baseCurrency, $frontCurrency) != 'SAR') {
             $this->enable_sadad  = false;
         }
@@ -310,14 +329,19 @@ class WC_Gateway_Payfort extends Payfort_Fort_Super
                 'placeholder' => __('Integration Type', 'payfort_fort'),
                 'class'       => 'wc-enhanced-select',
             ),
-            
+            'enable_mada'  => array(
+                'title'   => __('', 'payfort_fort'),
+                'type'    => 'checkbox',
+                'label'   => __('Enable Mada option in the store', 'payfort_fort'),
+                'default' => 'no'
+            ),
             
             
             
             
             
             'enable_installments'  => array(
-                'title'   => __('Installments', 'payfort_fort'),
+                'title'   => __('', 'payfort_fort'),
                 'type'    => 'checkbox',
                 'label'   => __('Enable Installments Payment Option', 'payfort_fort'),
                 'default' => 'no'
