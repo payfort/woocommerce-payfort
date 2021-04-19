@@ -51,7 +51,7 @@ class Payfort_Fort_Helper extends Payfort_Fort_Super
 
     public function getUrl($path)
     {
-        $url = get_site_url().$path;
+        $url = get_home_url().$path;
         return $url;
     }
    
