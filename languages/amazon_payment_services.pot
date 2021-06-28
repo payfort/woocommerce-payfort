@@ -1,0 +1,888 @@
+# Copyright (C) 2021 Amazon Payment Services
+# This file is distributed under the same license as the Amazon payment services plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Amazon payment services 2.2.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woocommerce-aps-master\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2021-03-26T23:23:05+05:30\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.4.0\n"
+"X-Domain: amazon_payment_services\n"
+
+#. Plugin Name of the plugin
+msgid "Amazon payment services"
+msgstr ""
+
+#. Plugin URI of the plugin
+#. Author URI of the plugin
+msgid "https://paymentservices.amazon.com/"
+msgstr ""
+
+#. Description of the plugin
+msgid "Amazon payment services makes it really easy to start accepting online payments (credit &amp; debit cards) in the Middle East. Sign up is instant, at https://paymentservices.amazon.com/"
+msgstr ""
+
+#. Author of the plugin
+msgid "Amazon Payment Services"
+msgstr ""
+
+#: admin/class-aps-admin.php:127
+#: admin/class-aps-admin.php:128
+#: includes/class-aps-fields-loader.php:371
+msgid "Apple Pay Certificates"
+msgstr ""
+
+#: admin/pages/apple-pay-certificates.php:37
+msgid "Certificate Path File"
+msgstr ""
+
+#: admin/pages/apple-pay-certificates.php:47
+msgid "Certificate Path Key"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:5
+msgid "Order Total"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:10
+msgid "Total Capture"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:14
+msgid "Remaining Capture"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:20
+#: admin/partials/aps-payment-capture.php:58
+msgid "Void"
+msgstr ""
+
+#: lib/class-aps-payment-capture.php:29
+msgid "History of Capture/Void"
+msgstr ""
+
+#: lib/class-aps-refund.php:84
+#: lib/class-aps-refund.php:128
+msgid "Refund submitted successfully"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-super.php:417
+msgid "Refund amount must be lower than captured amount"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:33
+msgid "Date"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:34
+msgid "Amount"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:54
+msgid "Select Action"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:55
+msgid "Capture"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:62
+msgid "Enter Amout"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:70
+msgid "Payment Captured"
+msgstr ""
+
+#: admin/partials/aps-payment-capture.php:72
+msgid "Authorization Voided"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:4
+#: includes/class-aps-fields-loader.php:133
+msgid "Command"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:8
+msgid "Merchant Reference"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:12
+msgid "Fort ID"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:16
+msgid "Payment Option"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:24
+#: classes/class-wc-gateway-aps-installments.php:29
+#: classes/class-wc-gateway-aps-installments.php:167
+#: includes/class-aps-fields-loader.php:452
+msgid "Installments"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:30
+msgid "Installment Amount"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:36
+msgid "Installment Interest"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:46
+#: classes/class-wc-gateway-aps-valu.php:145
+msgid "Tenure"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:52
+#: classes/class-wc-gateway-aps-valu.php:146
+msgid "Tenure Amount"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:58
+#: classes/class-wc-gateway-aps-valu.php:147
+msgid "Tenure Interest"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:65
+msgid "Card Token"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:71
+msgid "Card Expiry"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:77
+#: public/partials/hosted-credit-card-wizard.php:64
+#: public/partials/hosted-installment-wizard.php:59
+#: public/partials/tokenization-credit-card-form.php:19
+msgid "Card Number"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:83
+msgid "Authorization Code"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:89
+msgid "Response Code"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:95
+msgid "Acquier Response Code"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:101
+msgid "Reconciliation Reference"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:107
+msgid "Acquirer Reconciliation Reference"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:113
+msgid "Customer IP"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:119
+msgid "Customer Email"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:125
+msgid "Phone Number"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:133
+msgid "Title"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:134
+msgid "Value"
+msgstr ""
+
+#: admin/partials/configuration-fields.php:2
+msgid "Click here to sign up for Amazon Payment Services account"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-apple-pay.php:28
+#: classes/class-wc-gateway-aps-apple-pay.php:30
+msgid "Amazon Payment Service - Apple Pay"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-apple-pay.php:29
+#: includes/class-aps-fields-loader.php:256
+msgid "Apple Pay"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-apple-pay.php:31
+msgid "Accept Apple Pay payment"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-apple-pay.php:176
+msgid "Invalid amount"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:28
+#: classes/class-wc-gateway-aps-installments.php:30
+msgid "Amazon Payment Service - Installments"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:31
+#: classes/class-wc-gateway-aps-visa-checkout.php:31
+msgid "Accept installments"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:159
+msgid "Installment Details"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:161
+msgid "EMI"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:161
+#: classes/class-wc-gateway-aps-valu.php:146
+msgid "Month"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:164
+#: includes/class-aps-ajax.php:132
+#: lib/class-aps-payment.php:681
+msgid "Interest"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-installments.php:171
+msgid "Confirmation"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-knet.php:27
+#: classes/class-wc-gateway-aps-knet.php:29
+msgid "Amazon Payment Service - KNET"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-knet.php:28
+#: includes/class-aps-fields-loader.php:376
+msgid "KNET"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-knet.php:30
+msgid "Accept Knet"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-naps.php:28
+msgid "Amazon Payment Service - NAPS"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-naps.php:29
+#: includes/class-aps-fields-loader.php:392
+msgid "NAPS"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-naps.php:30
+msgid "Amazon Payment Service - Naps"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-naps.php:31
+msgid "Accept NAPS"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-naps.php:99
+#: classes/class-wc-gateway-aps-valu.php:165
+msgid "Partial refund is not available in this payment method"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-super.php:38
+msgid "You will be redirected to the Amazon Payment Services website when you place an order"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-super.php:41
+msgid "{field_name} : cannot be empty"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-super.php:42
+msgid "{field_name} : should not contain blank spaces"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-super.php:43
+msgid "{field_name} : must be greater than or equals {min_length}"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-super.php:44
+msgid "{field_name} : must be lower than or equals to {max_length}"
+msgstr ""
+
+#. translators: %s: aps_error
+#: classes/class-wc-gateway-aps-super.php:353
+msgid "An error occurred while making the transaction. Please try again. (Error message: %s)"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-valu.php:27
+#: classes/class-wc-gateway-aps-valu.php:29
+msgid "Amazon Payment Service - Valu"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-valu.php:28
+msgid "Buy Now, Pay Monthly"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-valu.php:30
+msgid "Accept valu payment"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-valu.php:144
+msgid "VALU Details"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-visa-checkout.php:28
+#: classes/class-wc-gateway-aps-visa-checkout.php:30
+msgid "Amazon Payment Service - Visa Checkout"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-visa-checkout.php:29
+#: includes/class-aps-fields-loader.php:408
+msgid "Visa Checkout"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-visa-checkout.php:56
+msgid "Continue"
+msgstr ""
+
+#: classes/class-wc-gateway-aps.php:25
+msgid "mada debit card / Credit Cards"
+msgstr ""
+
+#: classes/class-wc-gateway-aps.php:26
+msgid "Credit / Debit card"
+msgstr ""
+
+#: classes/class-wc-gateway-aps.php:27
+msgid "Accept credit / Debit card payment"
+msgstr ""
+
+#: classes/class-wc-gateway-aps.php:28
+msgid "Amazon Payment Service"
+msgstr ""
+
+#: classes/class-wc-gateway-aps.php:29
+msgid "Amazon Payment Service - All payment methods"
+msgstr ""
+
+#: includes/class-aps-ajax.php:93
+msgid "No plans found"
+msgstr ""
+
+#: includes/class-aps-ajax.php:97
+msgid "There is no installment plan available"
+msgstr ""
+
+#: includes/class-aps-ajax.php:132
+msgid "Profit Rate"
+msgstr ""
+
+#: includes/class-aps-ajax.php:133
+#: lib/class-aps-payment.php:679
+msgid "Months"
+msgstr ""
+
+#: includes/class-aps-ajax.php:134
+#: lib/class-aps-payment.php:680
+msgid "month"
+msgstr ""
+
+#: includes/class-aps-ajax.php:159
+msgid "I agree with the installment {terms_link} to proceed with the transaction"
+msgstr ""
+
+#: includes/class-aps-ajax.php:160
+msgid "terms and condition"
+msgstr ""
+
+#: includes/class-aps-ajax.php:167
+msgid "Issuer name"
+msgstr ""
+
+#: includes/class-aps-ajax.php:319
+msgid "Order Id is missing"
+msgstr ""
+
+#: includes/class-aps-ajax.php:322
+msgid "Authorization command Type is missing"
+msgstr ""
+
+#: includes/class-aps-ajax.php:326
+msgid "Authorization amount is missing"
+msgstr ""
+
+#: includes/class-aps-ajax.php:374
+msgid "Payment Capture successfully "
+msgstr ""
+
+#: includes/class-aps-ajax.php:376
+msgid "Authorization Voided Successfully"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:45
+msgid "Redirection"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:46
+msgid "Standard Checkout"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:47
+msgid "Hosted Checkout"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:48
+msgid "BUY"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:49
+msgid "DONATE"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:50
+msgid "PLAIN"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:51
+msgid "SETUP"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:52
+msgid "BOOK"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:53
+msgid "CHECKOUT"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:54
+msgid "SUBSCRIBE"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:55
+msgid "ADDMONEY"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:56
+msgid "CONTRIBUTE"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:57
+msgid "ORDER"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:58
+msgid "RELOAD"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:59
+msgid "RENT"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:60
+msgid "SUPPORT"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:61
+msgid "TIP"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:62
+msgid "TOPUP"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:73
+msgid "Amazon Payment Services Merchant Configuration"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:77
+msgid "Merchant Identifier"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:87
+#: includes/class-aps-fields-loader.php:308
+msgid "Access Code"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:97
+#: includes/class-aps-fields-loader.php:318
+msgid "Request SHA Phrase"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:107
+#: includes/class-aps-fields-loader.php:328
+msgid "Response SHA Phrase"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:117
+msgid "Amazon Payment Services Global Configuration"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:121
+msgid "Sandbox Mode"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:124
+#: includes/class-aps-fields-loader.php:174
+#: includes/class-aps-fields-loader.php:194
+#: includes/class-aps-fields-loader.php:206
+#: includes/class-aps-fields-loader.php:222
+#: includes/class-aps-fields-loader.php:263
+#: includes/class-aps-fields-loader.php:383
+#: includes/class-aps-fields-loader.php:399
+#: includes/class-aps-fields-loader.php:415
+#: includes/class-aps-fields-loader.php:459
+#: includes/class-aps-fields-loader.php:530
+msgid "Yes"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:125
+#: includes/class-aps-fields-loader.php:175
+#: includes/class-aps-fields-loader.php:195
+#: includes/class-aps-fields-loader.php:207
+#: includes/class-aps-fields-loader.php:223
+#: includes/class-aps-fields-loader.php:264
+#: includes/class-aps-fields-loader.php:384
+#: includes/class-aps-fields-loader.php:400
+#: includes/class-aps-fields-loader.php:416
+#: includes/class-aps-fields-loader.php:460
+#: includes/class-aps-fields-loader.php:531
+msgid "No"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:136
+msgid "AUTHORIZATION"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:137
+msgid "PURCHASE"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:145
+#: includes/class-aps-fields-loader.php:272
+msgid "SHA Type"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:148
+#: includes/class-aps-fields-loader.php:275
+msgid "SHA-256"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:149
+#: includes/class-aps-fields-loader.php:276
+msgid "SHA-512"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:150
+#: includes/class-aps-fields-loader.php:277
+msgid "HMAC-256"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:151
+#: includes/class-aps-fields-loader.php:278
+msgid "HMAC-512"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:159
+msgid "Gateway Currency"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:162
+msgid "Base"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:163
+msgid "Front"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:171
+msgid "Debug Mode"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:183
+msgid "Host to Host URL"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:191
+msgid "Enable Tokenization"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:203
+msgid "Hide delete Token button"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:215
+msgid "Credit / Debit Card"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:219
+#: includes/class-aps-fields-loader.php:260
+#: includes/class-aps-fields-loader.php:380
+#: includes/class-aps-fields-loader.php:396
+#: includes/class-aps-fields-loader.php:412
+#: includes/class-aps-fields-loader.php:456
+#: includes/class-aps-fields-loader.php:527
+msgid "Enabled"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:231
+#: includes/class-aps-fields-loader.php:240
+#: includes/class-aps-fields-loader.php:424
+#: includes/class-aps-fields-loader.php:432
+#: includes/class-aps-fields-loader.php:468
+#: includes/class-aps-fields-loader.php:477
+msgid "Integration Type"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:244
+msgid "Show mada Branding"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:246
+msgid "Show mada Branding during checkout"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:250
+msgid "Show Meeza Branding"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:252
+msgid "Show Meeza Branding during checkout"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:283
+msgid "Apple Pay Button Types"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:338
+msgid "Domain Name"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:340
+msgid "Display Name"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:348
+msgid "Supported Networks"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:351
+msgid "American Express"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:352
+msgid "MasterCard"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:353
+msgid "Visa"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:354
+msgid "mada"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:361
+msgid "Production Key"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:436
+msgid "API Key"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:444
+msgid "Profile ID"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:481
+msgid "Intallment Order Purchase minimum limit (SAR)"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:487
+msgid "Intallment Order Purchase minimum limit (AED)"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:493
+msgid "Intallment Order Purchase minimum limit (EGP)"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:499
+#: includes/class-aps-fields-loader.php:507
+msgid "Show issuer name"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:511
+#: includes/class-aps-fields-loader.php:519
+msgid "Show issuer logo"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:523
+msgid "Valu"
+msgstr ""
+
+#: includes/class-aps-fields-loader.php:539
+msgid "VALU Order Purchase minimum limit in EGP"
+msgstr ""
+
+#: lib/class-aps-payment.php:184
+msgid "Invalid Fort Parameters"
+msgstr ""
+
+#: lib/class-aps-payment.php:216
+msgid "Invalid Singature"
+msgstr ""
+
+#: lib/class-aps-payment.php:222
+#: lib/class-aps-payment.php:432
+msgid "Transaction Cancelled"
+msgstr ""
+
+#: lib/class-aps-payment.php:614
+msgid "OTP has been sent to you on your mobile number : {mobile_number}"
+msgstr ""
+
+#: lib/class-aps-payment.php:673
+msgid "OTP Verified successfully"
+msgstr ""
+
+#: lib/class-aps-payment.php:748
+msgid "Transaction Verified successfully"
+msgstr ""
+
+#: public/class-aps-public.php:139
+msgid "Invalid card length"
+msgstr ""
+
+#: public/class-aps-public.php:140
+msgid "Card number cannot be empty"
+msgstr ""
+
+#: public/class-aps-public.php:141
+msgid "Card number is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:142
+msgid "Card holder name is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:143
+msgid "Card CVV is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:144
+msgid "Expiry month is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:145
+msgid "Expiry year is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:146
+msgid "Expiry date is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:147
+msgid "Please complete the evaluation process"
+msgstr ""
+
+#: public/class-aps-public.php:148
+msgid "Please accept the terms and conditions"
+msgstr ""
+
+#: lib/class-aps-payment.php:565
+#: lib/class-aps-payment.php:621
+#: lib/class-aps-payment.php:679
+msgid "VALU API failed. Please try again later"
+msgstr ""
+
+#: public/class-aps-public.php:139
+msgid "Mobile number is invalid"
+msgstr ""
+
+#: public/class-aps-public.php:149
+msgid "This is a required field"
+msgstr ""
+
+#: public/partials/hosted-credit-card-wizard.php:44
+#: public/partials/hosted-installment-wizard.php:38
+#: public/partials/redirection-credit-card-wizard.php:30
+#: public/partials/standard-credit-card-wizard.php:40
+msgid "exp"
+msgstr ""
+
+#: public/partials/hosted-credit-card-wizard.php:47
+#: public/partials/hosted-credit-card-wizard.php:83
+#: public/partials/hosted-installment-wizard.php:41
+#: public/partials/hosted-installment-wizard.php:78
+#: public/partials/tokenization-credit-card-form.php:38
+msgid "CVV"
+msgstr ""
+
+#: public/partials/hosted-credit-card-wizard.php:58
+#: public/partials/hosted-installment-wizard.php:53
+msgid "Add a new card"
+msgstr ""
+
+#: public/partials/hosted-credit-card-wizard.php:72
+#: public/partials/hosted-installment-wizard.php:67
+#: public/partials/tokenization-credit-card-form.php:27
+msgid "Card Holder name"
+msgstr ""
+
+#: public/partials/hosted-credit-card-wizard.php:77
+#: public/partials/hosted-installment-wizard.php:72
+#: public/partials/tokenization-credit-card-form.php:32
+msgid "Expiry Date"
+msgstr ""
+
+#: public/partials/hosted-credit-card-wizard.php:89
+#: public/partials/hosted-installment-wizard.php:84
+msgid "Save My Card"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:2
+msgid "I agree with the valU"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:3
+msgid "terms and condition"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:4
+msgid "to proceed with the transaction"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:11
+msgid "Enter your mobile number"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:14
+msgid "Request OTP"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:23
+msgid "Enter OTP"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:26
+msgid "Verify OTP"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:36
+msgid "OTP verified successfully, Please select your Installment plan!"
+msgstr ""
+
+#: public/partials/hosted-valu-wizard.php:49
+msgid "Processing..."
+msgstr ""
+
+#: includes/class-aps-ajax.php:152
+msgid "Proceed with full amount"
+msgstr ""

@@ -1,0 +1,33 @@
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+ div#adminWrapper .form-row label {
+	margin-bottom: 5px;
+	display: block;
+	padding: 8px 0;
+	font-weight: 500;
+}
+div#adminWrapper .form-row input[type='file'] {
+	margin-bottom: 10px;
+}
+div#adminWrapper input[type="submit"] {
+	background-color: #000;
+	color: #fff;
+	padding: 12px 40px;
+	border: none;
+	border-radius: 3px;
+	margin-top: 8px;
+}
+table.aps-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+table.aps-table tbody td {
+	padding: 5px;
+}
+.aps_error {
+	color: red;
+	font-weight: 500;
+	display: block;
+}
