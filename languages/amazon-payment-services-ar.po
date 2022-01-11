@@ -7,14 +7,14 @@ msgstr ""
 "Language-Team: ArabicMIME-Version: 1.0Content-Type: text/plain; charset=UTF-"
 "8Content-Transfer-Encoding: 8bitPOT-Creation-Date: 2021-03-26T23:23:05+05:"
 "30PO-Revision-Date: 2021-03-26 20:05+0000X-Generator: Loco https://localise."
-"biz/X-Domain: amazon_payment_servicesLanguage: arPlural-Forms: nplurals=6; "
+"biz/X-Domain: amazon-payment-servicesLanguage: arPlural-Forms: nplurals=6; "
 "plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100 >= 3 && n%100<=10 ? 3 : n%100 >"
 "= 11 && n%100<=99 ? 4 : 5;X-Loco-Version: 2.5.2; wp-5.7\n"
 "Language: ar\n"
 "Language-Team: Arabic\n"
 "Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100 >= 3 "
 "&& n%100<=10 ? 3 : n%100 >= 11 && n%100<=99 ? 4 : 5;\n"
-"PO-Revision-Date: 2021-03-31 13:11+0000\n"
+"PO-Revision-Date: 2021-07-31 14:07+0000\n"
 "X-Generator: Loco https://localise.biz/\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-03-27 07:18+0000\n"
@@ -317,6 +317,10 @@ msgstr "تاريخ"
 msgid "Debug Mode"
 msgstr "وضع التصحيح"
 
+#: includes/class-aps-fields-loader.php:340
+msgid "Display Name"
+msgstr "اسم العرض"
+
 #: includes/class-aps-fields-loader.php:338
 msgid "Domain Name"
 msgstr "اسم النطاق"
@@ -396,7 +400,7 @@ msgstr "عملة البوابة"
 msgid "Hide delete Token button"
 msgstr "إخفاء زر حذف الرمز المميز"
 
-#: admin/partials/aps-payment-capture.php:29
+#: lib/class-aps-payment-capture.php:29
 msgid "History of Capture/Void"
 msgstr "تاريخ الالتقاط / الفراغ"
 
@@ -452,15 +456,15 @@ msgid "Installments"
 msgstr "Installments"
 
 #: includes/class-aps-fields-loader.php:487
-msgid "Intallment Order Purchase minimum limit (AED)"
+msgid "Installment Order Purchase minimum limit (AED)"
 msgstr "الحد الأدنى لشراء أوامر الشراء (بالدرهم الإماراتي)"
 
 #: includes/class-aps-fields-loader.php:493
-msgid "Intallment Order Purchase minimum limit (EGP)"
+msgid "Installment Order Purchase minimum limit (EGP)"
 msgstr "الحد الأدنى للشراء لأمر Intallment (EGP)"
 
 #: includes/class-aps-fields-loader.php:481
-msgid "Intallment Order Purchase minimum limit (SAR)"
+msgid "Installment Order Purchase minimum limit (SAR)"
 msgstr "الحد الأدنى للشراء لأمر Intallment (ريال سعودي)"
 
 #: includes/class-aps-fields-loader.php:231
@@ -475,7 +479,7 @@ msgstr "نوع التكامل"
 #: classes/class-wc-gateway-aps-installments.php:164
 #: includes/class-aps-ajax.php:132 lib/class-aps-payment.php:681
 msgid "Interest"
-msgstr "اهتمام"
+msgstr "سعر فائدة البنك"
 
 #: classes/class-wc-gateway-aps-apple-pay.php:176
 msgid "Invalid amount"
@@ -501,6 +505,16 @@ msgstr "اسم المُصدر"
 #: includes/class-aps-fields-loader.php:376
 msgid "KNET"
 msgstr "KNET"
+
+#: admin/partials/aps-payment-information.php:158
+#| msgid "KNET Ref Number"
+msgid "KNET ref Number"
+msgstr "KNET ref number"
+
+#: admin/partials/aps-payment-information.php:152
+#| msgid "Third party transaction number"
+msgid "KNET third party transaction number"
+msgstr "KNET third party transaction number"
 
 #: includes/class-aps-fields-loader.php:354
 msgid "mada"
@@ -619,6 +633,10 @@ msgstr "الرجاء قبول الشروط والأحكام"
 msgid "Please complete the evaluation process"
 msgstr "يرجى إكمال عملية التقييم"
 
+#: includes/class-aps-ajax.php:152
+msgid "Proceed with full amount"
+msgstr "المضي قدما بالمبلغ الكامل"
+
 #: public/partials/hosted-valu-wizard.php:49
 msgid "Processing..."
 msgstr "معالجة..."
@@ -646,6 +664,14 @@ msgstr "مرجع التسوية"
 #: includes/class-aps-fields-loader.php:45
 msgid "Redirection"
 msgstr "إعادة التوجيه"
+
+#: classes/class-wc-gateway-aps-super.php:417
+msgid "Refund amount must be lower than captured amount"
+msgstr "يجب أن يكون مبلغ الاسترداد أقل من المبلغ الذي تم تسجيله"
+
+#: lib/class-aps-refund.php:84 lib/class-aps-refund.php:128
+msgid "Refund submitted successfully"
+msgstr "تم إرسال المبلغ المسترد بنجاح"
 
 #: includes/class-aps-fields-loader.php:58
 msgid "RELOAD"

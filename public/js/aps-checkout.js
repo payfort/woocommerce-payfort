@@ -177,7 +177,9 @@
 		},
 		standardCheckout: function( gatewayUrl, responseParams, redirect_url, payment_method ) {
 			if ( ! ! redirect_url ) {
-				window.location.href = redirect_url;
+				if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+					window.location.href = redirect_url;
+				}
 			} else {
 				var payment_box = $( '.payment_box.payment_method_' + payment_method );
 				if (payment_box.find( "#" + aps_info.form_id ).size()) {
@@ -217,7 +219,9 @@
 		},
 		hostedCheckout: function( gatewayUrl, responseParams, is_hosted_tokenization, redirect_url, payment_method ) {
 			if ( is_hosted_tokenization || is_hosted_tokenization === true ) {
-				window.location.href = redirect_url;
+				if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+					window.location.href = redirect_url;
+				}
 			} else {
 				var payment_box = $( '.payment_box.payment_method_' + payment_method );
 				$( '<form id="' + aps_info.form_id + '" action="' + gatewayUrl + '" method="POST"><input type="submit"/></form>' ).appendTo( 'body' );
@@ -366,10 +370,18 @@
 	checkoutForm.on(
 		'checkout_place_order',
 		function() {
+			var redirect_url             = '';
 			var checkoutUrl              = wc_checkout_params.checkout_url;
 			var checkoutData             = checkoutForm.serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var payment_integration_type = $( '.integration_type_' + selected_payment_method ).val().replace( /(<([^>]+)>)/ig,"" );
+			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay'];
+			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
+				return;
+			}
+			var payment_integration_type = '';
+			if($( '.integration_type_' + selected_payment_method ).length){
+				payment_integration_type = $( '.integration_type_' + selected_payment_method ).val().replace( /(<([^>]+)>)/ig,"" );
+			}
 			var aps_card_bin             = $( '.payment_box.payment_method_' + selected_payment_method ).find( '.aps_card_number' );
 			if ( aps_info.payment_method_valu === selected_payment_method ) {
 				var valu_status = true;
@@ -470,15 +482,15 @@
 			var is_error = false;
 			$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
 			$( '#place_order' ).attr( 'disabled', true );
-			$.ajax(
-				{
-					'url': checkoutUrl,
-					'type': 'POST',
-					'dataType': 'json',
-					'data': checkoutData,
-				}
-			).complete(
-				function (response) {
+			$.ajax({
+				type:		'POST',
+				url:		checkoutUrl+'&aps=true',
+				data:		checkoutData,
+				dataType:   'json',
+				success: function (response){
+				},
+				complete:	function( response ) {
+					response = JSON.parse(response.responseText);
 					$( ".valu_loader" ).removeClass( 'active' );
 					if ( response.result === 'success' ) {
 						if ( payment_integration_type === aps_info.redirection_type && response.form ) {
@@ -488,9 +500,15 @@
 							apsPayment.standardCheckout( response.url, response.params, response.redirect_url, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
 							if ( aps_info.payment_method_valu === selected_payment_method ) {
-								window.location.href = response.redirect_link;
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
 							} else if ( aps_info.payment_method_visa_checkout === selected_payment_method ) {
-								window.location.href = response.redirect_link;
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
 							} else {
 								apsPayment.hostedCheckout( response.url, response.params, response.is_hosted_tokenization, response.redirect_url, selected_payment_method );
 							}
@@ -508,12 +526,16 @@
 							);
 						}
 						if ( response.redirect_link ) {
-							window.location.href = response.redirect_link;
+							redirect_url = response.redirect_link;
+							if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+								window.location.href = redirect_url;
+							}
 						}
 					}
-
+				},
+				error:	function( jqXHR, textStatus, errorThrown ) {
 				}
-			);
+			});
 			return is_error;
 		}
 	);
@@ -523,9 +545,13 @@
 		'form#order_review #place_order',
 		function(e) {
 			e.preventDefault();
-			var checkoutUrl              = $( 'input[name="_wp_http_referer"]' ).val();
+			var checkoutUrl              = aps_info.review_order_checkout_url;
 			var checkoutData             = $( 'form#order_review' ).serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay'];
+			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
+				return;
+			}
 			var payment_integration_type = $( '.integration_type_' + selected_payment_method ).val().replace( /(<([^>]+)>)/ig,"" );
 			if ( aps_info.payment_method_valu === selected_payment_method ) {
 				var valu_status = true;
@@ -594,16 +620,16 @@
 			var is_error = false;
 			$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
 			$( '#place_order' ).attr( 'disabled', true );
-			$.ajax(
-				{
-					'url': checkoutUrl,
-					'type': 'POST',
-					'dataType': 'json',
-					'data': checkoutData,
-					'async': false
-				}
-			).complete(
-				function (response) {
+			$.ajax({
+				type:		'POST',
+				url:		checkoutUrl+'&aps=true',
+				data:		checkoutData,
+				dataType:   'json',
+				async:      false,
+				success: function (response){
+				},
+				complete:	function( response ) {
+					response = JSON.parse(response.responseText);
 					$( ".valu_loader" ).removeClass( 'active' );
 					if ( response.result === 'success' ) {
 						if ( payment_integration_type === aps_info.redirection_type && response.form ) {
@@ -613,9 +639,15 @@
 							apsPayment.standardCheckout( response.url, response.params, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
 							if ( aps_info.payment_method_valu === selected_payment_method ) {
-								window.location.href = response.redirect_link;
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
 							} else if ( aps_info.payment_method_visa_checkout === selected_payment_method ) {
-								window.location.href = response.redirect_link;
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
 							} else {
 								apsPayment.hostedCheckout( response.url, response.params, response.is_hosted_tokenization, response.redirect_url, selected_payment_method );
 							}
@@ -634,10 +666,10 @@
 							);
 						}
 					}
-
+				},
+				error:	function( jqXHR, textStatus, errorThrown ) {
 				}
-			);
-			//return is_error;
+			});
 			return false;
 		}
 	);
@@ -646,6 +678,10 @@
 		function(e){
 			var can_execute_ajax         = true;
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
+			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay'];
+			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
+				return;
+			}
 			var payment_integration_type = $( '.integration_type_' + selected_payment_method ).val().replace( /(<([^>]+)>)/ig,"" );
 			if ( payment_integration_type === aps_info.hosted_type ) {
 				var validate_payment = apsPayment.validatePayment( selected_payment_method, 'my-account' );
@@ -1084,7 +1120,7 @@
 				$.ajax(
 					{
 						url: ajaxurl,
-						type:'GET',
+						type:'POST',
 						data: {
 							action:'valu_verify_customer',
 							mobile_number,
@@ -1092,16 +1128,16 @@
 						success: function(response) {
 							response = JSON.parse( response );
 							if ( 'success' === response.status ) {
-								$.ajax(
-									{
-										'url': checkoutUrl,
-										'type': 'POST',
-										'dataType': 'json',
-										'data': checkoutData,
-										'async': false
-									}
-								).complete(
-									function (otp_response) {
+								$.ajax({
+									type:		'POST',
+									url:		checkoutUrl+'&aps=true',
+									data:		checkoutData,
+									dataType:   'json',
+									async:      false,
+									success: function (response){
+									},
+									complete:	function( otp_response ) {
+										otp_response = JSON.parse(otp_response.responseText);
 										if ( otp_response.result && otp_response.result === 'failure' ) {
 											$( '.woocommerce-notices-wrapper:first-child' ).html( otp_response.messages );
 											$( 'html, body' ).animate(
@@ -1120,8 +1156,10 @@
 										} else if ( 'success' === otp_response.status ) {
 											apsPayment.valuOtpVerifyBox( otp_response );
 										}
+									},
+									error:	function( jqXHR, textStatus, errorThrown ) {
 									}
-								);
+								});
 							} else {
 								$( ".valu_loader" ).removeClass( 'active' );
 								$( '.valu_process_error' ).html( response.message );
@@ -1146,7 +1184,7 @@
 			$.ajax(
 				{
 					url: ajaxurl,
-					type:'GET',
+					type:'POST',
 					data: {
 						action:'valu_otp_verify',
 						otp,
@@ -1236,6 +1274,24 @@
 				}
 			}, 250);
 	  });
+	});
+
+	$(document).ready(function(){
+		var startTime = new Date().getTime();
+		function everyTimeCheckHostedVisaCheckout() {
+		    if($("#hosted_visa_checkout_img").length > 0){
+
+				var sdk_url = $("#hosted_visa_checkout_img").data('visa-sdk-url');
+				$.getScript(sdk_url);
+				clearInterval(myInterval);
+		    }
+		    if(new Date().getTime() - startTime > 60000){
+				clearInterval(myInterval);
+		    }
+		}
+		if (typeof vc_params != 'undefined' && 'aps_vc_integration_type' in vc_params && 'hosted_checkout' == vc_params.aps_vc_integration_type){
+			var myInterval = setInterval(everyTimeCheckHostedVisaCheckout, 100);
+		}
 	});
 
 })( jQuery );

@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS Payment
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/lib
- * @author     Amazon Payment Services
  */
 class APS_Refund extends APS_Super {
 	/**
@@ -65,17 +66,17 @@ class APS_Refund extends APS_Super {
 			$payment_details                     = get_post_meta( $order_id, 'aps_payment_response', true );
 
 			$merchant_reference =  $payment_details['merchant_reference'];
-			if(empty($merchant_reference)){
+			if ( empty($merchant_reference) ) {
 				$payment_method = $this->aps_order->get_payment_method();
-				if($payment_method == APS_Constants::APS_PAYMENT_TYPE_VALU){
+				if ( APS_Constants::APS_PAYMENT_TYPE_VALU == $payment_method ) {
 					$valu_reference_id = get_post_meta( $order_id, 'valu_reference_id', true );
-						if(!empty($valu_reference_id)){
-						$this->aps_helper->log( 'APS refund valu order_id#' . $order_id. 'valu_reference_id#'.$valu_reference_id );
+					if ( !empty($valu_reference_id) ) {
+						$this->aps_helper->log( 'APS refund valu order_id#' . $order_id . 'valu_reference_id#' . $valu_reference_id );
 						$order_id = $valu_reference_id;
 					}
-		        }
-		        $merchant_reference = $order_id;
-		    }
+				}
+				$merchant_reference = $order_id;
+			}
 
 			$gateway_params                      = array(
 				'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
@@ -85,14 +86,14 @@ class APS_Refund extends APS_Super {
 			);
 
 			$currency = $payment_details['currency'];
-			if(empty($currency)){
+			if ( empty($currency) ) {
 				$currency = $this->aps_order->get_currency();
 			}
 			$gateway_params['currency']          = strtoupper( $currency);
 			$total_amount                        = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
 			$gateway_params['amount']            = $total_amount;
 			$gateway_params['command']           = APS_Constants::APS_COMMAND_REFUND;
-			if($payment_details['fort_id']){
+			if ( $payment_details['fort_id'] ) {
 				$gateway_params['fort_id']           = $payment_details['fort_id'];
 			}
 			$gateway_params['order_description'] = $this->aps_helper->clean_string( substr( ! empty( $reason ) ? $reason : $order_item_name, 0, 49 ) );
@@ -103,7 +104,7 @@ class APS_Refund extends APS_Super {
 			$response                            = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'APS refund response \n\n' . wp_json_encode( $response, true ) );
 			if ( APS_Constants::APS_REFUND_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-				throw new Exception( __( 'Refund submitted successfully', 'amazon_payment_services' ) );
+				throw new Exception( __( 'Refund submitted successfully', 'amazon-payment-services' ) );
 			} else {
 				throw new Exception( $response['response_message'] );
 			}
@@ -147,7 +148,7 @@ class APS_Refund extends APS_Super {
 			$response                            = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'APS apple pay refund response \n\n' . wp_json_encode( $response, true ) );
 			if ( APS_Constants::APS_REFUND_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-				throw new Exception( __( 'Refund submitted successfully', 'amazon_payment_services' ) );
+				throw new Exception( __( 'Refund submitted successfully', 'amazon-payment-services' ) );
 			} else {
 				throw new Exception( $response['response_message'] );
 			}

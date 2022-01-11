@@ -6,40 +6,44 @@
 	 * should reside in this file.
 	 */
 	var debug = false;
-	if (window.ApplePaySession) {
-		if (ApplePaySession.canMakePayments) {
-			setTimeout(function(){
-				$( '.apple_pay_option.aps-d-none' ).removeClass( 'aps-d-none' )
-			},2000);
+	$( document ).ready(function() {
+		if (window.ApplePaySession) {
+			if (ApplePaySession.canMakePayments) {
+				setTimeout(function(){
+					$( '.apple_pay_option.aps-d-none' ).removeClass( 'aps-d-none' )
+				},2000);
+			}
 		}
-	}
+	});
 
 	function initApplePayment( apple_order, evt ) {
-		var runningAmount  = parseFloat( apple_order.grand_total );
-		var runningPP      = parseFloat( 0 );
-		var runningTotal   = function() { return parseFloat( runningAmount + runningPP ).toFixed( 2 ); }
 		var shippingOption = "";
-
+		var shipping_total = 0;
 		var cart_array         = [];
-		var x                  = 0;
-		var subtotal           = apple_order.sub_total;
-		var tax_total          = apple_order.tax_total;
-		var shipping_total     = apple_order.shipping_total;
-		var discount_total     = apple_order.discount_total;
 		var supported_networks = [];
 		apple_vars.supported_networks.forEach(
 			function (network) {
 				supported_networks.push( network );
 			}
 		);
-		cart_array[x++] = {type: 'final',label: 'Subtotal', amount: parseFloat( subtotal ).toFixed( 2 ) };
-		if ( parseFloat( shipping_total ) >= 1 ) {
+
+		var runningTotal = function(apple_order) {
+			var x                  = 0;
+			var runningAmount      =  parseFloat( apple_order.grand_total );
+			var subtotal           = apple_order.sub_total;
+			var tax_total          = apple_order.tax_total;
+			shipping_total     = apple_order.shipping_total;
+			var discount_total     = apple_order.discount_total;
+
+			cart_array[x++] = {type: 'final',label: 'Subtotal', amount: parseFloat( subtotal ).toFixed( 2 ) };
 			cart_array[x++] = {type: 'final',label: 'Shipping fees', amount: parseFloat( shipping_total ).toFixed( 2 ) };
+
+			if ( Math.abs(parseFloat( discount_total )) > 0 ) {
+				cart_array[x++] = {type: 'final',label: 'Discount', amount: parseFloat( discount_total ).toFixed( 2 ) };
+			}
+			cart_array[x++] = {type: 'final',label: 'Tax', amount: parseFloat( tax_total ).toFixed( 2 ) };
+			return  parseFloat( runningAmount).toFixed( 2 );
 		}
-		if ( parseFloat( discount_total ) >= 1 ) {
-			cart_array[x++] = {type: 'final',label: 'Discount', amount: parseFloat( discount_total ).toFixed( 2 ) };
-		}
-		cart_array[x++] = {type: 'final',label: 'Tax', amount: parseFloat( tax_total ).toFixed( 2 ) };
 
 		function getShippingOptions(){
 			var shippingMethods     = [];
@@ -83,7 +87,7 @@
 				lineItems: cart_array,
 				total: {
 					label: apple_vars.display_name,
-					amount: runningTotal()
+					amount: runningTotal(apple_order)
 				},
 				supportedNetworks: supported_networks,
 				merchantCapabilities: [ 'supports3DS' ]
@@ -96,13 +100,17 @@
 				lineItems: cart_array,
 				total: {
 					label: apple_vars.display_name,
-					amount: runningTotal()
+					amount: runningTotal(apple_order)
 				},
 				supportedNetworks: supported_networks,
 				merchantCapabilities: [ 'supports3DS' ]
 			};
 		}
-		var session = new ApplePaySession( 3, paymentRequest );
+		var supported_networks_level = 3;
+		if($.inArray('mada', supported_networks) != -1){
+			supported_networks_level = 5;
+		}
+		var session = new ApplePaySession(supported_networks_level, paymentRequest );
 
 		// Merchant Validation
 		session.onvalidatemerchant = function (event) {
@@ -120,7 +128,7 @@
 					$.ajax(
 						{
 							url: apple_vars.ajax_url,
-							type: 'GET',
+							type: 'POST',
 							data: {
 								action: 'validate_apple_url',
 								apple_url
@@ -139,7 +147,7 @@
 		}
 
 		session.onpaymentmethodselected = function(event) {
-			var newTotal     = { type: 'final', label: apple_vars.display_name, amount: runningTotal() };
+			var newTotal     = { type: 'final', label: apple_vars.display_name, amount: runningTotal(apple_order) };
 			var newLineItems = cart_array;
 
 			session.completePaymentMethodSelection( newTotal, newLineItems );
@@ -152,29 +160,12 @@
 				function(data) {
 					var status             = ApplePaySession.STATUS_SUCCESS;
 					var newShippingMethods = [];
-					var newItemArray       = [];
-					var y                  = 0;
-
-					var subtotal       = data.sub_total;
-					var tax_total      = data.tax_total;
-					var shipping_total = data.shipping_total;
-					var discount_total = data.discount_total;
-					var grand_total    = data.grand_total;
-
-					newItemArray[y++] = {type: 'final',label: 'Subtotal', amount: parseFloat( subtotal ).toFixed( 2 ) };
-					if ( parseFloat( shipping_total ) >= 1 ) {
-						newItemArray[y++] = {type: 'final',label: 'Shipping fees', amount: parseFloat( shipping_total ).toFixed( 2 ) };
-					}
-					if ( parseFloat( discount_total ) >= 1 ) {
-						newItemArray[y++] = {type: 'final',label: 'Discount', amount: parseFloat( discount_total ).toFixed( 2 ) };
-					}
-					newItemArray[y++] = {type: 'final',label: 'Tax', amount: parseFloat( tax_total ).toFixed( 2 ) };
-
+					apple_order = data;
 					var finalTotal = {
 						label: apple_vars.display_name,
-						amount: parseFloat( grand_total ).toFixed( 2 )
+						amount: runningTotal( data )
 					};
-					session.completeShippingContactSelection( status, newShippingMethods, finalTotal, newItemArray );
+					session.completeShippingContactSelection( status, newShippingMethods, finalTotal, cart_array );
 				},
 				function(error) {
 					var zipAppleError = new ApplePayError( "shippingContactInvalid", "postalCode", "Invalid Address" );
@@ -226,18 +217,18 @@
 					if (success) {
 						document.getElementById( "applePay" ).style.display = "none";
 						if (event.payment.shippingContact) {
+							status = ApplePaySession.STATUS_SUCCESS;
 							var cart_promise = create_cart_order( event.payment.shippingContact );
 							cart_promise.then(
 								function(data) {
-									status = ApplePaySession.STATUS_SUCCESS;
 									sendPaymentToAps( event.payment.token );
 								}
 							);
 						} else {
+							status = ApplePaySession.STATUS_SUCCESS;
 							var cart_promise = create_cart_order( [] );
 							cart_promise.then(
 								function(data) {
-									status = ApplePaySession.STATUS_SUCCESS;
 									sendPaymentToAps( event.payment.token );
 								}
 							);
@@ -322,25 +313,26 @@
 		'click',
 		'#applePay',
 		function(evt) {
-			$.ajax(
-				{
-					'url': apple_vars.ajax_url,
-					'type': 'POST',
-					'dataType': 'json',
-					'data': {
-						action: 'get_apple_pay_cart_data',
-						exec_from: 'cart_page'
-					},
-					'async': false
+			$.ajax({
+				type:		'POST',
+				url:		apple_vars.ajax_url,
+				data: {
+					action: 'get_apple_pay_cart_data',
+					exec_from: 'cart_page'
+				},
+				dataType:   'json',
+				async:      false,
+				success: function (response){
+				},
+				complete:	function( response ) {
+				},
+				error:	function( jqXHR, textStatus, errorThrown ) {
 				}
-			).complete(
-				function (response) {
-					if ( response.result === 'success' ) {
-						initApplePayment( response.apple_order, evt );
-					}
+			}).done(function(response){
+				if ( response.result === 'success' ) {
+					initApplePayment( response.apple_order, evt );
 				}
-			);
+			});
 		}
 	);
-
 })( jQuery );

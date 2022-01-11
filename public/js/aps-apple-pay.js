@@ -6,13 +6,15 @@
 	 * should reside in this file.
 	 */
 	var debug = false;
-	if (window.ApplePaySession) {
-		if (ApplePaySession.canMakePayments) {
-			setTimeout(function(){
-				$( '.apple_pay_option' ).removeClass( 'hide-me' )
-			},2000);
+	$( document ).ready(function() {
+		if (window.ApplePaySession) {
+			if (ApplePaySession.canMakePayments) {
+				setTimeout(function(){
+					$( '.apple_pay_option' ).removeClass( 'hide-me' )
+				},2000);
+			}
 		}
-	}
+	});
 
 	function initApplePayment( apple_order, evt ) {
 		var runningAmount  = parseFloat( apple_order.grand_total );
@@ -86,7 +88,11 @@
 			merchantCapabilities: [ 'supports3DS' ]
 		};
 
-		var session = new ApplePaySession( 3, paymentRequest );
+		var supported_networks_level = 3;
+		if($.inArray('mada', supported_networks) != -1){
+			supported_networks_level = 5;
+		}
+		var session = new ApplePaySession(supported_networks_level, paymentRequest );
 
 		// Merchant Validation
 		session.onvalidatemerchant = function (event) {
@@ -104,7 +110,7 @@
 					$.ajax(
 						{
 							url: apple_vars.ajax_url,
-							type: 'GET',
+							type: 'POST',
 							data: {
 								action: 'validate_apple_url',
 								apple_url
@@ -204,30 +210,32 @@
 			var checkoutData            = $( checkoutForm ).serialize();
 			var selected_payment_method = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
 			$( '#payment_method_aps_apple_pay' ).attr( 'checked',true );
-			$.ajax(
-				{
-					'url': checkoutUrl,
-					'type': 'POST',
-					'dataType': 'json',
-					'data': checkoutData,
-					'async': false
+			$.ajax({
+				type:		'POST',
+				url:		checkoutUrl+'&aps=true',
+				data:		checkoutData,
+				dataType:   'json',
+				async:      false,
+				success: function (response){
+				},
+				complete:	function( response ) {
+				},
+				error:	function( jqXHR, textStatus, errorThrown ) {
 				}
-			).complete(
-				function (response) {
-					if ( response.result === 'success' ) {
-						$( '.woocommerce-notices-wrapper:first-child' ).html( '' );
-						initApplePayment( response.apple_order, evt );
-					} else {
-						$( '.woocommerce-notices-wrapper:first-child' ).html( response.messages );
-						$( 'html, body' ).animate(
-							{
-								scrollTop: $( '.woocommerce-notices-wrapper' ).offset().top
-							},
-							1000
-						);
-					}
+			}).done(function(response){
+				if ( response.result === 'success' ) {
+					$( '.woocommerce-notices-wrapper:first-child' ).html( '' );
+					initApplePayment( response.apple_order, evt );
+				} else {
+					$( '.woocommerce-notices-wrapper:first-child' ).html( response.messages );
+					$( 'html, body' ).animate(
+						{
+							scrollTop: $( '.woocommerce-notices-wrapper' ).offset().top
+						},
+						1000
+					);
 				}
-			);
+			});
 		}
 	);
 

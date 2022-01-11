@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * Fired during plugin deactivation
  *
@@ -18,7 +20,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class APS_Deactivator {
 

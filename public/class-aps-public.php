@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * The public-facing functionality of the plugin.
  *
@@ -18,7 +20,6 @@
  *
  * @package    APS
  * @subpackage APS/public
- * @author     Amazon Payment Services
  */
 class APS_Public {
 
@@ -26,7 +27,6 @@ class APS_Public {
 	 * The ID of this plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 * @var      string    $plugin_name    The ID of this plugin.
 	 */
 	private $plugin_name;
@@ -35,7 +35,6 @@ class APS_Public {
 	 * The version of this plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 * @var      string    $version    The current version of this plugin.
 	 */
 	private $version;
@@ -136,26 +135,26 @@ class APS_Public {
 			'payment_method_valu'          => APS_Constants::APS_PAYMENT_TYPE_VALU,
 			'payment_method_visa_checkout' => APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
 			'error_msg'                    => array(
-				'invalid_mobile_number'    => __( 'Mobile number is invalid', 'amazon_payment_services' ) . '.',
-				'invalid_card_length'      => __( 'Invalid card length', 'amazon_payment_services' ) . '.',
-				'card_empty'               => __( 'Card number cannot be empty', 'amazon_payment_services' ) . '.',
-				'invalid_card'             => __( 'Card number is invalid', 'amazon_payment_services' ) . '.',
-				'invalid_card_holder_name' => __( 'Card holder name is invalid', 'amazon_payment_services' ) . '.',
-				'invalid_card_cvv'         => __( 'Card CVV is invalid', 'amazon_payment_services' ) . '.',
-				'invalid_expiry_month'     => __( 'Expiry month is invalid', 'amazon_payment_services' ) . '.',
-				'invalid_expiry_year'      => __( 'Expiry year is invalid', 'amazon_payment_services' ) . '.',
-				'invalid_expiry_date'      => __( 'Expiry date is invalid', 'amazon_payment_services' ) . '.',
-				'valu_pending_msg'         => __( 'Please complete the evaluation process', 'amazon_payment_services' ) . '.',
-				'valu_terms_msg'           => __( 'Please accept the terms and conditions', 'amazon_payment_services' ) . '.',
-				'required_field'           => __( 'This is a required field', 'amazon_payment_services' ) . '.',
+				'invalid_mobile_number'    => __( 'Mobile number is invalid', 'amazon-payment-services' ) . '.',
+				'invalid_card_length'      => __( 'Invalid card length', 'amazon-payment-services' ) . '.',
+				'card_empty'               => __( 'Card number cannot be empty', 'amazon-payment-services' ) . '.',
+				'invalid_card'             => __( 'Card number is invalid', 'amazon-payment-services' ) . '.',
+				'invalid_card_holder_name' => __( 'Card holder name is invalid', 'amazon-payment-services' ) . '.',
+				'invalid_card_cvv'         => __( 'Card CVV is invalid', 'amazon-payment-services' ) . '.',
+				'invalid_expiry_month'     => __( 'Expiry month is invalid', 'amazon-payment-services' ) . '.',
+				'invalid_expiry_year'      => __( 'Expiry year is invalid', 'amazon-payment-services' ) . '.',
+				'invalid_expiry_date'      => __( 'Expiry date is invalid', 'amazon-payment-services' ) . '.',
+				'valu_pending_msg'         => __( 'Please complete the evaluation process', 'amazon-payment-services' ) . '.',
+				'valu_terms_msg'           => __( 'Please accept the terms and conditions', 'amazon-payment-services' ) . '.',
+				'required_field'           => __( 'This is a required field', 'amazon-payment-services' ) . '.',
 			),
 			'success_msg'                  => array(
-				'otp_generated_message' => __( 'OTP has been sent to you on your mobile number : {mobile_number}', 'amazon_payment_services' ),
+				'otp_generated_message' => __( 'OTP has been sent to you on your mobile number : {mobile_number}', 'amazon-payment-services' ),
 			),
 			'general_text'                 => array(
-				'months_txt'   => __( 'Months', 'amazon_payment_services' ),
-				'month_txt'    => __( 'month', 'amazon_payment_services' ),
-				'interest_txt' => __( 'Interest', 'amazon_payment_services' ),
+				'months_txt'   => __( 'Months', 'amazon-payment-services' ),
+				'month_txt'    => __( 'month', 'amazon-payment-services' ),
+				'interest_txt' => __( 'Interest', 'amazon-payment-services' ),
 			),
 			'ajax_url'                     => admin_url( 'admin-ajax.php' ),
 			'checkout_url'                 => site_url( '?wc-ajax=checkout' ),
@@ -163,6 +162,7 @@ class APS_Public {
 			'mada_bins'                    => $this->aps_config->get_mada_bins(),
 			'meeza_bins'                   => $this->aps_config->get_meeza_bins(),
 			'installment_with_cc'          => $this->aps_config->get_enabled_credit_card_installments(),
+			'review_order_checkout_url'    => esc_attr( wp_unslash( $_SERVER['REQUEST_URI'] ) ) ,
 		);
 		if ( class_exists( 'WC_Subscriptions_Cart' ) && ( WC_Subscriptions_Cart::cart_contains_subscription() || ( function_exists( 'wcs_cart_contains_renewal' ) && wcs_cart_contains_renewal() ) ) ) {
 			$aps_info['have_recurring_items'] = true;
@@ -175,14 +175,15 @@ class APS_Public {
 		$currency                      = $this->aps_helper->get_fort_currency();
 		$apple_certificates            = get_option( 'aps_apple_pay_certificates' );
 		$apple_pay_merchant_identifier = '';
-		if(!empty($apple_certificates)){
-			$certificate_path              = plugin_dir_path( dirname( __FILE__ ) ) . 'certificates/' . $apple_certificates['apple_certificate_path_file'];
+		if (!empty($apple_certificates)) {
+			$upload_dir         = wp_upload_dir();
+			$certificate_path              = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
 			$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
 		}
 		$supported_networks            = $this->aps_config->get_apple_pay_supported_networks();
 		$apple_vars                    = array(
 			'response_url'               => create_wc_api_url( 'aps_applepay_response' ),
-			'cancel_url'                 => create_wc_api_url( 'aps_merchant_cancel' ),
+			'cancel_url'                 => create_wc_api_url( 'aps_merchant_cancel_apple_pay' ),
 			'merchant_identifier'        => $apple_pay_merchant_identifier,
 			'country_code'               => WC()->countries->get_base_country(),
 			'currency_code'              => strtoupper( $currency ),
@@ -193,19 +194,19 @@ class APS_Public {
 		);
 		if ( is_checkout() ) {
 			// Register apple pay script
-			wp_register_script( $this->plugin_name . '-apple-pay-checkout', plugin_dir_url( __FILE__ ) . 'js/aps-apple-pay.js', array( 'jquery' ), $this->version . '-' . rand( 0, 9 ), true );
+			wp_register_script( $this->plugin_name . '-apple-pay-checkout', plugin_dir_url( __FILE__ ) . 'js/aps-apple-pay.js', array( 'jquery' ), $this->version . '-' . hexdec(bin2hex(openssl_random_pseudo_bytes(2))), true );
 			wp_localize_script( $this->plugin_name . '-apple-pay-checkout', 'apple_vars', $apple_vars );
 			// Enqueued script with localized data.
 			wp_enqueue_script( $this->plugin_name . '-apple-pay-checkout' );
 		} elseif ( is_cart() ) {
 			// Register apple pay script
-			wp_register_script( $this->plugin_name . '-apple-pay-cart', plugin_dir_url( __FILE__ ) . 'js/aps-apple-pay-cart.js', array( 'jquery' ), $this->version . '-' . rand( 0, 9 ), true );
+			wp_register_script( $this->plugin_name . '-apple-pay-cart', plugin_dir_url( __FILE__ ) . 'js/aps-apple-pay-cart.js', array( 'jquery' ), $this->version . '-' . hexdec(bin2hex(openssl_random_pseudo_bytes(2))), true );
 			wp_localize_script( $this->plugin_name . '-apple-pay-cart', 'apple_vars', $apple_vars );
 			// Enqueued script with localized data.
 			wp_enqueue_script( $this->plugin_name . '-apple-pay-cart' );
 		} elseif ( is_product() ) {
 			// Register apple pay script
-			wp_register_script( $this->plugin_name . '-apple-pay-product', plugin_dir_url( __FILE__ ) . 'js/aps-apple-pay-product.js', array( 'jquery' ), $this->version . '-' . rand( 0, 9 ), true );
+			wp_register_script( $this->plugin_name . '-apple-pay-product', plugin_dir_url( __FILE__ ) . 'js/aps-apple-pay-product.js', array( 'jquery' ), $this->version . '-' . hexdec(bin2hex(openssl_random_pseudo_bytes(2))), true );
 			wp_localize_script( $this->plugin_name . '-apple-pay-product', 'apple_vars', $apple_vars );
 			// Enqueued script with localized data.
 			wp_enqueue_script( $this->plugin_name . '-apple-pay-product' );

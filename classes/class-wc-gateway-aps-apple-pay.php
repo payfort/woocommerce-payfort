@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS apple pay gateway class
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/classes
- * @author     Amazon Payment Services
  */
 class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 
@@ -25,10 +26,10 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 		$this->id                 = APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY; // payment gateway plugin ID
 		$this->icon               = ''; // URL of the icon that will be displayed on checkout page near your gateway name
 		$this->has_fields         = false; // in case you need a custom credit card form
-		$this->method_title       = __( 'Amazon Payment Service - Apple Pay', 'amazon_payment_services' );
-		$this->title              = __( 'Apple Pay', 'amazon_payment_services' );
-		$this->description        = __( 'Amazon Payment Service - Apple Pay', 'amazon_payment_services' );
-		$this->method_description = __( 'Accept Apple Pay payment', 'amazon_payment_services' ); // will be displayed on the options page
+		$this->method_title       = __( 'Amazon Payment Service - Apple Pay', 'amazon-payment-services' );
+		$this->title              = __( 'Apple Pay', 'amazon-payment-services' );
+		$this->description        = __( 'Amazon Payment Service - Apple Pay', 'amazon-payment-services' );
+		$this->method_description = __( 'Accept Apple Pay payment', 'amazon-payment-services' ); // will be displayed on the options page
 		$this->enabled            = $this->check_availability();
 
 		// We need custom JavaScript to obtain a token
@@ -61,7 +62,6 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 	/**
 	 * Process the payment and return the result
 	 *
-	 * @access public
 	 * @param int $order_id
 	 * @return array
 	 */
@@ -107,7 +107,6 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 	/**
 	 * Generate the valu payment form
 	 *
-	 * @access public
 	 * @param none
 	 * @return string
 	 */
@@ -137,7 +136,12 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 		$redirect_url   = '';
 		$apple_pay_data = filter_input_array( INPUT_POST, FILTER_SANITIZE_STRING );
 		if ( isset( $apple_pay_data['data'] ) && ! empty( $apple_pay_data['data'] ) ) {
-			$response_params = json_decode( html_entity_decode( $apple_pay_data['data'] ) );
+			$params          = html_entity_decode( $apple_pay_data['data'] );
+			$response_params = json_decode(filter_var($params, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
+			$this->aps_helper->log( 'apple params: ' . wp_json_encode( $response_params, true ) );
+
+			$order_id = WC()->session->get('order_awaiting_payment');
+			update_post_meta( $order_id, 'aps_redirected', 1 );
 			$apple_payment   = $this->aps_payment->init_apple_pay_payment( $response_params );
 			if ( 'success' === $apple_payment['status'] ) {
 				$order = new WC_Order( $apple_payment['order_id'] );
@@ -146,10 +150,26 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 			} else {
 				$redirect_url = wc_get_checkout_url();
 			}
+			// redirect to success page
+			$order = new WC_Order( $apple_payment['order_id'] );
+			if ( in_array($order->get_status(), ['processing', 'completed']) ) {
+				$redirect_url = $this->get_return_url( $order );
+				unset( $_SESSION['aps_error'] );
+			}
 		} else {
 			$redirect_url = wc_get_checkout_url();
+
+			// redirect to success page if order processing
+			$order = new WC_Order( $this->aps_order->get_session_order_id() );
+			if ( in_array($order->get_status(), ['processing', 'completed']) ) {
+				$redirect_url = $this->get_return_url( $order );
+				unset( $_SESSION['aps_error'] );
+			}
 		}
-		echo '<script>window.top.location.href = "' . esc_url_raw( $redirect_url ) . '"</script>';
+		//echo '<script>window.top.location.href = "' . esc_url_raw( $redirect_url ) . '"</script>';
+		ob_start();
+		header('Location: ' . esc_url_raw($redirect_url));
+		ob_end_flush();
 		exit;
 	}
 
@@ -178,7 +198,7 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 	public function process_refund( $order_id, $amount = null, $reason = '' ) {
 		if ( empty( $amount ) || intval( $amount ) <= 0 ) {
 			$error = new WP_Error();
-			$error->add( 'aps_refund_error', __( 'Invalid amount', 'amazon_payment_services' ) );
+			$error->add( 'aps_refund_error', __( 'Invalid amount', 'amazon-payment-services' ) );
 			return $error;
 		}
 		$refund_status = $this->aps_refund->submit_apple_pay_refund( $order_id, $amount, $reason );

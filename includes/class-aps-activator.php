@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * Fired during plugin activation
  *
@@ -18,7 +20,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class APS_Activator {
 
@@ -29,7 +30,7 @@ class APS_Activator {
 	 */
 	public static function activate() {
 		if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
-			wp_die( 'Sorry, but this plugin requires the Woocommerce to be installed and active. <br><a href="' . admin_url( 'plugins.php' ) . '">&laquo; Return to Plugins</a>' );
+			wp_die( 'Sorry, but this plugin requires the Woocommerce to be installed and active. <br><a href="' . esc_url(admin_url( 'plugins.php' )) . '">&laquo; Return to Plugins</a>' );
 		}
 		//Schedule an action if it's not already scheduled
 		if ( ! wp_next_scheduled( 'aps_pending_payment_cron' ) ) {

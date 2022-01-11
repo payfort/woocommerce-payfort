@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * Define the internationalization functionality
  *
@@ -22,7 +24,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class APS_I18n {
 
@@ -34,7 +35,7 @@ class APS_I18n {
 	 */
 	public function load_plugin_textdomain() {
 		load_plugin_textdomain(
-			'amazon_payment_services',
+			'amazon-payment-services',
 			false,
 			dirname( dirname( plugin_basename( __FILE__ ) ) ) . '/languages/'
 		);

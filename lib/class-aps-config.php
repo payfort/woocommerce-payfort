@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS Config
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/lib
- * @author     Amazon Payment Services
  */
 class APS_Config extends APS_Super {
 
@@ -40,6 +41,7 @@ class APS_Config extends APS_Super {
 	private $debug_mode;
 	private $enable_tokenization;
 	private $hide_delete_token_button;
+	private $threeds_redirection_method;
 	private $enable_credit_card;
 	private $credit_card_integration_type;
 	private $show_mada_branding;
@@ -94,6 +96,7 @@ class APS_Config extends APS_Super {
 		$this->debug_mode                          = $this->get_aps_config( 'debug_mode' );
 		$this->enable_tokenization                 = $this->get_aps_config( 'enable_tokenization' );
 		$this->hide_delete_token_button            = $this->get_aps_config( 'hide_delete_token_button' );
+		$this->threeds_redirection_method          = $this->get_aps_config( 'threeds_redirection_method' );
 		$this->enable_credit_card                  = $this->get_aps_config( 'enable_credit_card' );
 		$this->credit_card_integration_type        = $this->get_aps_config( 'credit_card_integration_type' );
 		$this->show_mada_branding                  = $this->get_aps_config( 'show_mada_branding' );
@@ -319,7 +322,7 @@ class APS_Config extends APS_Super {
 		} elseif ( is_product() ) {
 			$product_id =  get_the_ID();
 			$product = wc_get_product($product_id);
-			if (isset($product) && $product !=false && 'subscription' === $product->get_type() ) {
+			if ( isset($product) && false != $product && 'subscription' === $product->get_type() ) {
 				return 'yes';
 			}
 		}
@@ -333,6 +336,15 @@ class APS_Config extends APS_Super {
 	 */
 	public function get_hide_delete_token_button() {
 		return ! empty( $this->hide_delete_token_button ) ? $this->hide_delete_token_button : 'no';
+	}
+
+	/**
+	 * Return 3ds Redirection Method
+	 *
+	 * @return string
+	 */
+	public function get_threeds_redirection_method() {
+		return ! empty( $this->threeds_redirection_method ) ? $this->threeds_redirection_method : 'server_side';
 	}
 
 	/**
@@ -360,7 +372,7 @@ class APS_Config extends APS_Super {
 	 */
 	public function get_enabled_credit_card_installments() {
 		$enabled_cc_with_installment = 'no';
-		if ($this->installment_integration_type == APS_Constants::APS_INTEGRATION_TYPE_EMBEDDED_HOSTED_CHECKOUT){
+		if ( APS_Constants::APS_INTEGRATION_TYPE_EMBEDDED_HOSTED_CHECKOUT == $this->installment_integration_type ) {
 			$enabled_cc_with_installment = 'yes';
 			if ( 'yes' === $this->have_subscription() ) {
 				$enabled_cc_with_installment = 'no';
@@ -598,7 +610,7 @@ class APS_Config extends APS_Super {
 	 */
 	public function get_language() {
 		$language = '';
-		$language = apply_filters( 'wpml_current_language', NULL );
+		$language = apply_filters( 'wpml_current_language', null );
 		if ( empty($language) ) {
 			$language = get_locale();
 		}
@@ -665,13 +677,15 @@ class APS_Config extends APS_Super {
 
 	/**
 	 * Return apple pay supported networks
+	 *
 	 * @return string
 	 */
 	public function get_apple_pay_supported_networks() {
 		return $this->apple_pay_supported_networks;
 	}
 
-	/* Return Apple pay Button Types
+	/** 
+	 *Return Apple pay Button Types
 	 *
 	 * @return string
 	 */
@@ -735,14 +749,14 @@ class APS_Config extends APS_Super {
 		}
 	}
 
-	public function decodeValue($value){
+	public function decodeValue( $value ) {
 		return html_entity_decode( $value, ENT_QUOTES, get_bloginfo( 'charset' ) );
 	}
 
 	/**
 	 * Display payment method enabled in admin listing if atleast one enabled
 	*/
-	public function adminDisplayEnabledPaymentMethod(){
+	public function adminDisplayEnabledPaymentMethod() {
 		$payment_method_status = array(
 			$this->enable_credit_card,
 			$this->enable_installment,
@@ -752,7 +766,7 @@ class APS_Config extends APS_Super {
 			$this->enable_naps,
 			$this->enable_apple_pay,
 		);
-		if (in_array('yes', $payment_method_status)){
+		if ( in_array('yes', $payment_method_status) ) {
 			return 'yes';
 		}
 		return 'no';

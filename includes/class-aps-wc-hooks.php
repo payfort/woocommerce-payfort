@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * All functions of APS ajax
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class APS_WC_Hooks {
 
@@ -69,6 +70,7 @@ class APS_WC_Hooks {
 
 	/**
 	 * APS Render Payment methods
+	 *
 	 * @return array
 	 */
 	public function aps_render_payment_methods( $item, $payment_token ) {
@@ -83,11 +85,11 @@ class APS_WC_Hooks {
 	 */
 	public function show_token_response_messages() {
 		if ( isset( $_SESSION['aps_token_error'] ) ) {
-			$aps_error_msg = $_SESSION['aps_token_error'];
+			$aps_error_msg = wp_kses_data($_SESSION['aps_token_error']);
 			$this->aps_helper->set_flash_msg( $aps_error_msg, APS_Constants::APS_FLASH_MESSAGE_ERROR );
 			unset( $_SESSION['aps_token_error'] );
 		} elseif ( isset( $_SESSION['aps_token_success'] ) ) {
-			$aps_success_msg = $_SESSION['aps_token_success'];
+			$aps_success_msg = wp_kses_data($_SESSION['aps_token_success']);
 			$this->aps_helper->set_flash_msg( $aps_success_msg, APS_Constants::APS_FLASH_MESSAGE_SUCCESS );
 			unset( $_SESSION['aps_token_success'] );
 		}
@@ -103,6 +105,31 @@ class APS_WC_Hooks {
 		if ( empty( $payment_method ) ) {
 			$errors->add( 'payment_method_not_selected', 'Please select payment method' );
 		}
+		if (isset($fields['payment_method'])) {
+			$payment_method = $fields['payment_method'];
+			$payment_methods = array(
+			APS_Constants::APS_PAYMENT_TYPE_CC,
+			APS_Constants::APS_PAYMENT_TYPE_VALU,
+			APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
+			APS_Constants::APS_PAYMENT_TYPE_NAPS,
+			APS_Constants::APS_PAYMENT_TYPE_KNET,
+			APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
+			APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY);
+			if (in_array($payment_method, $payment_methods)) {
+				if (isset($errors->errors) && empty($errors->errors)) {
+					$last_order_id = WC()->session->get( 'order_awaiting_payment');
+					if (empty($last_order_id) || null != $last_order_id) {
+						$aps_redirected = get_post_meta( $last_order_id, 'aps_redirected', true );
+						if (1 == $aps_redirected) {
+							$order    = wc_get_order( $last_order_id );
+							if ($order->get_status() == 'pending') {
+								WC()->session->set( 'order_awaiting_payment', false);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -110,13 +137,22 @@ class APS_WC_Hooks {
 	 */
 	public function aps_pending_payment_cron_handler() {
 		$duration_mins = $this->aps_config->get_status_cron_duration();
+		$payment_methods = array(
+			APS_Constants::APS_PAYMENT_TYPE_CC,
+			APS_Constants::APS_PAYMENT_TYPE_VALU,
+			APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
+			APS_Constants::APS_PAYMENT_TYPE_NAPS,
+			APS_Constants::APS_PAYMENT_TYPE_KNET,
+			APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
+			APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY);
+
 		$args          = array(
 			'post_type'   => 'shop_order',
 			'meta_query'  => array(
 				'relation' => 'AND',
 				array(
-					'key'   => 'payment_gateway',
-					'value' => APS_Constants::APS_GATEWAY_ID,
+					'key'   => '_payment_method',
+					'value' => $payment_methods,
 				),
 			),
 			'date_query'  => array(
@@ -133,6 +169,7 @@ class APS_WC_Hooks {
 			while ( $get_data->have_posts() ) {
 				$get_data->the_post();
 				$order_id    = get_the_ID();
+				$this->aps_helper->log( 'check status called : ' . $order_id );
 				$status_data = $this->aps_helper->aps_status_checker( get_the_ID() );
 				if ( ! empty( $status_data ) && isset( $status_data['response_code'] ) ) {
 					$response_code    = $status_data['response_code'];
@@ -174,9 +211,9 @@ class APS_WC_Hooks {
 		}
 	}
 
-	public function aps_wocommerce_credit_card_type_labels($labels_type){
+	public function aps_wocommerce_credit_card_type_labels( $labels_type ) {
 		if ( !empty( $labels_type ) ) {
-			if($labels_type == 'Mada'){
+			if ('Mada' == $labels_type) {
 				$labels_type = 'mada';
 			}
 		}

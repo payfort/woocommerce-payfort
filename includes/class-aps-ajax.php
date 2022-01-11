@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * All functions of APS ajax
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class APS_Ajax {
 
@@ -90,11 +91,11 @@ class APS_Ajax {
 					}
 				);
 				if ( empty( $response['installment_detail']['issuer_detail'] ) ) {
-					throw new \Exception( __( 'No plans found', 'amazon_payment_services' ), 404 );
+					throw new \Exception( __( 'No plans found', 'amazon-payment-services' ), 404 );
 				}
 				$issuer_key = $this->find_bin_in_plans( $card_bin, $response['installment_detail']['issuer_detail'] );
 				if ( empty( $issuer_key ) && ! isset( $response['installment_detail']['issuer_detail'][ $issuer_key ] ) ) {
-					throw new \Exception( __( 'There is no installment plan available', 'amazon_payment_services' ), 404 );
+					throw new \Exception( __( 'There is no installment plan available', 'amazon-payment-services' ), 404 );
 				}
 				$retarr['installment_data'] = $response['installment_detail']['issuer_detail'][ $issuer_key ];
 			} else {
@@ -147,11 +148,11 @@ class APS_Ajax {
 				wp_die();
 			}
 
-			$pay_full_payment = "<div class='slide'>
-						<div class='emi_box' data-interest ='' data-amount='' data-plan-code='' data-issuer-code='' data-full-payment='1'>
-							<p class='with_full_payment'>".__( 'Proceed with full amount', 'amazon_payment_services' )."</p>
+			$pay_full_payment = '<div class="slide">
+						<div class="emi_box" data-interest ="" data-amount="" data-plan-code="" data-issuer-code="" data-full-payment="1">
+							<p class="with_full_payment">' . __( 'Proceed with full amount', 'amazon-payment-services' ) . '</p>
 						</div>
-					</div>";
+					</div>';
 		}
 
 		$card_bin = str_replace( array( ' ', '*' ), array( '', '' ), $card_bin );
@@ -159,9 +160,9 @@ class APS_Ajax {
 		if ( 'success' === $response['status'] && ! empty( $response['installment_data'] ) ) {
 			$all_plans      = $response['installment_data']['plan_details'];
 			$banking_system = $response['installment_data']['banking_system'];
-			$interest_text  = 'Non Islamic' === $banking_system ? __( 'Interest', 'amazon_payment_services' ) : __( 'Profit Rate', 'amazon_payment_services' );
-			$months_text    = __( 'Months', 'amazon_payment_services' );
-			$month_text     = __( 'month', 'amazon_payment_services' );
+			$interest_text  = 'Non Islamic' === $banking_system ? __( 'Interest', 'amazon-payment-services' ) : __( 'Profit Rate', 'amazon-payment-services' );
+			$months_text    = __( 'Months', 'amazon-payment-services' );
+			$month_text     = __( 'month', 'amazon-payment-services' );
 			$plans_html     = "<div class='emi_carousel'>";
 			if ( ! empty( $all_plans ) ) {
 				$plans_html .= $pay_full_payment;
@@ -187,15 +188,15 @@ class APS_Ajax {
 			if ( 'yes' === $this->aps_config->show_issuer_logo() ) {
 				$terms_text .= "<img src='" . $issuer_logo . "' class='issuer-logo' />";
 			}
-			$terms_text .= __( 'I agree with the installment {terms_link} to proceed with the transaction', 'amazon_payment_services' );
-			$terms_text  = str_replace( '{terms_link}', '<a target="_blank" href="' . $terms_url . '">' . __( 'terms and condition', 'amazon_payment_services' ) . '</a>', $terms_text );
+			$terms_text .= __( 'I agree with the installment {terms_link} to proceed with the transaction', 'amazon-payment-services' );
+			$terms_text  = str_replace( '{terms_link}', '<a target="_blank" href="' . $terms_url . '">' . __( 'terms and condition', 'amazon-payment-services' ) . '</a>', $terms_text );
 			$plan_info   = '<input type="checkbox" name="installment_term" id="installment_term" required/>' . $terms_text;
 			$plan_info  .= '<label class="aps_installment_terms_error aps_error"></label>';
 			$plan_info  .= '<p> ' . $processing_content . '</p>';
 
 			$issuer_info = '';
 			if ( 'yes' === $this->aps_config->show_issuer_name() ) {
-				$issuer_info .= "<div class='issuer_info'> <p> " . __( 'Issuer name', 'amazon_payment_services' ) . ' : ' . $issuer_text . '</p> </div>';
+				$issuer_info .= "<div class='issuer_info'> <p> " . __( 'Issuer name', 'amazon-payment-services' ) . ' : ' . $issuer_text . '</p> </div>';
 			}
 
 			$retarr['plans_html']      = $plans_html;
@@ -216,7 +217,7 @@ class APS_Ajax {
 	 */
 	public function validate_apple_url() {
 		try {
-			$apple_url = filter_input( INPUT_GET, 'apple_url' );
+			$apple_url = filter_input( INPUT_POST, 'apple_url' );
 			if ( empty( $apple_url ) ) {
 				throw new \Exception( 'Apple pay url is missing' );
 			}
@@ -227,7 +228,7 @@ class APS_Ajax {
 			if ( ! isset( $parse_apple['scheme'] ) || ! in_array( $parse_apple['scheme'], array( 'http', 'https' ), true ) ) {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
-			echo $this->aps_helper->init_apple_pay_api( $apple_url );
+			echo wp_kses_data($this->aps_helper->init_apple_pay_api( $apple_url ) );
 		} catch ( \Exception $e ) {
 			echo wp_json_encode( array( 'error' => $e->getMessage() ) );
 		}
@@ -241,8 +242,9 @@ class APS_Ajax {
 		$status         = 'success';
 		$error_msg      = '';
 		$shipping_total = 0.00;
-		if ( isset( $_POST['address_obj'] ) ) {
-			$address_data = $_POST['address_obj'];
+		$address_obj = filter_input( INPUT_POST, 'address_obj', FILTER_DEFAULT, FILTER_FORCE_ARRAY );
+		if ( isset( $address_obj ) ) {
+			$address_data = array_map('sanitize_text_field', wp_unslash($address_obj ));
 			$this->aps_helper->log( 'APS address data \n\n' . wp_json_encode( $address_data, true ) );
 			global $woocommerce;
 			if ( isset( $address_data['countryCode'] ) && ! empty( $address_data['countryCode'] ) ) {
@@ -261,11 +263,11 @@ class APS_Ajax {
 		if ( WC()->cart->needs_shipping() ) {
 			$shipping_country = WC()->customer->get_shipping_country();
 			if ( empty( $shipping_country ) ) {
-				$error_msg = __( 'Shipping Address is invalid', 'amazon_payment_services' );
+				$error_msg = __( 'Shipping Address is invalid', 'amazon-payment-services' );
 				$status    = 'error';
 			} elseif ( ! in_array( WC()->customer->get_shipping_country(), array_keys( WC()->countries->get_shipping_countries() ), true ) ) {
 				/* translators: %s: shipping location */
-				$error_msg = sprintf( __( 'Unfortunately <strong>we do not ship %s</strong>. Please enter an alternative shipping address.', 'amazon_payment_services' ), WC()->countries->shipping_to_prefix() . ' ' . WC()->customer->get_shipping_country() );
+				$error_msg = sprintf( __( 'Unfortunately <strong>we do not ship %s</strong>. Please enter an alternative shipping address.', 'amazon-payment-services' ), WC()->countries->shipping_to_prefix() . ' ' . WC()->customer->get_shipping_country() );
 				$status    = 'error';
 			} else {
 				$chosen_shipping_methods = WC()->session->get( 'chosen_shipping_methods' );
@@ -307,8 +309,11 @@ class APS_Ajax {
 			'order_items'    => array(),
 		);
 		try {
-			if ( 'product_page' === $_POST['exec_from'] && isset( $_POST['product_cart_data'] ) && ! empty( $_POST['product_cart_data'] ) ) {
-				$product_cart_data = $_POST['product_cart_data'];
+			$exec_from = filter_input( INPUT_POST, 'exec_from' );
+			$product_cart_datas = filter_input( INPUT_POST, 'product_cart_data', FILTER_DEFAULT, FILTER_FORCE_ARRAY);
+
+			if ( isset($exec_from) && 'product_page' === $exec_from && isset( $product_cart_datas ) && ! empty( $product_cart_datas ) ) {
+				$product_cart_data = array_map( 'sanitize_text_field', $product_cart_datas );
 				$product_id        = isset( $product_cart_data['product_id'] ) ? $product_cart_data['product_id'] : 0;
 				$quantity          = isset( $product_cart_data['quantity'] ) ? $product_cart_data['quantity'] : 1;
 				$variation_id      = isset( $product_cart_data['variation_id'] ) ? $product_cart_data['variation_id'] : 0;
@@ -368,8 +373,13 @@ class APS_Ajax {
 		foreach ( $shipping_address as $key => $val ) {
 			$address[ str_replace( 'shipping_', '', $key ) ] = $val;
 		}
-		if ( isset( $_POST['address_obj'] ) && ! empty( $_POST['address_obj'] ) ) {
-			$address_data = $_POST['address_obj'];
+		$address_obj = filter_input( INPUT_POST, 'address_obj', FILTER_DEFAULT, FILTER_FORCE_ARRAY );
+		if ( isset( $address_obj ) && ! empty( $address_obj ) ) {
+			$address_data = array_map('sanitize_text_field', wp_unslash($address_obj ));
+			$addressLines = [];
+			if ( isset($address_obj['addressLines']) ) {
+				$addressLines = array_map('sanitize_text_field', wp_unslash( $address_obj['addressLines'] ));
+			}
 			global $woocommerce;
 			if ( isset( $address_data['givenName'] ) && ! empty( $address_data['givenName'] ) ) {
 				$address['first_name'] = $address_data['givenName'];
@@ -377,12 +387,12 @@ class APS_Ajax {
 			if ( isset( $address_data['familyName'] ) && ! empty( $address_data['familyName'] ) ) {
 				$address['last_name'] = $address_data['familyName'];
 			}
-			if ( isset( $address_data['addressLines'] ) && ! empty( $address_data['addressLines'] ) ) {
-				if ( isset( $address_data['addressLines'][0] ) && ! empty( $address_data['addressLines'][0] ) ) {
-					$address['address_1'] = $address_data['addressLines'][0];
+			if ( isset( $addressLines ) && ! empty( $addressLines ) ) {
+				if ( isset( $addressLines[0] ) && ! empty( $addressLines[0] ) ) {
+					$address['address_1'] = $addressLines[0];
 				}
-				if ( isset( $address_data['addressLines'][1] ) && ! empty( $address_data['addressLines'][1] ) ) {
-					$address['address_2'] = $address_data['addressLines'][1];
+				if ( isset( $addressLines[1] ) && ! empty( $addressLines[1] ) ) {
+					$address['address_2'] = $addressLines[1];
 				}
 			}
 			if ( isset( $address_data['emailAddress'] ) && ! empty( $address_data['emailAddress'] ) ) {
@@ -406,7 +416,7 @@ class APS_Ajax {
 			'message' => '',
 		);
 		try {
-			$mobile_number = filter_input( INPUT_GET, 'mobile_number' );
+			$mobile_number = filter_input( INPUT_POST, 'mobile_number' );
 			if ( empty( $mobile_number ) ) {
 				throw new \Exception( 'Mobile number is missing' );
 			}
@@ -430,7 +440,7 @@ class APS_Ajax {
 			'message' => '',
 		);
 		try {
-			$otp = filter_input( INPUT_GET, 'otp' );
+			$otp = filter_input( INPUT_POST, 'otp' );
 			if ( empty( $otp ) ) {
 				throw new \Exception( 'OTP is missing' );
 			}
@@ -459,7 +469,7 @@ class APS_Ajax {
 			if ( empty( $otp ) ) {
 				throw new \Exception( 'Tenure is missing' );
 			}
-			$_SESSION['valu_payment'] = $tenure;
+			$_SESSION['valu_payment'] = wp_kses_data($tenure);
 			$response_arr['status']   = 'success';
 		} catch ( \Exception $e ) {
 			$response_arr['status']  = 'error';
@@ -493,7 +503,7 @@ class APS_Ajax {
 	}
 
 	/**
-	 * aps payment authorization capture & void
+	 * Aps payment authorization capture & void
 	 */
 	public function aps_payment_authorization() {
 		$response_arr = array(
@@ -505,19 +515,19 @@ class APS_Ajax {
 			$authorization_command = filter_input( INPUT_POST, 'authorization_command' );
 			$amount_authorization  = filter_input( INPUT_POST, 'amount_authorization' );
 			if ( empty( $order_id ) ) {
-				throw new \Exception( __( 'Order Id is missing', 'amazon_payment_services' ) );
+				throw new \Exception( __( 'Order Id is missing', 'amazon-payment-services' ) );
 			}
 			if ( empty( $authorization_command ) ) {
-				throw new \Exception( __( 'Authorization command Type is missing', 'amazon_payment_services' ) );
+				throw new \Exception( __( 'Authorization command Type is missing', 'amazon-payment-services' ) );
 			}
-			if ( ! empty( $authorization_command ) && $authorization_command == APS_Constants::APS_COMMAND_CAPTURE ) {
+			if ( ! empty( $authorization_command ) && APS_Constants::APS_COMMAND_CAPTURE == $authorization_command ) {
 				if ( empty( $amount_authorization ) ) {
-					throw new \Exception( __( 'Authorization amount is missing', 'amazon_payment_services' ) );
+					throw new \Exception( __( 'Authorization amount is missing', 'amazon-payment-services' ) );
 				}
 			}
 			$response                = $this->submit_authorization( $order_id, $authorization_command, $amount_authorization );
 			$response_arr['message'] = $response['message'];
-			if ( $response['status'] == 'error' ) {
+			if ('error' == $response['status']) {
 				throw new \Exception( $response['message'] );
 			}
 		} catch ( \Exception $e ) {
@@ -551,7 +561,7 @@ class APS_Ajax {
 
 			$signature_type = 'regular';
 			$access_code = $this->aps_config->get_access_code();
-			if($order->get_payment_method() == APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY){
+			if ($order->get_payment_method() == APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY) {
 				$access_code = $this->aps_config->get_apple_pay_access_code();
 				$signature_type = 'apple_pay';
 			}
@@ -568,9 +578,9 @@ class APS_Ajax {
 				$gateway_params['currency'] = strtoupper( $payment_details['currency'] );
 				$total_amount               = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
 				$gateway_params['amount']   = $total_amount;
-				$response_arr['message']    = __( 'Payment Capture successfully ', 'amazon_payment_services' );
+				$response_arr['message']    = __( 'Payment Capture successfully ', 'amazon-payment-services' );
 			} else {
-				$response_arr['message'] = __( 'Authorization Voided Successfully', 'amazon_payment_services' );
+				$response_arr['message'] = __( 'Authorization Voided Successfully', 'amazon-payment-services' );
 			}
 			$gateway_params['command']           = $authorization_command;
 			$gateway_params['fort_id']           = $payment_details['fort_id'];

@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS Knet gateway class
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/classes
- * @author     Amazon Payment Services
  */
 class WC_Gateway_APS_Naps extends WC_Gateway_APS_Super {
 
@@ -25,10 +26,10 @@ class WC_Gateway_APS_Naps extends WC_Gateway_APS_Super {
 		$this->id                   = APS_Constants::APS_PAYMENT_TYPE_NAPS; // payment gateway plugin ID
 		$this->icon                 = ''; // URL of the icon that will be displayed on checkout page near your gateway name
 		$this->has_fields           = false; // in case you need a custom credit card form
-		$this->method_title         = __( 'Amazon Payment Service - NAPS', 'amazon_payment_services' );
-		$this->title                = __( 'NAPS', 'amazon_payment_services' );
-		$this->description          = __( 'Amazon Payment Service - Naps', 'amazon_payment_services' );
-		$this->method_description   = __( 'Accept NAPS', 'amazon_payment_services' ); // will be displayed on the options page
+		$this->method_title         = __( 'Amazon Payment Service - NAPS', 'amazon-payment-services' );
+		$this->title                = __( 'NAPS', 'amazon-payment-services' );
+		$this->description          = __( 'Amazon Payment Service - Naps', 'amazon-payment-services' );
+		$this->method_description   = __( 'Accept NAPS', 'amazon-payment-services' ); // will be displayed on the options page
 		$this->api_payment_option   = APS_Constants::APS_PAYMENT_METHOD_NAPS;
 		$this->supported_currencies = array( 'QAR' );
 		$this->enabled              = $this->check_availability();
@@ -96,7 +97,7 @@ class WC_Gateway_APS_Naps extends WC_Gateway_APS_Super {
 		$total_amount = $order->get_total();
 		if ( $amount < $total_amount ) {
 			$error = new WP_Error();
-			$error->add( 'aps_refund_error', __( 'Partial refund is not available in this payment method', 'amazon_payment_services' ) );
+			$error->add( 'aps_refund_error', __( 'Partial refund is not available in this payment method', 'amazon-payment-services' ) );
 			return $error;
 		} else {
 			$refund_status = $this->aps_refund->submit_refund( $order_id, $amount, $reason );
