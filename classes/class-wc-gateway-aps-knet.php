@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS Knet gateway class
  *
@@ -15,7 +17,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/classes
- * @author     Amazon Payment Services
  */
 class WC_Gateway_APS_Knet extends WC_Gateway_APS_Super {
 
@@ -24,10 +25,10 @@ class WC_Gateway_APS_Knet extends WC_Gateway_APS_Super {
 		$this->id                   = APS_Constants::APS_PAYMENT_TYPE_KNET; // payment gateway plugin ID
 		$this->icon                 = ''; // URL of the icon that will be displayed on checkout page near your gateway name
 		$this->has_fields           = false; // in case you need a custom credit card form
-		$this->method_title         = __( 'Amazon Payment Service - KNET', 'amazon_payment_services' );
-		$this->title                = __( 'KNET', 'amazon_payment_services' );
-		$this->description          = __( 'Amazon Payment Service - KNET', 'amazon_payment_services' );
-		$this->method_description   = __( 'Accept Knet', 'amazon_payment_services' ); // will be displayed on the options page
+		$this->method_title         = __( 'Amazon Payment Service - KNET', 'amazon-payment-services' );
+		$this->title                = __( 'KNET', 'amazon-payment-services' );
+		$this->description          = __( 'Amazon Payment Service - KNET', 'amazon-payment-services' );
+		$this->method_description   = __( 'Accept Knet', 'amazon-payment-services' ); // will be displayed on the options page
 		$this->api_payment_option   = APS_Constants::APS_PAYMENT_METHOD_KNET;
 		$this->supported_currencies = array( 'KWD' );
 		$this->enabled              = $this->check_availability();
@@ -38,6 +39,7 @@ class WC_Gateway_APS_Knet extends WC_Gateway_APS_Super {
 
 		// You can also register a webhook here
 		// add_action( 'woocommerce_api_{webhook name}', array( $this, 'webhook' ) );
+		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'display_knet_data' ), 10, 1 );
 	}
 
 	/**
@@ -79,5 +81,15 @@ class WC_Gateway_APS_Knet extends WC_Gateway_APS_Super {
 	 */
 	public function get_integration_type() {
 		return APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION;
+	}
+
+	/**
+	 * Display KNET data
+	 */
+	public function display_knet_data( $order_id ) {
+		$aps_response_meta = get_post_meta( $order_id, 'aps_payment_response', true );
+		echo '<h2> ' . wp_kses_data( __( 'KNET Details', 'amazon-payment-services' ) ) . '</h2>';
+		echo '<h4> ' . wp_kses_data( __( 'KNET third party transaction number', 'amazon-payment-services' ) ) . ' : ' . esc_attr($aps_response_meta['third_party_transaction_number']) . '</h4>';
+		echo '<h4> ' . wp_kses_data( __( 'KNET ref number', 'amazon-payment-services' ) ) . ' : ' . esc_attr($aps_response_meta['knet_ref_number']) . '</h4>';
 	}
 }

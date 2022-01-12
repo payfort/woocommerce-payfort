@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 	$icon_html       = '';
 	$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'images/';
 	$mada_logo       = $image_directory . 'mada-logo.png';
@@ -7,11 +10,11 @@
 	$amex_logo       = $image_directory . 'amex-logo.png';
 	$meeza_logo      = $image_directory . 'meeza-logo.jpg';
 	//Wrap icons
-	$icon_html .= '<img src="' . $mada_logo . '" alt="mada" class="card-mada card-icon" />';
-	$icon_html .= '<img src="' . $meeza_logo . '" alt="meeza" class="card-meeza card-icon" />';
-	$icon_html .= '<img src="' . $visa_logo . '" alt="visa" class="card-visa card-icon" />';
-	$icon_html .= '<img src="' . $mastercard_logo . '" alt="mastercard" class="card-mastercard card-icon" />';
-	$icon_html .= '<img src="' . $amex_logo . '" alt="amex" class="card-amex card-icon" />';
+	$icon_html .= '<img src="' . esc_attr($mada_logo) . '" alt="mada" class="card-mada card-icon" />';
+	$icon_html .= '<img src="' . esc_attr($meeza_logo) . '" alt="meeza" class="card-meeza card-icon" />';
+	$icon_html .= '<img src="' . esc_attr($visa_logo) . '" alt="visa" class="card-visa card-icon" />';
+	$icon_html .= '<img src="' . esc_attr($mastercard_logo) . '" alt="mastercard" class="card-mastercard card-icon" />';
+	$icon_html .= '<img src="' . esc_attr($amex_logo) . '" alt="amex" class="card-amex card-icon" />';
 
 	$tokens = array();
 if ( 'yes' === $is_enabled_tokenization ) {
@@ -38,19 +41,19 @@ if ( 'yes' === $is_enabled_tokenization ) {
 		$maxlength    = 'amex' === $token_row->get_card_type() ? 4 : 3;
 		$cc_plan_cls  = 'visa' === $token_row->get_card_type() || 'mastercard' === $token_row->get_card_type() ? 'cc_plan_cvv' : '';
 		$card_type = $token_row->get_card_type();
-		if($card_type != 'mada'){
+		if ( 'mada' != $card_type ) {
 			$card_type = strtoupper($card_type);
 		}
 		echo '<li>';
 			echo '<div class="aps-row ' . wp_kses_data( $checked ) . '">';
 				echo '<div class="aps-col-sm-9">';
-					echo '<input type="radio" class="aps_cc_token aps_token_radio" name="aps_payment_token_cc" data-masking-card="' . wp_kses_data( substr( $masking_card, 0, 6 ) ) . '" value="' . wp_kses_data( $token_row->get_token() ) . '" ' . $checked . '/>';
-					echo '<img class="card-icon" src="' . $card_icons[ $token_row->get_card_type() ] . '"/>';
-					echo '<strong>' . $card_type . ' ' . $token_row->get_last4() . '</strong> ';
-					echo __( 'exp', 'amazon_payment_services' ) . ' ' . $token_row->get_expiry_month() . '/' . $token_row->get_expiry_year();
+					echo '<input type="radio" class="aps_cc_token aps_token_radio" name="aps_payment_token_cc" data-masking-card="' . wp_kses_data( substr( $masking_card, 0, 6 ) ) . '" value="' . wp_kses_data( $token_row->get_token() ) . '" ' . wp_kses_data($checked) . '/>';
+					echo '<img class="card-icon" src="' . wp_kses_data($card_icons[ $token_row->get_card_type() ]) . '"/>';
+					echo '<strong>' . esc_attr($card_type) . ' ' . esc_attr($token_row->get_last4()) . '</strong> ';
+					echo wp_kses_data( __( 'exp', 'amazon-payment-services' ) . ' ' . esc_attr($token_row->get_expiry_month()) . '/' . esc_attr($token_row->get_expiry_year()) );
 				echo '</div>';
 				echo '<div class="aps-col-sm-3">';
-					echo '<input type="text" value="" autocomplete="off" maxlength="' . $maxlength . '" class="input-text aps_saved_card_cvv onlynum ' . $cc_plan_cls . '" placeholder="' . __( 'CVV', 'amazon_payment_services' ) . '">';
+					echo '<input type="text" value="" autocomplete="off" maxlength="' . esc_attr($maxlength) . '" class="input-text aps_saved_card_cvv onlynum ' . esc_attr($cc_plan_cls) . '" placeholder="' . esc_html__( 'CVV', 'amazon-payment-services' ) . '">';
 				echo '</div>';
 			echo '</div>';
 		echo '</li>';
@@ -61,38 +64,38 @@ if ( 'yes' === $is_enabled_tokenization ) {
 			<div class="aps-col-xs-12">
 				<?php
 				if ( ! empty( $tokens ) ) {
-					echo '<input type="radio" name="aps_payment_token_cc" value="" class="aps_token_card aps_token_radio" required/> ' . __( 'Add a new card', 'amazon_payment_services' );
+					echo '<input type="radio" name="aps_payment_token_cc" value="" class="aps_token_card aps_token_radio" required/> ' . esc_html__( 'Add a new card', 'amazon-payment-services' );
 				}
 				?>
 				<div id="aps_cc_form" class="aps_hosted_form">
 					<div class="payfort-fort-cc" >
 						<p id="aps_card_number_field" class="form-row">
-							<label class="" for="aps_card_number"><?php echo __( 'Card Number', 'amazon_payment_services' ); ?> <span class="required">*</span></label>
+							<label class="" for="aps_card_number"><?php echo esc_html__( 'Card Number', 'amazon-payment-services' ); ?> <span class="required">*</span></label>
 							<div class="card-row">
 								<input type="text" value="" autocomplete="off" maxlength="19" placeholder="" class="input-text aps_card_number onlynum"/>
-								<?php echo $icon_html; ?>
+								<?php echo wp_kses_post($icon_html); ?>
 							</div>
 							<label class="aps_error aps_card_error"></label>
 						</p>
 						<p id="aps_card_holder_name_field" class="form-row clear">
-							<label class="" for="aps_card_holder_name"><?php echo __( 'Card Holder name', 'amazon_payment_services' ); ?></label>
+							<label class="" for="aps_card_holder_name"><?php echo esc_html__( 'Card Holder name', 'amazon-payment-services' ); ?></label>
 							<input type="text" value="" autocomplete="off" maxlength="50" placeholder="" class="input-text aps_card_holder_name">
 							<label class="aps_error aps_card_name_error"></label>
 						</p>
 						<p id="aps_expiry_month_field" class="form-row clear form-row-wide">
-							<label class="" for="aps_expiry_month"><?php echo __( 'Expiry Date', 'amazon_payment_services' ); ?>  <span class="required">*</span></label>
+							<label class="" for="aps_expiry_month"><?php echo esc_html__( 'Expiry Date', 'amazon-payment-services' ); ?>  <span class="required">*</span></label>
 							<input width="50px" type="text" value="" autocomplete="off" maxlength="2" placeholder="MM" class="input-text aps_expiry_month onlynum" size="2" style="width: 50px">
 							<input width="50px" type="text" autocomplete="off" maxlength="2" placeholder="YY"  class="input-text aps_expiry_year onlynum" size="2" style="width: 50px">
 							<label class="aps_error aps_card_expiry_error"></label>
 						</p>
 						<p id="aps_card_security_code_field" class="form-row clear">
-							<label class="" for="aps_card_security_code"><?php echo __( 'CVV', 'amazon_payment_services' ); ?>  <span class="required">*</span></label>
+							<label class="" for="aps_card_security_code"><?php echo esc_html__( 'CVV', 'amazon-payment-services' ); ?>  <span class="required">*</span></label>
 							<input type="text" value="" autocomplete="off" maxlength="4" placeholder="" class="input-text aps_card_security_code onlynum" style="width: 60px">
 							<label class="aps_error aps_card_cvv_error"></label>
 						</p>
 						<?php if ( 'yes' === $is_enabled_tokenization && 'no' === $have_subscription ) { ?>
 							<p class="form-row clear">
-								<input type="checkbox" class="aps_card_remember_me" class="input-checkbox" checked/> <?php echo __( 'Save My Card', 'amazon_payment_services' ); ?>
+								<input type="checkbox" class="aps_card_remember_me" class="input-checkbox" checked/> <?php echo esc_html__( 'Save My Card', 'amazon-payment-services' ); ?>
 							</p>
 						<?php } ?>
 					</div>

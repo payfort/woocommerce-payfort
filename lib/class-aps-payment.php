@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS Payment
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/lib
- * @author     Amazon Payment Services
  */
 class APS_Payment extends APS_Super {
 
@@ -145,17 +146,18 @@ class APS_Payment extends APS_Super {
 					$this->aps_order->success_order( $aps_notify_params, 'online' );
 					$redirect_url = $this->aps_order->get_checkout_success_url();
 				} elseif ( APS_Constants::APS_MERCHANT_SUCCESS_RESPONSE_CODE === $notify_code && isset( $aps_notify_params['3ds_url'] ) ) {
+					$this->aps_helper->log( 'build 3ds_url=' . $aps_notify_params['3ds_url'] );
 					$redirect_url = $aps_notify_params['3ds_url'];
 				} elseif ( in_array( $notify_code, APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 					$this->aps_order->on_hold_order( $notify_response_message );
-					$aps_error_log = "APS handler ERROR\n\n" . wp_json_encode( $aps_notify_params, true );
+					$aps_error_log = "APS handler ERROR -\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 					$redirect_url = $this->aps_order->get_checkout_success_url();
 				} else {
-					$aps_error_log = "APS handler ERROR\n\n" . wp_json_encode( $aps_notify_params, true );
+					$aps_error_log = "APS handler ERROR::\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 					$result                = $this->aps_order->decline_order( $aps_notify_params, $notify_response_message );
-					$_SESSION['aps_error'] = $notify_response_message;
+					$_SESSION['aps_error'] = wp_kses_data($notify_response_message);
 					$redirect_url          = wc_get_checkout_url();
 				}
 			}
@@ -190,8 +192,8 @@ class APS_Payment extends APS_Super {
 	public function handle_fort_response( $response_params, $response_mode, $integration_type ) {
 		try {
 			$success          = false;
-			$response_message = __( 'Invalid Fort Parameters', 'amazon_payment_services' );
-			$aps_error_log    = "APS handler ERROR\n\n" . wp_json_encode( $response_params, true );
+			$response_message = __( 'Invalid Fort Parameters', 'amazon-payment-services' );
+			$aps_error_log    = "APS handler ERROR=\n\n" . wp_json_encode( $response_params, true );
 			if ( empty( $response_params ) ) {
 				$this->aps_helper->log( $aps_error_log );
 				throw new Exception( $response_message );
@@ -208,14 +210,14 @@ class APS_Payment extends APS_Super {
 			// check if webhook call for valu refund
 			$order = $this->aps_order->get_loaded_order();
 			$valu_order_id_by_reference = '';
-		    if(! ($order && $order->get_id() ) ){
-				if( isset( $response_params['command'] ) && $response_params['command'] == 'REFUND'){
-					$this->aps_helper->log( "Valu REFUND merchant_reference". $response_params['merchant_reference']);
+			if ( ! ( $order && $order->get_id() ) ) {
+				if ( isset( $response_params['command'] ) && 'REFUND' == $response_params['command'] ) {
+					$this->aps_helper->log( 'Valu REFUND merchant_reference' . $response_params['merchant_reference']);
 
 					$valu_order_id_by_reference = $this->aps_helper->find_valu_order_by_reference( $response_params['merchant_reference'] );
 
-                    $this->aps_helper->log( "Valu REFUND order_id". $response_params['merchant_reference']);
-                }
+					$this->aps_helper->log( 'Valu REFUND order_id' . $response_params['merchant_reference']);
+				}
 			}
 
 			$excluded_params = array( 'signature', 'wc-ajax', 'wc-api', 'APS_fort', 'integration_type', 'WordApp_launch', 'WordApp_mobile_site', 'WordApp_demo', 'WordApp_demo', 'lang' );
@@ -236,27 +238,27 @@ class APS_Payment extends APS_Super {
 			$signature_type     = isset( $response_params['digital_wallet'] ) && APS_Constants::APS_PAYMENT_METHOD_APPLE_PAY === $response_params['digital_wallet'] ? 'apple_pay' : 'regular';
 
 			//check webhook call for apple pay
-			if( isset( $response_params['command'] ) && in_array($response_params['command'], array('REFUND', 'CAPTURE', 'VOID_AUTHORIZATION')) ){
-                if( isset($response_params['access_code']) && $response_params['access_code'] == $this->aps_config->get_apple_pay_access_code() ){
-                    $signature_type = 'apple_pay';
-                }
-            }
+			if ( isset( $response_params['command'] ) && in_array($response_params['command'], array('REFUND', 'CAPTURE', 'VOID_AUTHORIZATION')) ) {
+				if ( isset($response_params['access_code']) && $response_params['access_code'] == $this->aps_config->get_apple_pay_access_code() ) {
+					$signature_type = 'apple_pay';
+				}
+			}
 
 			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );
 
 			//update order id if webhook call for valu refund
-			if($valu_order_id_by_reference != '' && (! ($order && $order->get_id()) ) ){
+			if ( '' != $valu_order_id_by_reference && ( ! ( $order && $order->get_id() ) ) ) {
 				$order_id = $valu_order_id_by_reference;
 				$this->aps_order->load_order( $order_id );
 				$response_params['merchant_reference'] = $order_id;
-				$this->aps_helper->log( "Valu REFUND order_id from reference_id". $order_id);
+				$this->aps_helper->log( 'Valu REFUND order_id from reference_id' . $order_id);
 			}
 
 			$payment_method = $this->aps_order->get_payment_method();
 
 			// check the signature
 			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] ) {
-				$response_message = __( 'Invalid Singature', 'amazon_payment_services' );
+				$response_message = __( 'Invalid Singature', 'amazon-payment-services' );
 				// There is a problem in the response we got
 				$this->aps_order->on_hold_order( 'Invalid Signature.' );
 				$aps_invalid_signature_log = "APS Response invalid signature ERROR\n\n Original array : " . wp_json_encode( $response_params, true ) . "\n\n\n Final array : " . wp_json_encode( $response_gateway_params, true );
@@ -264,7 +266,7 @@ class APS_Payment extends APS_Super {
 				return true;
 			}
 			if ( APS_Constants::APS_PAYMENT_CANCEL_RESPONSE_CODE === $response_code ) {
-				$response_message = __( 'Transaction Cancelled', 'amazon_payment_services' );
+				$response_message = __( 'Transaction Cancelled', 'amazon-payment-services' );
 				$result           = $this->aps_order->decline_order( $response_params, $response_message );
 				if ( $result ) {
 					$this->aps_helper->log( $aps_error_log );
@@ -289,18 +291,32 @@ class APS_Payment extends APS_Super {
 				$notify_code             = $aps_notify_params['response_code'];
 				if ( APS_Constants::APS_MERCHANT_SUCCESS_RESPONSE_CODE === $notify_code || APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $notify_code ) {
 					if ( isset( $aps_notify_params['3ds_url'] ) ) {
-						echo '<script>window.top.location.href = "' . esc_url( $aps_notify_params['3ds_url'] ) . '"</script>';
-						exit;
+						if ( APS_Constants::APS_INTEGRATION_TYPE_STANDARD_CHECKOUT == $integration_type) {
+							$this->aps_helper->log( 'JS 3ds_url redirect=' . $aps_notify_params['3ds_url'] );
+							echo '<script>window.top.location.href = "' . esc_url_raw( $aps_notify_params['3ds_url'] ) . '"</script>';
+							exit;
+						} else {
+							$this->aps_helper->log( '3ds_url redirect=' . $aps_notify_params['3ds_url'] );
+							$ds_method = $this->aps_config->get_threeds_redirection_method();
+							if ('server_side' == $ds_method ) {
+								ob_start();
+								header('Location: ' . esc_url_raw($aps_notify_params['3ds_url']));
+								ob_end_flush();
+							} else {
+								echo '<script>window.top.location.href = "' . esc_url_raw( $aps_notify_params['3ds_url'] ) . '"</script>';
+							}
+							exit;
+						}
 					} else {
 						$this->aps_order->success_order( $aps_notify_params, $response_mode );
 					}
 				} elseif ( in_array( $notify_code, APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 					$this->aps_order->on_hold_order( $notify_response_message );
-					$aps_error_log = "APS handler ERROR\n\n" . wp_json_encode( $aps_notify_params, true );
+					$aps_error_log = "APS handler ERROR:\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 				} else {
 					$result        = $this->aps_order->decline_order( $aps_notify_params, $notify_response_message );
-					$aps_error_log = "APS handler ERROR\n\n" . wp_json_encode( $aps_notify_params, true );
+					$aps_error_log = "APS handler ERROR-\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 					throw new Exception( $notify_response_message );
 				}
@@ -311,18 +327,26 @@ class APS_Payment extends APS_Super {
 				$notify_code             = $aps_notify_params['response_code'];
 				if ( APS_Constants::APS_MERCHANT_SUCCESS_RESPONSE_CODE === $notify_code || APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $notify_code ) {
 					if ( isset( $aps_notify_params['3ds_url'] ) ) {
-						echo '<script>window.top.location.href = "' . esc_url( $aps_notify_params['3ds_url'] ) . '"</script>';
+						$this->aps_helper->log( '3ds_url redirect :=' . $aps_notify_params['3ds_url'] );
+						$ds_method = $this->aps_config->get_threeds_redirection_method();
+						if ( 'server_side' == $ds_method ) {
+							ob_start();
+							header('Location: ' . esc_url_raw($aps_notify_params['3ds_url']));
+							ob_end_flush();
+						} else {
+							echo '<script>window.top.location.href = "' . esc_url_raw( $aps_notify_params['3ds_url'] ) . '"</script>';
+						}
 						exit;
 					} else {
 						$this->aps_order->success_order( $aps_notify_params, $response_mode );
 					}
 				} elseif ( in_array( $notify_code, APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 					$this->aps_order->on_hold_order( $notify_response_message );
-					$aps_error_log = "APS handler ERROR\n\n" . wp_json_encode( $aps_notify_params, true );
+					$aps_error_log = "APS handler ERROR :\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 				} else {
 					$result        = $this->aps_order->decline_order( $aps_notify_params, $notify_response_message );
-					$aps_error_log = "APS handler ERROR\n\n" . wp_json_encode( $aps_notify_params, true );
+					$aps_error_log = "APS handler ERROR =\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 					throw new Exception( $notify_response_message );
 				}
@@ -333,7 +357,7 @@ class APS_Payment extends APS_Super {
 			}
 		} catch ( Exception $e ) {
 			//need to store data in session here
-			$_SESSION['aps_error'] = $e->getMessage();
+			$_SESSION['aps_error'] = wp_kses_data($e->getMessage());
 			return false;
 		}
 		return true;
@@ -507,14 +531,21 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return void
 	 */
-	public function merchant_page_cancel() {
+	public function merchant_page_cancel( $apple_pay_cancel = false ) {
 		$order_id = $this->aps_order->get_session_order_id();
 		$this->aps_order->load_order( $order_id );
 
 		if ( $order_id ) {
 			$this->aps_order->cancelled_order();
+			//display msg when cancel and not display on back button
+			if ( ! $apple_pay_cancel ) {
+				$this->aps_helper->set_flash_msg( __( 'Transaction Cancelled', 'amazon-payment-services' ), APS_Constants::APS_FLASH_MESSAGE_ERROR );
+			}
 		}
-		$this->aps_helper->set_flash_msg( __( 'Transaction Cancelled', 'amazon_payment_services' ), APS_Constants::APS_FLASH_MESSAGE_ERROR );
+		//display msg when cancel from all page apple pay
+		if ( $apple_pay_cancel ) {
+			$this->aps_helper->set_flash_msg( __( 'Transaction Cancelled', 'amazon-payment-services' ), APS_Constants::APS_FLASH_MESSAGE_ERROR );
+		}
 	}
 
 	/**
@@ -570,7 +601,7 @@ class APS_Payment extends APS_Super {
 			}
 		} catch ( \Exception $e ) {
 			$status                = 'error';
-			$_SESSION['aps_error'] = $e->getMessage();
+			$_SESSION['aps_error'] = wp_kses_data($e->getMessage());
 		}
 		return array(
 			'status'   => $status,
@@ -645,10 +676,10 @@ class APS_Payment extends APS_Super {
 			$gateway_url = $this->aps_config->get_gateway_url( 'api' );
 			$result      = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'Valu verfiy customer ' . json_encode( $result ) );
-			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon_payment_services' );
+			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
 			if ( isset( $result['status'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
-				$_SESSION['valu_payment']['reference_id']  = $reference_id;
-				$_SESSION['valu_payment']['mobile_number'] = $mobile_number;
+				$_SESSION['valu_payment']['reference_id']  = wp_kses_data($reference_id);
+				$_SESSION['valu_payment']['mobile_number'] = wp_kses_data($mobile_number);
 			} elseif ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_FAILED_RESPONSE_CODE === $result['response_code'] ) {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? 'Customer does not exist.' : $valuapi_stop_message;
@@ -701,12 +732,12 @@ class APS_Payment extends APS_Super {
 			$gateway_url = $this->aps_config->get_gateway_url( 'api' );
 			$result      = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'Valu generate otp ' . json_encode( $result ) );
-			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon_payment_services' );
+			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
 			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_GENERATE_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
 				$status                                     = 'success';
 				$mobile_number_string                       = APS_Constants::APS_VALU_EG_COUNTRY_CODE . $mobile_number;
-				$_SESSION['valu_payment']['order_id']       = $order_id;
-				$_SESSION['valu_payment']['transaction_id'] = $result['transaction_id'];
+				$_SESSION['valu_payment']['order_id']       = wp_kses_data($order_id);
+				$_SESSION['valu_payment']['transaction_id'] = wp_kses_data($result['transaction_id']);
 			} else {
 				$status  = 'genotp_error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
@@ -734,10 +765,10 @@ class APS_Payment extends APS_Super {
 		$message     = '';
 		$tenure_html = '';
 		try {
-			$reference_id = $_SESSION['valu_payment']['reference_id'];
-			$order_id     = ! empty( $this->aps_order->get_session_order_id() ) ? $this->aps_order->get_session_order_id() : $_SESSION['valu_payment']['order_id'];
+			$reference_id = wp_kses_data($_SESSION['valu_payment']['reference_id']);
+			$order_id     = ! empty( $this->aps_order->get_session_order_id() ) ? $this->aps_order->get_session_order_id() : wp_kses_data($_SESSION['valu_payment']['order_id']);
 			$this->aps_order->load_order( $order_id );
-			$mobile_number = $_SESSION['valu_payment']['mobile_number'];
+			$mobile_number = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
 			$currency      = $this->aps_helper->get_front_currency();
 
 			$gateway_params              = array(
@@ -759,11 +790,11 @@ class APS_Payment extends APS_Super {
 			//execute post
 			$gateway_url          = $this->aps_config->get_gateway_url( 'api' );
 			$result               = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
-			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon_payment_services' );
+			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
 			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
-				$_SESSION['valu_payment']['otp'] = $otp;
+				$_SESSION['valu_payment']['otp'] = sanitize_text_field($otp);
 				$status                          = 'success';
-				$message                         = __( 'OTP Verified successfully', 'amazon_payment_services' );
+				$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
 				$tenure_html                     = "<div class='tenure_carousel'>";
 				if ( isset( $result['tenure']['TENURE_VM'] ) ) {
 					foreach ( $result['tenure']['TENURE_VM'] as $key => $ten ) {
@@ -803,13 +834,13 @@ class APS_Payment extends APS_Super {
 		try {
 			$order_id = $this->aps_order->get_session_order_id();
 			$this->aps_order->load_order( $order_id );
-			$reference_id                = $_SESSION['valu_payment']['reference_id'];
-			$mobile_number               = $_SESSION['valu_payment']['mobile_number'];
-			$otp                         = $_SESSION['valu_payment']['otp'];
+			$reference_id                = wp_kses_data($_SESSION['valu_payment']['reference_id']);
+			$mobile_number               = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
+			$otp                         = wp_kses_data($_SESSION['valu_payment']['otp']);
 			$customer_email              = $this->aps_order->get_email();
 			$customer_code               = $mobile_number;
 			$currency                    = $this->aps_helper->get_front_currency();
-			$transaction_id              = $_SESSION['valu_payment']['transaction_id'];
+			$transaction_id              = wp_kses_data($_SESSION['valu_payment']['transaction_id']);
 			$gateway_params              = array(
 				'command'              => 'PURCHASE',
 				'merchant_identifier'  => $this->aps_config->get_merchant_identifier(),
@@ -839,7 +870,7 @@ class APS_Payment extends APS_Super {
 			$this->aps_helper->log( 'Valu execute purchase ' . json_encode( $result ) );
 			if ( isset( $result['response_code'] ) && APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
 				$status  = 'success';
-				$message = __( 'Transaction Verified successfully', 'amazon_payment_services' );
+				$message = __( 'Transaction Verified successfully', 'amazon-payment-services' );
 				$this->aps_order->success_order( $result, 'online' );
 			} else {
 				$status  = 'error';

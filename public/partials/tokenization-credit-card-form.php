@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 	$icon_html       = '';
 	$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'images/';
 	$mada_logo       = $image_directory . 'mada-logo.png';
@@ -16,20 +19,20 @@
 <div id="aps_cc_form" class="aps_hosted_form">
 	<div class="payfort-fort-cc" >
 		<p id="aps_card_number_field" class="form-row">
-			<label class="" for="aps_card_number"><?php echo __( 'Card Number', 'amazon_payment_services' ); ?> <span class="required">*</span></label>
+			<label class="" for="aps_card_number"><?php echo esc_html__( 'Card Number', 'amazon-payment-services' ); ?> <span class="required">*</span></label>
 			<div class="card-row">
 				<input type="text" value="" autocomplete="off" maxlength="19" placeholder="" class="input-text aps_card_number onlynum"/>
-				<?php echo $icon_html; ?>
+				<?php echo wp_kses_post($icon_html); ?>
 			</div>
 			<label class="aps_error aps_card_error"></label>
 		</p>
 		<p id="aps_card_holder_name_field" class="form-row clear">
-			<label class="" for="aps_card_holder_name"><?php echo __( 'Card Holder name', 'amazon_payment_services' ); ?></label>
+			<label class="" for="aps_card_holder_name"><?php echo esc_html__( 'Card Holder name', 'amazon-payment-services' ); ?></label>
 			<input type="text" value="" autocomplete="off" maxlength="50" placeholder="" class="input-text aps_card_holder_name">
 			<label class="aps_error aps_card_name_error"></label>
 		</p>
 		<p id="aps_expiry_month_field" class="form-row clear form-row-wide">
-			<label class="" for="aps_expiry_month"><?php echo __( 'Expiry Date', 'amazon_payment_services' ); ?>  <span class="required">*</span></label>
+			<label class="" for="aps_expiry_month"><?php echo esc_html__( 'Expiry Date', 'amazon-payment-services' ); ?>  <span class="required">*</span></label>
 			<input width="50px" type="text" value="" autocomplete="off" maxlength="2" placeholder="MM" class="input-text aps_expiry_month onlynum" size="2" style="width: 50px" />
 			<input width="50px" type="text" autocomplete="off" maxlength="2" placeholder="YY"  class="input-text aps_expiry_year onlynum" size="2" style="width: 50px" />
 			<label class="aps_error aps_card_expiry_error"></label>

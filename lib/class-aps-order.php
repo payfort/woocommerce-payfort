@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 class APS_Order extends APS_Super {
 
 	private $order = array();
@@ -204,9 +206,9 @@ class APS_Order extends APS_Super {
 					}
 				}
 			} else {
-				if( isset( $response_params['digital_wallet'] ) && APS_Constants::APS_PAYMENT_METHOD_APPLE_PAY === $response_params['digital_wallet'] ) {
-			        $this->cancelled_order( $reason );
-			    } elseif ( 'yes' === $tokenization_status ) {
+				if ( isset( $response_params['digital_wallet'] ) && APS_Constants::APS_PAYMENT_METHOD_APPLE_PAY === $response_params['digital_wallet'] ) {
+					$this->cancelled_order( $reason );
+				} elseif ( 'yes' === $tokenization_status ) {
 					$this->cancelled_order( $reason );
 				} else {
 					$this->failed_order( $reason );
@@ -226,6 +228,10 @@ class APS_Order extends APS_Super {
 		if ( $status === $this->get_status() ) {
 			return true;
 		}
+		// Don't failed order if already payment success
+		if ( in_array($this->get_status(), ['processing', 'completed', 'refunded']) ) {
+			return true;
+		}
 		$note = $reason;
 		$this->order->update_status( $status, $note );
 		return true;
@@ -239,6 +245,10 @@ class APS_Order extends APS_Super {
 	public function cancelled_order( $reason = 'Payment Cancelled' ) {
 		$status = 'cancelled';
 		if ( $status === $this->get_status() ) {
+			return true;
+		}
+		// Don't failed order if already payment success
+		if ( in_array($this->get_status(), ['processing', 'completed', 'refunded']) ) {
 			return true;
 		}
 		$this->order->update_status( 'cancelled', $reason );
@@ -329,37 +339,15 @@ class APS_Order extends APS_Super {
 	 * Captured amount history
 	 */
 	private function captured_amount_history( $order_id ) {
-		global $post;
-		$old_post                 = $post;
-		$history                  = array();
-		$get_capture_transactions = array(
-			'post_type'   => APS_Constants::APS_CAPTURE_POST_TYPE,
-			'post_parent' => $order_id,
-			'meta_query'  => array(
-				'relation' => 'AND',
-				array(
-					'key'     => 'aps_authorization_captured_amount',
-					'compare' => 'EXISTS',
-				),
-			),
-			'post_status' => 'capture',
-			'orderby'     => 'ID',
-			'order'       => 'DESC',
+		global $wpdb;
+		$history = $wpdb->get_results($wpdb->prepare("
+			SELECT DATE_FORMAT(posts.post_date, '%%M %%d, %%Y') as date, postmeta.meta_value as amount
+			FROM $wpdb->postmeta AS postmeta
+			INNER JOIN $wpdb->posts AS posts ON ( posts.post_type = 'aps_capture_trans' AND posts.post_status = 'capture' AND post_parent = %d )
+			WHERE postmeta.meta_key = 'aps_authorization_captured_amount'
+			AND postmeta.post_id = posts.ID ORDER BY posts.ID DESC LIMIT 0, 99
+			", $order_id), ARRAY_A
 		);
-
-		$get_transactions = new WP_Query( $get_capture_transactions );
-
-		if ( $get_transactions->have_posts() ) {
-			while ( $get_transactions->have_posts() ) {
-				$get_transactions->the_post();
-				$history[] = array(
-					'date'   => get_the_date(),
-					'amount' => get_post_meta( get_the_id(), 'aps_authorization_captured_amount', true ),
-				);
-			}
-		}
-		$post = $old_post;
-		wp_reset_postdata();
 		return $history;
 	}
 
@@ -402,7 +390,7 @@ class APS_Order extends APS_Super {
 				$amount     = $aps_helper->convert_dec_amount( $response_params['amount'], $response_params['currency'] );
 				$order_id   = $response_params['merchant_reference'];
 				$order_post = get_post( $order_id );
-				$reason     = __( 'Refund by APS Backoffice', 'amazon_payment_services' );
+				$reason     = __( 'Refund by APS Backoffice', 'amazon-payment-services' );
 				$refund     = wc_create_refund(
 					array(
 						'amount'   => $amount,
@@ -423,7 +411,7 @@ class APS_Order extends APS_Super {
 		try {
 			//check response with get Method and card detail contain * only
 			if ( isset( $response_params['expiry_date'] ) ) {
-				if(!preg_match('#[^*]#',$response_params['expiry_date'])){
+				if ( !preg_match('#[^*]#', $response_params['expiry_date']) ) {
 					// return if all character are *
 					return;
 				}

@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * All functions of APS payment gateways
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class Gateway_Loader {
 
@@ -27,7 +28,7 @@ class Gateway_Loader {
 	 */
 	public function init_gateways( $gateways ) {
 		//Below condition check to show supported payment options in frontend only
-		if ( is_admin() && isset($_GET['tab']) && 'checkout' == $_GET['tab'] && 'wc-settings' == $_GET['page'] ) {
+		if ( is_admin() && isset($_GET['tab']) && 'checkout' == $_GET['tab'] && isset($_GET['page']) && 'wc-settings' == $_GET['page'] ) {
 			//Load list of supported payment options for checkout view
 			$gateways[] = 'WC_Gateway_APS';
 		} else {

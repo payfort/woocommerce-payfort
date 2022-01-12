@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS visa checkout gateway class
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/classes
- * @author     Amazon Payment Services
  */
 class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 
@@ -26,10 +27,10 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 		$this->id                 = APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT; // payment gateway plugin ID
 		$this->icon               = ''; // URL of the icon that will be displayed on checkout page near your gateway name
 		$this->has_fields         = false; // in case you need a custom credit card form
-		$this->method_title       = __( 'Amazon Payment Service - Visa Checkout', 'amazon_payment_services' );
-		$this->title              = __( 'Visa Checkout', 'amazon_payment_services' );
-		$this->description        = __( 'Amazon Payment Service - Visa Checkout', 'amazon_payment_services' );
-		$this->method_description = __( 'Accept installments', 'amazon_payment_services' ); // will be displayed on the options page
+		$this->method_title       = __( 'Amazon Payment Service - Visa Checkout', 'amazon-payment-services' );
+		$this->title              = __( 'Visa Checkout', 'amazon-payment-services' );
+		$this->description        = __( 'Amazon Payment Service - Visa Checkout', 'amazon-payment-services' );
+		$this->method_description = __( 'Accept installments', 'amazon-payment-services' ); // will be displayed on the options page
 		$this->enabled            = $this->check_availability();
 
 		// We need custom JavaScript to obtain a token
@@ -44,7 +45,7 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 	 * @return void
 	 */
 	public function payment_scripts() {
-		wp_register_script( $this->plugin_name . '-visa-checkout', plugin_dir_url( dirname( __FILE__ ) ) . 'public/js/aps-visa-checkout.js', array( 'jquery' ), APS_VERSION, true );
+		wp_register_script( $this->plugin_name . '-visa-checkout', plugin_dir_url( dirname( __FILE__ ) ) . 'public/js/aps-visa-checkout.js', array( 'jquery' ), APS_VERSION, false );
 		$cart_total   = WC()->cart->cart_contents_total;
 		$currency     = $this->aps_helper->get_fort_currency();
 		$total_amount = $this->aps_helper->convert_fort_amount( $cart_total, 1, $currency );
@@ -54,9 +55,10 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 			'screen_msg'   => get_bloginfo( 'name' ),
 			'total_amount' => $total_amount,
 			'currency'     => $currency,
-			'continue_btn' => __( 'Continue', 'amazon_payment_services' ),
+			'continue_btn' => __( 'Continue', 'amazon-payment-services' ),
 			'country_code' => WC()->countries->get_base_country(),
 			'language'     => $this->aps_config->get_language(),
+			'aps_vc_integration_type' => $this->get_integration_type()
 		);
 		wp_localize_script( $this->plugin_name . '-visa-checkout', 'vc_params', $vc_params );
 		wp_enqueue_script( $this->plugin_name . '-visa-checkout' );
@@ -75,7 +77,6 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 	/**
 	 * Generate the payment fields
 	 *
-	 * @access public
 	 * @param none
 	 * @return string
 	 */
@@ -120,7 +121,6 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 	/**
 	 * Process the payment and return the result
 	 *
-	 * @access public
 	 * @param int $order_id
 	 * @return array
 	 */
@@ -162,7 +162,7 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 					'redirect_link' => $payment_data['3ds_url'],
 				);
 			} else {
-				$_SESSION['aps_error'] = $payment_data['response_message'];
+				$_SESSION['aps_error'] = wp_kses_data($payment_data['response_message']);
 				$result                = array(
 					'result'        => 'failure',
 					'redirect_link' => wc_get_checkout_url(),
@@ -171,6 +171,7 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 		}
 		//save integration type
 		update_post_meta( $order_id, 'APS_INTEGEATION_TYPE', $integration_type );
+		update_post_meta( $order_id, 'aps_redirected', 1 );
 		wp_send_json( $result );
 		wp_die();
 	}

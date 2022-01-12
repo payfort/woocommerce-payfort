@@ -12,7 +12,7 @@ msgstr ""
 "POT-Creation-Date: 2021-03-26T23:23:05+05:30\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.4.0\n"
-"X-Domain: amazon_payment_services\n"
+"X-Domain: amazon-payment-services\n"
 
 #. Plugin Name of the plugin
 msgid "Amazon payment services"
@@ -203,6 +203,14 @@ msgstr ""
 
 #: admin/partials/aps-payment-information.php:134
 msgid "Value"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:152
+msgid "KNET third party transaction number"
+msgstr ""
+
+#: admin/partials/aps-payment-information.php:158
+msgid "KNET ref Number"
 msgstr ""
 
 #: admin/partials/configuration-fields.php:2
@@ -702,15 +710,15 @@ msgid "Profile ID"
 msgstr ""
 
 #: includes/class-aps-fields-loader.php:481
-msgid "Intallment Order Purchase minimum limit (SAR)"
+msgid "Installment Order Purchase minimum limit (SAR)"
 msgstr ""
 
 #: includes/class-aps-fields-loader.php:487
-msgid "Intallment Order Purchase minimum limit (AED)"
+msgid "Installment Order Purchase minimum limit (AED)"
 msgstr ""
 
 #: includes/class-aps-fields-loader.php:493
-msgid "Intallment Order Purchase minimum limit (EGP)"
+msgid "Installment Order Purchase minimum limit (EGP)"
 msgstr ""
 
 #: includes/class-aps-fields-loader.php:499

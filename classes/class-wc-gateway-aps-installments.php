@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS installment gateway class
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/classes
- * @author     Amazon Payment Services
  */
 class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 
@@ -25,10 +26,10 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$this->id                     = APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT; // payment gateway plugin ID
 		$this->icon                   = ''; // URL of the icon that will be displayed on checkout page near your gateway name
 		$this->has_fields             = false; // in case you need a custom credit card form
-		$this->method_title           = __( 'Amazon Payment Service - Installments', 'amazon_payment_services' );
-		$this->title                  = __( 'Installments', 'amazon_payment_services' );
-		$this->description            = __( 'Amazon Payment Service - Installments', 'amazon_payment_services' );
-		$this->method_description     = __( 'Accept installments', 'amazon_payment_services' ); // will be displayed on the options page
+		$this->method_title           = __( 'Amazon Payment Service - Installments', 'amazon-payment-services' );
+		$this->title                  = __( 'Installments', 'amazon-payment-services' );
+		$this->description            = __( 'Amazon Payment Service - Installments', 'amazon-payment-services' );
+		$this->method_description     = __( 'Accept installments', 'amazon-payment-services' ); // will be displayed on the options page
 		$this->price_limit_currencies = array( 'AED', 'SAR', 'EGP' );
 		$this->enabled                = $this->check_availability();
 		$this->supports               = array( 'products', 'refunds' );
@@ -66,7 +67,6 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 	/**
 	 * Generate the payment fields
 	 *
-	 * @access public
 	 * @param none
 	 * @return string
 	 */
@@ -128,7 +128,7 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 	 */
 	public function check_availability() {
 		$is_enabled = $this->aps_config->get_enable_installment();
-		if($this->aps_config->get_installment_integration_type() == APS_Constants::APS_INTEGRATION_TYPE_EMBEDDED_HOSTED_CHECKOUT){
+		if ( $this->aps_config->get_installment_integration_type() == APS_Constants::APS_INTEGRATION_TYPE_EMBEDDED_HOSTED_CHECKOUT ) {
 			$is_enabled = 'no';
 		}
 		if ( 'yes' === $is_enabled && in_array( strtoupper( $this->aps_helper->get_front_currency() ), $this->price_limit_currencies, true ) ) {
@@ -159,19 +159,19 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$aps_installment_amount = get_post_meta( $order_id, 'aps_installment_amount', true );
 		$aps_interest_amount    = get_post_meta( $order_id, 'aps_installment_interest', true );
 		$number_of_installments = $aps_response_meta['number_of_installments'];
-		echo '<h2> ' . wp_kses_data( __( 'Installment Details', 'amazon_payment_services' ) ) . '</h2>';
+		echo '<h2> ' . wp_kses_data( __( 'Installment Details', 'amazon-payment-services' ) ) . '</h2>';
 		if ( ! empty( $aps_installment_amount ) ) {
-			echo '<h4> ' . wp_kses_data( __( 'EMI', 'amazon_payment_services' ) ) . ' : ' . $aps_installment_amount . ' ' . $aps_response_meta['currency'] . '/ ' . __( 'Month', 'amazon_payment_services' ) . '</h4>';
+			echo '<h4> ' . wp_kses_data( __( 'EMI', 'amazon-payment-services' ) ) . ' : ' . esc_attr($aps_installment_amount) . ' ' . esc_attr($aps_response_meta['currency']) . '/ ' . esc_html__( 'Month', 'amazon-payment-services' ) . '</h4>';
 		}
 		if ( ! empty( $aps_interest_amount ) ) {
-			echo '<h4> ' . wp_kses_data( __( 'Interest', 'amazon_payment_services' ) ) . ' : ' . $aps_interest_amount . '</h4>';
+			echo '<h4> ' . wp_kses_data( __( 'Interest', 'amazon-payment-services' ) ) . ' : ' . esc_attr($aps_interest_amount) . '</h4>';
 		}
 		if ( ! empty( $number_of_installments ) ) {
-			echo '<h4> ' . wp_kses_data( __( 'Installments', 'amazon_payment_services' ) ) . ' : ' . $number_of_installments . '</h4>';
+			echo '<h4> ' . wp_kses_data( __( 'Installments', 'amazon-payment-services' ) ) . ' : ' . esc_attr($number_of_installments) . '</h4>';
 		}
 		$confirm_msg = get_post_meta( $order_id, 'aps_installment_confirmation_' . $this->aps_config->get_language(), true );
 		if ( ! empty( $confirm_msg ) ) {
-			echo wp_kses_data( '<p> ' . __( 'Confirmation', 'amazon_payment_services' ) . ' : <strong> ' . $confirm_msg . ' </strong></p>' );
+			echo wp_kses_data( '<p> ' . __( 'Confirmation', 'amazon-payment-services' ) . ' : <strong> ' . wp_kses_data($confirm_msg) . ' </strong></p>' );
 		}
 	}
 }

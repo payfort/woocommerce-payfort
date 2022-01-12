@@ -37,6 +37,9 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes |
 | :---: | :--- |
+| 2.2.5 |   * Fix - Failed order when back button click from thank you <br/> * Fix - 3DS redirection handling with configuration  <br/> * Fix - Apple Pay button display on dom ready <br/> * Fix - WC compatibility updates | 
+| 2.2.4 |   * Fix - Change Ajax calling to support third party plugin | 
+| 2.2.3 |   * Fix - Scheduled task check status call only for APS orders <br/> * Fix - Redirection issue fixed  <br/> * Fix - Order place checkout js error <br/> * New - KNET parameters are shown at order confirmation page | 
 | 2.2.2 |   * Fix - Validate HTTP post of extra params on APS redirection endpoint <br/> * New - Apple Pay : Display store  name in Apple Pay sheet is now configurable from admin panel. | 
 | 2.2.1 |   * Fix - Apple Pay button implementation with generic function. <br/> * Fix - WC compatibility. <br/> * Fix - Html entity decode, html entites for signature. <br/> * Fix - Plugin enabled in WC payment tab if any of the payment options enabled.<br/> * Fix - Embedded hosted checkout clear card & plan detail while switch between cards. | 
 | 2.2.0 |   * Installments are embedded in Debit/Credit Card payment option | 

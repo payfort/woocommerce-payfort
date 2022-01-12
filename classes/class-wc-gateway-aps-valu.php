@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS valu gateway class
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/classes
- * @author     Amazon Payment Services
  */
 class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 
@@ -24,10 +25,10 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		parent::__construct();
 		$this->id                   = APS_Constants::APS_PAYMENT_TYPE_VALU; // payment gateway plugin ID
 		$this->has_fields           = false; // in case you need a custom credit card form
-		$this->method_title         = __( 'Amazon Payment Service - Valu', 'amazon_payment_services' );
-		$this->title                = __( 'Buy Now, Pay Monthly', 'amazon_payment_services' );
-		$this->description          = __( 'Amazon Payment Service - Valu', 'amazon_payment_services' );
-		$this->method_description   = __( 'Accept valu payment', 'amazon_payment_services' ); // will be displayed on the options page
+		$this->method_title         = __( 'Amazon Payment Service - Valu', 'amazon-payment-services' );
+		$this->title                = __( 'Buy Now, Pay Monthly', 'amazon-payment-services' );
+		$this->description          = __( 'Amazon Payment Service - Valu', 'amazon-payment-services' );
+		$this->method_description   = __( 'Accept valu payment', 'amazon-payment-services' ); // will be displayed on the options page
 		$this->supported_currencies = array( 'EGP' );
 		$this->enabled              = $this->check_availability();
 
@@ -75,15 +76,15 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	/**
 	 * Process the payment and return the result
 	 *
-	 * @access public
 	 * @param int $order_id
 	 * @return array
 	 */
 	public function process_payment( $order_id ) {
-		if ( ! empty( $_POST['active_tenure'] ) ) {
-			$active_tenure     = $_POST['active_tenure'];
-			$tenure_amount     = $_POST['tenure_amount'];
-			$tenure_interest   = $_POST['tenure_interest'];
+		$active_tenure = filter_input( INPUT_POST, 'active_tenure' );
+		if ( ! empty( $active_tenure ) ) {
+			$tenure_amount     = filter_input( INPUT_POST, 'tenure_amount' );
+			$tenure_interest   = filter_input( INPUT_POST, 'tenure_interest' );
+			update_post_meta( $order_id, 'aps_redirected', 1 );
 			$purchase_response = $this->aps_payment->valu_execute_purchase( $active_tenure );
 			$redirect_link     = '';
 			if ( 'success' === $purchase_response['status'] ) {
@@ -100,7 +101,7 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 				$redirect_link = $this->get_return_url( $order );
 			} else {
 				$redirect_link         = wc_get_checkout_url();
-				$_SESSION['aps_error'] = $purchase_response['message'];
+				$_SESSION['aps_error'] = wp_kses_data($purchase_response['message']);
 			}
 			$result = array(
 				'result'        => 'success',
@@ -108,8 +109,8 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 			);
 			wp_send_json( $result );
 		} else {
-			$reference_id          = $_SESSION['valu_payment']['reference_id'];
-			$mobile_number         = $_SESSION['valu_payment']['mobile_number'];
+			$reference_id          = wp_kses_data($_SESSION['valu_payment']['reference_id']);
+			$mobile_number         = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
 			$generate_otp_response = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id );
 			update_post_meta( $order_id, 'valu_reference_id', $reference_id );
 			wp_send_json( $generate_otp_response );
@@ -120,7 +121,6 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	/**
 	 * Generate the valu payment form
 	 *
-	 * @access public
 	 * @param none
 	 * @return string
 	 */
@@ -146,10 +146,10 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	 */
 	public function display_valu_data( $order_id ) {
 		$aps_response_meta = get_post_meta( $order_id, 'aps_payment_response', true );
-		echo '<h2> ' . wp_kses_data( __( 'VALU Details', 'amazon_payment_services' ) ) . '</h2>';
-		echo '<h4> ' . wp_kses_data( __( 'Tenure', 'amazon_payment_services' ) ) . ' : ' . get_post_meta( $order_id, 'valu_active_tenure', true ) . '</h4>';
-		echo '<h4> ' . wp_kses_data( __( 'Tenure Amount', 'amazon_payment_services' ) ) . ' : ' . get_post_meta( $order_id, 'valu_tenure_amount', true ) . ' ' . $aps_response_meta['currency'] . '/ ' . __( 'Month', 'amazon_payment_services' ) . '</h4>';
-		echo '<h4> ' . wp_kses_data( __( 'Tenure Interest', 'amazon_payment_services' ) ) . ' : ' . get_post_meta( $order_id, 'valu_tenure_interest', true ) . '</h4>';
+		echo '<h2> ' . wp_kses_data( __( 'VALU Details', 'amazon-payment-services' ) ) . '</h2>';
+		echo '<h4> ' . wp_kses_data( __( 'Tenure', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_active_tenure', true )) . '</h4>';
+		echo '<h4> ' . wp_kses_data( __( 'Tenure Amount', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_tenure_amount', true )) . ' ' . esc_attr($aps_response_meta['currency']) . '/ ' . esc_html__( 'Month', 'amazon-payment-services' ) . '</h4>';
+		echo '<h4> ' . wp_kses_data( __( 'Tenure Interest', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_tenure_interest', true )) . '</h4>';
 	}
 
 	/**
@@ -167,7 +167,7 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		$total_amount = $order->get_total();
 		if ( $amount < $total_amount ) {
 			$error = new WP_Error();
-			$error->add( 'aps_refund_error', __( 'Partial refund is not available in this payment method', 'amazon_payment_services' ) );
+			$error->add( 'aps_refund_error', __( 'Partial refund is not available in this payment method', 'amazon-payment-services' ) );
 			return $error;
 		} else {
 			$refund_status = $this->aps_refund->submit_refund( $order_id, $amount, $reason );

@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * The admin-specific functionality of the plugin.
  *
@@ -18,7 +20,6 @@
  *
  * @package    APS
  * @subpackage APS/admin
- * @author     Amazon Payment Services
  */
 class APS_Admin {
 
@@ -26,7 +27,6 @@ class APS_Admin {
 	 * The ID of this plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 * @var      string    $plugin_name    The ID of this plugin.
 	 */
 	private $plugin_name;
@@ -35,7 +35,6 @@ class APS_Admin {
 	 * The version of this plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 * @var      string    $version    The current version of this plugin.
 	 */
 	private $version;
@@ -124,8 +123,8 @@ class APS_Admin {
 	 */
 	public function register_admin_menu() {
 		add_options_page(
-			__( 'Apple Pay Certificates', 'amazon_payment_services' ),
-			__( 'Apple Pay Certificates', 'amazon_payment_services' ),
+			__( 'Apple Pay Certificates', 'amazon-payment-services' ),
+			__( 'Apple Pay Certificates', 'amazon-payment-services' ),
 			'manage_options',
 			'apple-pay-certificates',
 			array( $this, 'render_apple_pay_certificates' )
@@ -146,35 +145,55 @@ class APS_Admin {
 		$aps_error_messages = array();
 		$aps_success        = 'success';
 		$certificates       = array();
-		if ( wp_verify_nonce( $_POST['_upload_apple_certificates_nonce'], 'upload_apple_certificates' ) ) {
-			$uploding_path = plugin_dir_path( dirname( __FILE__ ) ) . 'certificates/';
-			if ( isset( $_FILES['certificate_path_file'] ) && ! empty( $_FILES['certificate_path_file']['tmp_name'] ) ) {
-				$certificate_path_file      = $_FILES['certificate_path_file']['name'];
-				$certificate_path_file_info = pathinfo( $certificate_path_file );
-				$certificate_path_filename  = 'identifier.crt.' . $certificate_path_file_info['extension'];
-				if ( file_exists( $uploding_path . $certificate_path_filename ) ) {
-					unlink( $uploding_path . $certificate_path_filename );
+		if ( isset($_POST['_upload_apple_certificates_nonce']) && wp_verify_nonce( sanitize_key($_POST['_upload_apple_certificates_nonce']), 'upload_apple_certificates' ) ) {
+			$upload_dir    = wp_upload_dir();
+			$uploding_path = $upload_dir['basedir'] . '/aps-certificates/';
+			if (!file_exists($uploding_path)) {
+				wp_mkdir_p($uploding_path);
+				if (!file_exists(trailingslashit($uploding_path) . '.htaccess')) {
+					$file_handle = @fopen( trailingslashit($uploding_path) . '.htaccess', 'wb' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_read_fopen
+					if ( $file_handle ) {
+						fwrite( $file_handle, 'deny from all' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
+						fclose( $file_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
+					}
 				}
-				$temp_name = $_FILES['certificate_path_file']['tmp_name'];
-				if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_path_filename ) ) {
-					chmod( $uploding_path . $certificate_path_filename, 0755 );
-					$certificates['apple_certificate_path_file'] = $certificate_path_filename;
+			}
+			if ( isset( $_FILES['certificate_path_file'] ) && ! empty( $_FILES['certificate_path_file']['tmp_name'] ) ) {
+				$certificate_path_file      = isset($_FILES['certificate_path_file']['name']) ? sanitize_file_name($_FILES['certificate_path_file']['name']) : '';
+				$certificate_path_file_info = pathinfo( $certificate_path_file );
+				if ( 'pem' == $certificate_path_file_info['extension'] ) {
+					$certificate_path_filename  = 'identifier.crt.' . $certificate_path_file_info['extension'];
+					if ( file_exists( $uploding_path . $certificate_path_filename ) ) {
+						unlink( $uploding_path . $certificate_path_filename );
+					}
+					$temp_name = sanitize_text_field($_FILES['certificate_path_file']['tmp_name']);
+
+					if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_path_filename ) ) {
+						chmod( $uploding_path . $certificate_path_filename, 0755 );
+						$certificates['apple_certificate_path_file'] = $certificate_path_filename;
+					} else {
+						$aps_error_messages[] = 'Unable to upload certificate path file.';
+					}
 				} else {
-					$aps_error_messages[] = 'Unable to upload certificate path file.';
+					$aps_error_messages[] = 'certificate crt file type not valid.';
 				}
 			} if ( isset( $_FILES['certificate_key_file'] ) && ! empty( $_FILES['certificate_key_file']['tmp_name'] ) ) {
-				$certificate_key_file      = $_FILES['certificate_key_file']['name'];
+				$certificate_key_file      = isset($_FILES['certificate_key_file']['name']) ? sanitize_file_name($_FILES['certificate_key_file']['name']) : '';
 				$certificate_key_file_info = pathinfo( $certificate_key_file );
-				$certificate_key_filename  = 'identifier.key.' . $certificate_key_file_info['extension'];
-				if ( file_exists( $uploding_path . $certificate_key_filename ) ) {
-					unlink( $uploding_path . $certificate_key_filename );
-				}
-				$temp_name = $_FILES['certificate_key_file']['tmp_name'];
-				if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_key_filename ) ) {
-					chmod( $uploding_path . $certificate_key_filename, 0755 );
-					$certificates['apple_certificate_key_file'] = $certificate_key_filename;
+				if ( 'pem' == $certificate_key_file_info['extension']) {
+					$certificate_key_filename  = 'identifier.key.' . $certificate_key_file_info['extension'];
+					if ( file_exists( $uploding_path . $certificate_key_filename ) ) {
+						unlink( $uploding_path . $certificate_key_filename );
+					}
+					$temp_name = sanitize_text_field($_FILES['certificate_key_file']['tmp_name']);
+					if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_key_filename ) ) {
+						chmod( $uploding_path . $certificate_key_filename, 0755 );
+						$certificates['apple_certificate_key_file'] = $certificate_key_filename;
+					} else {
+						$aps_error_messages[] = 'Unable to upload certificate key file.';
+					}
 				} else {
-					$aps_error_messages[] = 'Unable to upload certificate key file.';
+					$aps_error_messages[] = 'certificate key file type not valid.';
 				}
 			}
 
@@ -191,9 +210,9 @@ class APS_Admin {
 		}
 
 		if ( ! empty( $aps_error_messages ) ) {
-			$_SESSION['aps_error_messages'] = $aps_error_messages;
+			$_SESSION['aps_error_messages'] = wp_kses_post_deep($aps_error_messages);
 		} elseif ( ! empty( $aps_success ) ) {
-			$_SESSION['aps_success_message'] = $aps_success;
+			$_SESSION['aps_success_message'] = wp_kses_data($aps_success);
 		}
 		wp_safe_redirect( admin_url( 'options-general.php?page=apple-pay-certificates' ) );
 	}
@@ -229,7 +248,7 @@ class APS_Admin {
 		global $post;
 		$order_id = $post->ID;
 		$aps_data = get_post_meta( $order_id, 'aps_payment_response', true );
-		if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && $aps_data['command'] == 'AUTHORIZATION' ) {
+		if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && 'AUTHORIZATION' == $aps_data['command'] ) {
 			add_meta_box( 'aps_payment_authorization_info', __( 'Capture/Void Authorization', 'woocommerce' ), array( $this, 'render_capture_aps_payment' ), 'shop_order', 'normal', 'high' );
 		}
 	}
@@ -240,7 +259,7 @@ class APS_Admin {
 		$order                    = wc_get_order( $order_id );
 		$aps_data                 = get_post_meta( $order_id, 'aps_payment_response', true );
 		$aps_authorization_action = get_post_meta( $order_id, 'aps_authorization_command', true );
-		if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && $aps_data['command'] == 'AUTHORIZATION' ) {
+		if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && 'AUTHORIZATION' == $aps_data['command'] ) {
 			$payment_method = $order->get_payment_method();
 			$amount         = $order->get_total();
 			$order_total    = $order->get_total();
@@ -264,36 +283,15 @@ class APS_Admin {
 	}
 
 	public function get_captured_amount_history( $order_id, $authorization_command ) {
-		global $post;
-		$old_post                 = $post;
-		$history                  = array();
-		$get_capture_transactions = array(
-			'post_type'   => 'aps_capture_trans',
-			'post_parent' => $order_id,
-			'meta_query'  => array(
-				'relation' => 'AND',
-				array(
-					'key'     => 'aps_authorization_captured_amount',
-					'compare' => 'EXISTS',
-				),
-			),
-			'post_status' => strtolower( $authorization_command ),
-			'orderby'     => 'ID',
-			'order'       => 'DESC',
+		global $wpdb;
+		$history = $wpdb->get_results($wpdb->prepare("
+			SELECT DATE_FORMAT(posts.post_date, '%%M %%d, %%Y') as date, postmeta.meta_value as amount
+			FROM $wpdb->postmeta AS postmeta
+			INNER JOIN $wpdb->posts AS posts ON ( posts.post_type = 'aps_capture_trans' AND posts.post_status = %s AND post_parent = %d )
+			WHERE postmeta.meta_key = 'aps_authorization_captured_amount'
+			AND postmeta.post_id = posts.ID ORDER BY posts.ID DESC LIMIT 0, 99
+			", strtolower($authorization_command), $order_id), ARRAY_A
 		);
-
-		$get_transactions = new WP_Query( $get_capture_transactions );
-		if ( $get_transactions->have_posts() ) {
-			while ( $get_transactions->have_posts() ) {
-				$get_transactions->the_post();
-				$history[] = array(
-					'date'   => get_the_date(),
-					'amount' => get_post_meta( get_the_id(), 'aps_authorization_captured_amount', true ),
-				);
-			}
-		}
-		$post = $old_post;
-		wp_reset_postdata();
 		return $history;
 	}
 

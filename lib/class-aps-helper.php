@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * APS Helper
  *
@@ -16,7 +18,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/lib
- * @author     Amazon Payment Services
  */
 class APS_Helper extends APS_Super {
 
@@ -31,6 +32,8 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Get instance of helper class
+	 *
 	 * @return APS_Helper
 	 */
 	public static function get_instance() {
@@ -41,6 +44,8 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Config class object
+	 *
 	 * @return APS_Config
 	 */
 	public function get_config_object() {
@@ -64,7 +69,7 @@ class APS_Helper extends APS_Super {
 	public function get_front_currency() {
 		$currency = get_woocommerce_currency();
 		if ( isset( $_COOKIE['wmc_current_currency'] ) && ! empty( $_COOKIE['wmc_current_currency'] ) ) {
-			$currency = $_COOKIE['wmc_current_currency'];
+			$currency = sanitize_text_field($_COOKIE['wmc_current_currency']);
 		}
 		return $currency;
 	}
@@ -106,6 +111,7 @@ class APS_Helper extends APS_Super {
 
 	/**
 	 * Convert Amount with decimal points
+	 *
 	 * @param decimal $amount
 	 * @param decimal $currency_value
 	 * @param string  $currency_code
@@ -128,6 +134,7 @@ class APS_Helper extends APS_Super {
 
 	/**
 	 * Convert decimal point Amount with original amount
+	 *
 	 * @param decimal $amount
 	 * @param string  $currency_code
 	 * @return decimal
@@ -145,6 +152,7 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Get Decimal place of currency
 	 *
 	 * @param string $currency
 	 * @param integer
@@ -214,13 +222,15 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
-	 * generate fort signature
+	 * Generate fort signature
+	 *
 	 * @param array $arrData
 	 * @param sting $signType request or response
 	 * @return string fort signature
 	 */
 	public function generate_signature( $arr_data, $sign_type = 'request', $type = 'regular' ) {
-		$sha_string = $hash_algorithm = '';
+		$sha_string = '';
+		$hash_algorithm = '';
 		ksort( $arr_data );
 		foreach ( $arr_data as $k => $v ) {
 			if ( 'products' === $k ) {
@@ -280,6 +290,7 @@ class APS_Helper extends APS_Super {
 
 	/**
 	 * Set flash message
+	 *
 	 * @param message string
 	 *
 	 * @return void
@@ -296,51 +307,53 @@ class APS_Helper extends APS_Super {
 	 * @return string
 	 */
 	public function get_customer_ip() {
-		return $_SERVER['REMOTE_ADDR'];
+		return isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : null;
 	}
 
-	/**
-	 * Call Rest API
-	 * @param post_data array
-	 * @param gateway_url array
-	 *
-	 * @return result array
-	 */
+
 	public function call_rest_api( $post_data, $gateway_url ) {
-		//open connection
-		$ch = curl_init();
-
-		//set the url, number of POST vars, POST data
+		$body = wp_json_encode( $post_data );
 		$useragent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0';
-		curl_setopt( $ch, CURLOPT_USERAGENT, $useragent );
-		curl_setopt(
-			$ch,
-			CURLOPT_HTTPHEADER,
-			array(
-				'Content-Type: application/json;charset=UTF-8',
-			)
-		);
-		curl_setopt( $ch, CURLOPT_URL, $gateway_url );
-		curl_setopt( $ch, CURLOPT_POST, 1 );
-		curl_setopt( $ch, CURLOPT_FAILONERROR, 1 );
-		curl_setopt( $ch, CURLOPT_ENCODING, 'compress, gzip' );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, 1 ); // allow redirects
-		//curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // return into a variable
-		curl_setopt( $ch, CURLOPT_CONNECTTIMEOUT, 0 ); // The number of seconds to wait while trying to connect
-		//curl_setopt($ch, CURLOPT_TIMEOUT, Yii::app()->params['apiCallTimeout']); // timeout in seconds
-		curl_setopt( $ch, CURLOPT_POSTFIELDS, wp_json_encode( $post_data ) );
+		$options = [
+			'body'        => $body,
+			'user_Agent'  => $useragent,
+			'headers'     => [
+				'Content-Type' => 'application/json',
+				'charset'=> 'UTF-8',
+			],
+			'timeout'     => 60,
+			'redirection' => 5,
+			'blocking'    => true,
+			'sslverify'   => false,
+			'httpversion' => '1.0',
+			'data_format' => 'body',
+		];
 
-		$response = curl_exec( $ch );
+		$response = wp_remote_post( $gateway_url, $options );
+		if ( is_wp_error( $response ) ) {
+			$this->log( 'APS api call error \n\n' . $response->get_error_message() );
+		}
+		$parsed_response = json_decode( $response['body'], true );
 
-		curl_close( $ch );
-
-		$array_result = json_decode( $response, true );
-
-		if ( ! $response || empty( $array_result ) ) {
+		if ( !$response || empty( $parsed_response) ) {
 			return false;
 		}
-		return $array_result;
+		return $parsed_response;
+	}
+
+	public function set_cert_file( $curl_handle ) {
+		if ( ! $curl_handle ) {
+			return;
+		}
+		$production_key     = $this->aps_config->get_apple_pay_production_key();
+
+		$apple_certificates = get_option( 'aps_apple_pay_certificates' );
+		$upload_dir         = wp_upload_dir();
+		$certificate_path   = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
+		$certificate_key    = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
+		curl_setopt( $curl_handle, CURLOPT_SSLCERT, $certificate_path );
+		curl_setopt( $curl_handle, CURLOPT_SSLKEY, $certificate_key );
+		curl_setopt( $curl_handle, CURLOPT_SSLKEYPASSWD, $production_key );
 	}
 
 	/**
@@ -349,27 +362,46 @@ class APS_Helper extends APS_Super {
 	 * @return json
 	 */
 	public function init_apple_pay_api( $apple_url ) {
-		$ch                            = curl_init();
-		$domain_name                   = $this->aps_config->get_apple_pay_domain_name();
-		$apple_pay_display_name        = $this->aps_config->get_apple_pay_display_name();
-		$production_key                = $this->aps_config->get_apple_pay_production_key();
-		$apple_certificates            = get_option( 'aps_apple_pay_certificates' );
-		$certificate_path              = plugin_dir_path( dirname( __FILE__ ) ) . 'certificates/' . $apple_certificates['apple_certificate_path_file'];
-		$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
-		$certificate_key               = plugin_dir_path( dirname( __FILE__ ) ) . 'certificates/' . $apple_certificates['apple_certificate_key_file'];
-		$data                          = '{"merchantIdentifier":"' . $apple_pay_merchant_identifier . '", "domainName":"' . $domain_name . '", "displayName":"' . $apple_pay_display_name . '"}';
+		try {
+			$domain_name                   = $this->aps_config->get_apple_pay_domain_name();
+			$apple_pay_display_name        = $this->aps_config->get_apple_pay_display_name();
+			$production_key                = $this->aps_config->get_apple_pay_production_key();
+			$apple_certificates            = get_option( 'aps_apple_pay_certificates' );
+			$upload_dir         = wp_upload_dir();
+			$certificate_path              = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
+			$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
+			$certificate_key               = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
+			$data                          = '{"merchantIdentifier":"' . $apple_pay_merchant_identifier . '", "domainName":"' . $domain_name . '", "displayName":"' . $apple_pay_display_name . '"}';
 
-		curl_setopt( $ch, CURLOPT_URL, $apple_url );
-		curl_setopt( $ch, CURLOPT_SSLCERT, $certificate_path );
-		curl_setopt( $ch, CURLOPT_SSLKEY, $certificate_key );
-		curl_setopt( $ch, CURLOPT_SSLKEYPASSWD, $production_key );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $ch, CURLOPT_POST, 1 );
-		curl_setopt( $ch, CURLOPT_POSTFIELDS, $data );
-
-		$response = curl_exec( $ch );
-		curl_close( $ch );
-		return $response;
+			$useragent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0';
+			$options = [
+				'body'        => $data,
+				'user_Agent'  => $useragent,
+				'headers'     => [
+					'Content-Type' => 'application/json',
+					'charset'=> 'UTF-8',
+				],
+				'timeout'     => 60,
+				'redirection' => 5,
+				'blocking'    => true,
+				'sslverify'   => true,
+				'sslcertificates' => $certificate_path,
+				'httpversion' => '1.0',
+				'data_format' => 'body',
+			];
+			add_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
+			$response = wp_remote_post( $apple_url, $options );
+			if ( is_wp_error( $response ) ) {
+				$this->log( 'APS api call error \n\n' . $response->get_error_message() );
+			}
+			$parsed_response = $response['body'];
+			if ( !$response || empty( $parsed_response) ) {
+				return false;
+			}
+			return $parsed_response;
+		} catch ( Exception $e ) {
+			$this->log( 'Apple pay api call error \n\n' . $e->getMessage() );
+		}
 	}
 
 	/**
@@ -390,7 +422,17 @@ class APS_Helper extends APS_Super {
 	public function find_valu_order_by_reference( $reference_key ) {
 		global $wpdb;
 		$meta_key = 'valu_reference_id';
-		$meta     = $wpdb->get_row( 'SELECT post_id FROM ' . $wpdb->postmeta . ' WHERE meta_key="' . $wpdb->escape( $meta_key ) . '" AND meta_value="' . $wpdb->escape( $reference_key ) . '"', ARRAY_A );
+
+		$meta = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT post_id
+				FROM {$wpdb->postmeta}
+				WHERE meta_key = %s AND meta_value = %s",
+				$meta_key, $reference_key
+			),
+			ARRAY_A
+		);
+
 		if ( is_array( $meta ) && ! empty( $meta ) ) {
 			return $meta['post_id'];
 		} else {
@@ -408,22 +450,35 @@ class APS_Helper extends APS_Super {
 			$user_id = get_current_user_id();
 		}
 		global $wpdb;
-		$table_name = $wpdb->prefix . 'woocommerce_payment_tokens';
-		$token_sql  = 'select * from ' . $table_name . ' where token = "' . $token_name . '" and user_id = ' . $user_id . ' and gateway_id = "' . APS_Constants::APS_PAYMENT_TYPE_CC . '"';
-		return $wpdb->get_row( $token_sql, ARRAY_A );
+		$result = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}woocommerce_payment_tokens
+				WHERE token = %s AND user_id = %d AND gateway_id = %s",
+				$token_name, $user_id, APS_Constants::APS_PAYMENT_TYPE_CC
+			),
+			ARRAY_A
+		);
+		return $result;
+		
 	}
 
-	public function getOrderRefundedAmoutTotal($order_id){
+	public function getOrderRefundedAmoutTotal( $order_id ) {
 		global $wpdb;
 
-		$refund_datetime = date("Y-m-d H:i:s", strtotime("-3 seconds", strtotime(current_time( 'mysql' ))));
+		$refund_datetime = gmdate( 'Y-m-d H:i:s', strtotime( '-3 seconds' ) );
 
-		$sql = "SELECT SUM( postmeta.meta_value )
+		$total = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT SUM( postmeta.meta_value )
 				FROM $wpdb->postmeta AS postmeta
-				INNER JOIN $wpdb->posts AS posts ON ( posts.post_type = 'shop_order_refund' AND posts.post_parent = ".$order_id." )
+				INNER JOIN $wpdb->posts AS posts ON ( posts.post_type = 'shop_order_refund' AND posts.post_parent = %d )
 				WHERE postmeta.meta_key = '_refund_amount'
-				AND postmeta.post_id = posts.ID and posts.post_date < '".$refund_datetime."'";
-		$total = $wpdb->get_var($sql);
+				AND postmeta.post_id = posts.ID 
+				AND posts.post_date < %s",
+				$order_id,
+				$refund_datetime
+			)
+		);
 		return floatval( $total );
 	}
 
@@ -481,37 +536,16 @@ class APS_Helper extends APS_Super {
 	 * Captured amount history
 	 */
 	public function captured_amount_total( $order_id ) {
-		global $post;
-		$old_post                 = $post;
-		$history                  = array();
-		$get_capture_transactions = array(
-			'post_type'   => 'aps_capture_trans',
-			'post_parent' => $order_id,
-			'meta_query'  => array(
-				'relation' => 'AND',
-				array(
-					'key'     => 'aps_authorization_captured_amount',
-					'compare' => 'EXISTS',
-				),
-			),
-			'post_status' => 'capture',
-			'orderby'     => 'ID',
-			'order'       => 'DESC',
+		global $wpdb;
+		$total = $wpdb->get_var($wpdb->prepare("
+			SELECT SUM( postmeta.meta_value )
+			FROM $wpdb->postmeta AS postmeta
+			INNER JOIN $wpdb->posts AS posts ON ( posts.post_type = 'aps_capture_trans' AND posts.post_status = 'capture' AND post_parent = %d )
+			WHERE postmeta.meta_key = 'aps_authorization_captured_amount'
+			AND postmeta.post_id = posts.ID LIMIT 0, 99
+			", $order_id)
 		);
-
-		$get_transactions = new WP_Query( $get_capture_transactions );
-		if ( $get_transactions->have_posts() ) {
-			while ( $get_transactions->have_posts() ) {
-				$get_transactions->the_post();
-				$history[] = array(
-					'date'   => get_the_date(),
-					'amount' => get_post_meta( get_the_id(), 'aps_authorization_captured_amount', true ),
-				);
-			}
-		}
-		$post = $old_post;
-		wp_reset_postdata();
-		return array_sum( array_column( $history, 'amount' ) );
+		return $total;
 	}
 
 	/**
@@ -529,19 +563,19 @@ class APS_Helper extends APS_Super {
 		$payment_method = $this->aps_order->get_payment_method();
 
 		$signature_type = 'regular';
-        $access_code = $this->aps_config->get_access_code();
-        if($payment_method == APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY){
-            $access_code = $this->aps_config->get_apple_pay_access_code();
-            $signature_type = 'apple_pay';
-        }
+		$access_code = $this->aps_config->get_access_code();
+		if ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY == $payment_method ) {
+			$access_code = $this->aps_config->get_apple_pay_access_code();
+			$signature_type = 'apple_pay';
+		}
 
-        if($payment_method == APS_Constants::APS_PAYMENT_TYPE_VALU){
-        	$valu_reference_id = get_post_meta( $order_id, 'valu_reference_id', true );
-        	if(!empty($valu_reference_id)){
-        		$this->log( 'APS aps_status_checker valu order_id#' . $order_id. 'valu_reference_id#'.$valu_reference_id );
-        		$order_id = $valu_reference_id;
-        	}
-        }
+		if ( APS_Constants::APS_PAYMENT_TYPE_VALU == $payment_method ) {
+			$valu_reference_id = get_post_meta( $order_id, 'valu_reference_id', true );
+			if ( !empty($valu_reference_id) ) {
+				$this->log( 'APS aps_status_checker valu order_id#' . $order_id . 'valu_reference_id#' . $valu_reference_id );
+				$order_id = $valu_reference_id;
+			}
+		}
 
 		$command        = APS_Constants::APS_COMMAND_CHECK_STATUS;
 		$gateway_params = array(

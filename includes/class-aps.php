@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 /**
  * The file that defines the core plugin class
  *
@@ -24,7 +26,6 @@
  * @since      2.2.0
  * @package    APS
  * @subpackage APS/includes
- * @author     Amazon Payment Services
  */
 class APS {
 
@@ -33,7 +34,6 @@ class APS {
 	 * the plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   protected
 	 * @var      APS_Loader    $loader    Maintains and registers all hooks for the plugin.
 	 */
 	protected $loader;
@@ -42,7 +42,6 @@ class APS {
 	 * The unique identifier of this plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   protected
 	 * @var      string    $plugin_name    The string used to uniquely identify this plugin.
 	 */
 	protected $plugin_name;
@@ -51,7 +50,6 @@ class APS {
 	 * The current version of the plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   protected
 	 * @var      string    $version    The current version of the plugin.
 	 */
 	protected $version;
@@ -96,7 +94,6 @@ class APS {
 	 * with WordPress.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 */
 	private function load_dependencies() {
 
@@ -160,7 +157,6 @@ class APS {
 	 * with WordPress.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 */
 	private function set_locale() {
 
@@ -175,7 +171,6 @@ class APS {
 	 * of the plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 */
 	private function define_admin_hooks() {
 
@@ -191,7 +186,6 @@ class APS {
 	 * of the plugin.
 	 *
 	 * @since    2.2.0
-	 * @access   private
 	 */
 	private function define_public_hooks() {
 
