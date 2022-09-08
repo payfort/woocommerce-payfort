@@ -114,9 +114,17 @@ class APS_Payment extends APS_Super {
 			} elseif ( APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT === $payment_method ) {
 				$gateway_params['digital_wallet'] = APS_Constants::APS_COMMAND_VISA_CHECKOUT_WALLET;
 			}
+            if ( APS_Constants::APS_PAYMENT_TYPE_STC_PAY === $payment_method ) {
+                $gateway_params['digital_wallet'] =  APS_Constants::APS_PAYMENT_METHOD_STC_PAY;
+                $gateway_params['merchant_reference'] = $this->aps_helper->generate_random_key();
+                update_post_meta( $order_id , 'stc_pay_reference_id' , $gateway_params['merchant_reference'] );
+                $gateway_params['customer_ip'] = $this->aps_helper->get_customer_ip();
+                $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
+                $gateway_params['merchant_extra'] =  $order_id;
+            }
 			$plugin_params  = $this->aps_config->plugin_params();
 			$gateway_params = array_merge( $gateway_params, $plugin_params );
-			if ( APS_Constants::APS_PAYMENT_TYPE_CC !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT !== $payment_method ) {
+			if ( APS_Constants::APS_PAYMENT_TYPE_CC !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_STC_PAY !== $payment_method ) {
 				unset( WC()->session->order_awaiting_payment );
 			}
 		} else {
@@ -203,23 +211,24 @@ class APS_Payment extends APS_Super {
 				$this->aps_helper->log( $aps_error_log );
 				throw new Exception( $response_message );
 			}
-
-			$order_id = $response_params['merchant_reference'];
-			$this->aps_order->load_order( $order_id );
+            if (isset($response_params['payment_option']) && $response_params['payment_option'] ===  APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
+                $order_id = $response_params['merchant_extra'];
+                $this->aps_order->load_order( $order_id );
+            }else{
+                $order_id = $response_params['merchant_reference'];
+                $this->aps_order->load_order( $order_id );
+            }
 
 			// check if webhook call for valu refund
 			$order = $this->aps_order->get_loaded_order();
-			$valu_order_id_by_reference = '';
+			$order_id_by_reference = '';
 			if ( ! ( $order && $order->get_id() ) ) {
 				if ( isset( $response_params['command'] ) && 'REFUND' == $response_params['command'] ) {
 					$this->aps_helper->log( 'Valu REFUND merchant_reference' . $response_params['merchant_reference']);
-
-					$valu_order_id_by_reference = $this->aps_helper->find_valu_order_by_reference( $response_params['merchant_reference'] );
-
+					$order_id_by_reference = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , APS_Constants::APS_PAYMENT_METHOD_VALU);
 					$this->aps_helper->log( 'Valu REFUND order_id' . $response_params['merchant_reference']);
 				}
 			}
-
 			$excluded_params = array( 'signature', 'wc-ajax', 'wc-api', 'APS_fort', 'integration_type', 'WordApp_launch', 'WordApp_mobile_site', 'WordApp_demo', 'WordApp_demo', 'lang' );
 
 			$response_type           = $response_params['response_message'];
@@ -247,17 +256,22 @@ class APS_Payment extends APS_Super {
 			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );
 
 			//update order id if webhook call for valu refund
-			if ( '' != $valu_order_id_by_reference && ( ! ( $order && $order->get_id() ) ) ) {
-				$order_id = $valu_order_id_by_reference;
+			if ( '' != $order_id_by_reference && ( ! ( $order && $order->get_id() ) ) ) {
+				$order_id = $order_id_by_reference;
 				$this->aps_order->load_order( $order_id );
 				$response_params['merchant_reference'] = $order_id;
 				$this->aps_helper->log( 'Valu REFUND order_id from reference_id' . $order_id);
 			}
 
+
 			$payment_method = $this->aps_order->get_payment_method();
 
+            $stc_ignore_signature = true;
+            if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_STC_PAY || APS_Constants::APS_PAYMENT_METHOD_STC_PAY === $response_params['payment_option'] ){
+                $stc_ignore_signature = false;
+            }
 			// check the signature
-			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] ) {
+			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] && $stc_ignore_signature ) {
 				$response_message = __( 'Invalid Singature', 'amazon-payment-services' );
 				// There is a problem in the response we got
 				$this->aps_order->on_hold_order( 'Invalid Signature.' );
@@ -506,7 +520,54 @@ class APS_Payment extends APS_Super {
 		return $payment_status;
 	}
 
-	/**
+
+    public function stc_process_subscription_payment( $renewal_order, $recurring_amount ) {
+        $payment_status = false;
+        $this->aps_order->load_order( $renewal_order->get_id() );
+        $renewal_order_id       = $renewal_order->get_id();
+        $subscription_order_id  = get_post_meta( $renewal_order_id, '_subscription_renewal', true );
+        $subscription_order_obj = get_post( $subscription_order_id );
+        $parent_order_id        = $subscription_order_obj->post_parent;
+        $aps_response           = get_post_meta( $parent_order_id, 'aps_payment_response', true );
+        $currency               = $aps_response['currency'];
+        $language               = $aps_response['language'];
+        $gateway_params         = array(
+            'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
+            'access_code'         => $this->aps_config->get_access_code(),
+            'digital_wallet'      => APS_Constants::APS_PAYMENT_METHOD_STC_PAY,
+            'merchant_reference'  => $this->aps_helper->generate_random_key(),
+            'language'            => $language,
+            'command'             => APS_Constants::APS_COMMAND_PURCHASE,
+            'customer_ip'         => $this->aps_helper->get_customer_ip(),
+            'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
+            'currency'            => strtoupper( $currency ),
+            'customer_email'      => $this->aps_order->get_email(),
+            'token_name'          => $aps_response['token_name'],
+            'return_url'          => create_wc_api_url( 'aps_online_response' ),
+        );
+        $customer_name          = $this->aps_order->get_customer_name();
+        if ( ! empty( $customer_name ) ) {
+            $gateway_params['customer_name'] = $customer_name;
+        }
+        $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
+        $gateway_params['signature'] = $signature;
+
+        $gateway_url = $this->aps_config->get_gateway_url( 'api' );
+        $this->aps_helper->log( 'APS recurring request \n\n' . wp_json_encode( $gateway_params, true ) );
+        $response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+        if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
+            $this->aps_order->success_order( $response, 'online' );
+            $payment_status = true;
+        } else {
+            $result         = $this->aps_order->decline_order( $response, $response['response_message'] );
+            $payment_status = false;
+        }
+        $this->aps_helper->log( 'APS recurring response \n\n' . wp_json_encode( $response, true ) );
+        return $payment_status;
+    }
+
+
+    /**
 	 * APS Delete Token
 	 */
 	public function delete_aps_token( $token_id, $token ) {
@@ -888,5 +949,136 @@ class APS_Payment extends APS_Super {
 			'message' => $message,
 		);
 	}
+
+    /***************************************** STC Pay Payment Gateway Functions *************************/
+
+    /**
+     * STC Pay generate OTP
+     *
+     * @return array
+     */
+    public function stc_pay_generate_otp(  $mobile_number, $order_id ) {
+        $status               = 'success';
+        $message              = 'OTP Generated';
+        $mobile_number_string = null;
+        try {
+            $reference_id = $this->aps_helper->generate_random_key();
+            $this->aps_order->load_order( $order_id );
+            $currency                    = $this->aps_helper->get_front_currency();
+            $gateway_params              = array(
+                'service_command'     => 'GENERATE_OTP',
+                'access_code'         => $this->aps_config->get_access_code(),
+                'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
+                'merchant_reference'  => $reference_id,
+                'language'            => $this->aps_config->get_language(),
+                'digital_wallet'      => 'STCPAY',
+                'phone_number'        => $mobile_number,
+                'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+                'currency'            => $currency,
+            );
+            $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
+            $gateway_params['signature'] = $signature;
+            //execute post
+            $gateway_url = $this->aps_config->get_gateway_url( 'api' );
+            $result      = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+            $this->aps_helper->log( 'STC Pay generate otp ' . json_encode( $result ) );
+            update_post_meta( $order_id, 'stc_pay_reference_id', $reference_id );
+            $stc_pay_api_error_message = __( 'STC PAY API failed. Please try again later', 'amazon-payment-services' );
+            if ( isset( $result['response_code'] ) && APS_Constants::APS_STC_PAY_OTP_GENERATE_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+                $status                                     = 'success';
+                $mobile_number_string                       = APS_Constants::APS_STC_PAY_SAR_COUNTRY_CODE . $mobile_number;
+                $_SESSION['stc_pay_payment']['reference_id']       = wp_kses_data($reference_id);
+                $_SESSION['stc_pay_payment']['mobile_number']       = wp_kses_data($mobile_number);
+                $_SESSION['stc_pay_payment']['order_id']       = wp_kses_data($order_id);
+            } else {
+                $status  = 'genotp_error';
+                $message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $stc_pay_api_error_message;
+                unset( $_SESSION['stc_pay_payment'] );
+            }
+        } catch ( \Exception $e ) {
+            $status  = 'error';
+            $message = $e->getMessage();
+        }
+        $response_arr = array(
+            'status'               => $status,
+            'message'              => $message,
+            'mobile_number_string' => $mobile_number_string,
+        );
+        return $response_arr;
+    }
+
+    /**
+     * STC Pay generate OTP
+     *
+     * @return array
+     */
+    public function stc_pay_execute_purchase( $otp, $remember_me, $token_name ) {
+        $status  = 'success';
+        $message = '';
+        try {
+            $order_id = $this->aps_order->get_session_order_id();
+            $this->aps_order->load_order( $order_id );
+            $reference_id                = wp_kses_data($_SESSION['stc_pay_payment']['reference_id']);
+            $mobile_number               = wp_kses_data($_SESSION['stc_pay_payment']['mobile_number']);
+            $customer_email              = $this->aps_order->get_email();
+            $customer_name               = $this->aps_order->get_customer_name();
+            $currency                    = $this->aps_helper->get_front_currency();
+
+            $gateway_params              = array(
+                'command'              => 'PURCHASE',
+                'merchant_identifier'  => $this->aps_config->get_merchant_identifier(),
+                'access_code'          => $this->aps_config->get_access_code(),
+                'language'             => $this->aps_config->get_language(),
+                'digital_wallet'       => 'STCPAY',
+                'phone_number'         => $mobile_number,
+                'amount'               => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+                'merchant_order_id'    => $order_id,
+                'currency'             => strtoupper( $currency ),
+                'customer_name'        => $customer_name,
+                'customer_ip'          => $this->aps_helper->get_customer_ip(),
+                'customer_email'       => $customer_email,
+                'order_description'    =>  'Order' . $order_id,
+                'settlement_reference' => $order_id
+            );
+            $plugin_params               = $this->aps_config->plugin_params();
+            $gateway_params              = array_merge( $gateway_params, $plugin_params );
+            if(!empty($token_name)){
+                $gateway_params['token_name'] = $token_name;
+                $gateway_params['merchant_reference'] = $this->aps_helper->generate_random_key();
+                update_post_meta( $order_id, 'stc_pay_reference_id', $gateway_params['merchant_reference'] );
+            }
+            else{
+                $gateway_params['remember_me'] = $remember_me ? 'YES' : 'NO';
+                $gateway_params['otp'] = $otp;
+                $gateway_params['merchant_reference'] = $reference_id;
+            }
+            $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
+            $gateway_params['signature'] = $signature;
+            //execute post
+            $gateway_url = $this->aps_config->get_gateway_url( 'api' );
+            $result      = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+            $this->aps_helper->log( 'STC Pay execute purchase ' . json_encode( $result ) );
+            $stc_pay_api_error_message = __( 'STC PAY API failed. Please try again later', 'amazon-payment-services' );
+            if ( isset( $result['response_code'] ) && APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+                $status  = 'success';
+                $message = __( 'Transaction Verified successfully', 'amazon-payment-services' );
+                $this->aps_order->success_order( $result, 'online' );
+            } else {
+                $status  = 'error';
+                $message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $stc_pay_api_error_message;
+                $this->aps_order->decline_order( $result, $message );
+                throw new \Exception( $message );
+            }
+            unset( $_SESSION['stc_pay_payment'] );
+        } catch ( \Exception $e ) {
+            $status  = 'error';
+            $message = $e->getMessage();
+        }
+        return array(
+            'status'  => $status,
+            'message' => $message,
+        );
+    }
+
 }
 

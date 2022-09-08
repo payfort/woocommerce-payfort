@@ -415,13 +415,19 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
-	 * Find valu order id by reference
+	 * Find  order id by reference
 	 *
 	 * @return $order_id
 	 */
-	public function find_valu_order_by_reference( $reference_key ) {
+	public function find_order_by_reference($reference_key , $payment_option ) {
 		global $wpdb;
-		$meta_key = 'valu_reference_id';
+        if ($payment_option === APS_Constants::APS_PAYMENT_METHOD_VALU){
+            $meta_key = 'valu_reference_id';
+        }
+
+        if ($payment_option === APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
+            $meta_key = 'stc_pay_reference_id';
+        }
 
 		$meta = $wpdb->get_row(
 			$wpdb->prepare(
@@ -445,7 +451,7 @@ class APS_Helper extends APS_Super {
 	 *
 	 * @return $token_row
 	 */
-	public function find_token_row( $token_name, $user_id = false ) {
+	public function find_token_row( $token_name, $user_id = false, $aps_payment_type =  APS_Constants::APS_PAYMENT_TYPE_CC) {
 		if ( ! $user_id ) {
 			$user_id = get_current_user_id();
 		}
@@ -454,7 +460,7 @@ class APS_Helper extends APS_Super {
 			$wpdb->prepare(
 				"SELECT * FROM {$wpdb->prefix}woocommerce_payment_tokens
 				WHERE token = %s AND user_id = %d AND gateway_id = %s",
-				$token_name, $user_id, APS_Constants::APS_PAYMENT_TYPE_CC
+				$token_name, $user_id, $aps_payment_type
 			),
 			ARRAY_A
 		);
@@ -576,6 +582,14 @@ class APS_Helper extends APS_Super {
 				$order_id = $valu_reference_id;
 			}
 		}
+
+        if ( APS_Constants::APS_PAYMENT_TYPE_STC_PAY == $payment_method ) {
+            $stc_reference_id = get_post_meta( $order_id, 'stc_pay_reference_id', true );
+            if ( !empty($stc_reference_id) ) {
+                $this->log( 'APS aps_status_checker stc order_id#' . $order_id . 'stc_pay_reference_id#' . $stc_reference_id );
+                $order_id = $stc_reference_id;
+            }
+        }
 
 		$command        = APS_Constants::APS_COMMAND_CHECK_STATUS;
 		$gateway_params = array(

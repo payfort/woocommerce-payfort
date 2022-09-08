@@ -66,6 +66,15 @@ class APS_Refund extends APS_Super {
 			$payment_details                     = get_post_meta( $order_id, 'aps_payment_response', true );
 
 			$merchant_reference =  $payment_details['merchant_reference'];
+            if($this->aps_order->get_payment_method() == APS_Constants::APS_PAYMENT_TYPE_STC_PAY){
+                $stc_pay_reference_id = get_post_meta( $order_id, 'stc_pay_reference_id', true );
+                if ( !empty($stc_pay_reference_id) && $merchant_reference !== $stc_pay_reference_id ){
+                    $merchant_reference = $stc_pay_reference_id;
+                    $this->aps_helper->log( 'APS refund stc_pay order_id#' . $order_id . 'stc_pay_reference_id#' . $stc_pay_reference_id );
+                }
+            }
+
+            if ($merchant_reference)
 			if ( empty($merchant_reference) ) {
 				$payment_method = $this->aps_order->get_payment_method();
 				if ( APS_Constants::APS_PAYMENT_TYPE_VALU == $payment_method ) {
@@ -75,7 +84,7 @@ class APS_Refund extends APS_Super {
 						$order_id = $valu_reference_id;
 					}
 				}
-				$merchant_reference = $order_id;
+                $merchant_reference = $order_id;
 			}
 
 			$gateway_params                      = array(

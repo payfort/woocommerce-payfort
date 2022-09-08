@@ -188,11 +188,62 @@ label.aps_error {
 	-apple-pay-button-type: top-up;
 }
 
-/* Valu CSS */
-.valu_form:not(.active) {
+/* STC Pay CSS */
+.stc_pay_form:not(.active){
 	display: none;
 }
-section.valu_form {
+
+section.stc_pay_form {
+	overflow: hidden;
+}
+
+.stc_pay_loader:not(.active){
+	display:none;
+}
+
+.stc_pay_loader.active{
+	display: flex !important;
+	position: relative;
+	height: 25px;
+	width: 100%;
+	align-items: center;
+}
+
+.stc_pay_loader.active .stc_pay_loader_icon{
+	height: 0;
+	width: 0;
+	padding: 5px;
+	border: 5px solid #ccc;
+	border-right-color: #888;
+	border-radius: 10px;
+	-webkit-animation: rotateValuLoader 1s infinite linear;
+	z-index: 99999;
+	position: absolute;
+}
+
+.stc_pay_loader.active .stc_pay_loader_caption{
+	margin-left: 25px;
+}
+
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_stc_pay ,
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_stc_pay li{
+	line-height: 1;
+	padding: 10px 0px;
+}
+.stc_hosted_form , .stc_hosted_form .aps-row{
+	padding: 10px 0px;
+}
+
+.stc_pay_form .otp_generation_msg{
+	padding: 5px 0px;
+}
+
+
+/* OTP Form / Valu CSS */
+.valu_form:not(.active), .otp_form:not(.active) {
+	display: none;
+}
+section.valu_form, section.otp_form {
 	overflow: hidden;
 }
 
@@ -236,17 +287,17 @@ section.valu_form {
 .tenureBox.selected {
 	border: 2px solid #78cee1;
 }
-.valu_loader:not(.active) {
+.valu_loader:not(.active), .otp_loader:not(.active) {
 	display:none;
 }
-.valu_loader.active {
+.valu_loader.active, .otp_loader.active {
 	display: flex !important;
 	position: relative;
 	height: 25px;
 	width: 100%;
 	align-items: center;
 }
-.valu_loader.active .valu_loader_icon {
+.valu_loader.active .valu_loader_icon, .otp_loader.active .loader_icon {
 	height: 0;
 	width: 0;
 	padding: 5px;
@@ -258,16 +309,16 @@ section.valu_form {
 	position: absolute;
 }
 
-.valu_loader.active .valu_loader_caption {
+.valu_loader.active .valu_loader_caption, .otp_loader.active .loader_caption {
 	margin-left: 25px;
 }
-.valu_form .input-text {
+.valu_form .input-text, .otp_form .input-text {
 	width: 100%;
 	line-height: 1.25 !important;
 	padding: .5rem 1rem !important;
 	height: 35px;
 }
-.valu_form .aps-btn {
+.valu_form .aps-btn, .otp_form .aps-btn {
 	width: 100%;
 	font-size: 13px;
 	display: flex;
@@ -279,10 +330,10 @@ section.valu_form {
 	align-items: center;
 	padding: 0px;
 }
-.valu_form .aps-pad-none {
+.valu_form .aps-pad-none, .otp_form .aps-pad-none {
 	padding:0;
 }
-.valu_form span.country_code {
+.valu_form span.country_code, .otp_form span.country_code {
 	height: 35px;
 	display: flex;
 	justify-content: center;
@@ -332,7 +383,8 @@ ul.token-box .card-icon {
 	height: auto;
 	float: left !important;
 }
-input.aps_token_card:not(:checked)+.aps_hosted_form {
+input.aps_token_card:not(:checked)+.aps_hosted_form,
+input.aps_token_mobile:not(:checked)+.aps-hosted-form {
 	display: none;
 }
 .aps_saved_card_cvv {

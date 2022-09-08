@@ -4,7 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 class APS_Order extends APS_Super {
 
-	private $order = array();
+    /**
+     * @var WC_Order
+     */
+    private $order = array();
 	private $order_id;
 	private $aps_config;
 	private $log;
@@ -418,7 +421,8 @@ class APS_Order extends APS_Super {
 			}
 
 			$aps_helper      = new APS_Helper();
-			$existing_tokens = $aps_helper->find_token_row( $response_params['token_name'], $this->order->get_customer_id() );
+			$is_stc_pay = isset($response_params['digital_wallet']) && $response_params['digital_wallet'] === APS_Constants::APS_PAYMENT_METHOD_STC_PAY;
+			$existing_tokens = $aps_helper->find_token_row( $response_params['token_name'], $this->order->get_customer_id(), $is_stc_pay ? APS_Constants::APS_PAYMENT_TYPE_STC_PAY : ''  );
 			if ( ! empty( $existing_tokens ) ) {
 				$old_token_row = WC_Payment_Tokens::get( $existing_tokens['token_id'] );
 				if ( isset( $response_params['payment_option'] ) ) {
@@ -443,27 +447,46 @@ class APS_Order extends APS_Super {
 				$this->order->add_payment_token( $old_token_row );
 				$this->order_log( 'APS token updated ( ' . $response_mode . ')\n\n' . wp_json_encode( $response_params, true ) );
 			} else {
-				$gateway_id  = APS_Constants::APS_PAYMENT_TYPE_CC;
-				$token       = new WC_Payment_Token_CC();
-				$short_year  = substr( $response_params['expiry_date'], 0, 2 );
-				$date_format = \DateTime::createFromFormat( 'y', $short_year );
-				$full_year   = $date_format->format( 'Y' );
-				$token->set_token( $response_params['token_name'] );
-				$token->set_gateway_id( $gateway_id );
-				$token->set_card_type( strtolower( $response_params['payment_option'] ) );
-				$token->set_last4( substr( $response_params['card_number'], -4 ) );
-				$token->set_expiry_month( substr( $response_params['expiry_date'], 2, 2 ) );
-				$token->set_expiry_year( $full_year );
-				if ( $this->order->get_customer_id() ) {
-					$token->set_user_id( $this->order->get_customer_id() );
-				}
-				$token->save();
-				$this->order_log( 'APS token created ( ' . $response_mode . ')\n\n' . wp_json_encode( $response_params, true ) );
-				update_metadata( 'payment_token', $token->get_id(), 'masking_card', $response_params['card_number'] );
-				if ( isset( $response_params['card_holder_name'] ) ) {
-					update_metadata( 'payment_token', $token->get_id(), 'card_holder_name', $response_params['card_holder_name'] );
-				}
-				$this->order->add_payment_token( $token );
+			    // Add STC pay payment token
+			    if($is_stc_pay){
+			        $gateway_id = APS_Constants::APS_PAYMENT_TYPE_STC_PAY;
+			        $token = new WC_Payment_Token_APS_STC_Pay();
+			        $phone_number = $response_params['phone_number'];
+			        $token->set_mobile_number($phone_number);
+			        $token->set_gateway_id($gateway_id);
+			        $token->set_default(true);
+			        $token->set_token($response_params['token_name']);
+			        if($this->order->get_customer_id()){
+			            $token->set_user_id($this->order->get_customer_id());
+                    }
+			        $token->save();
+                    $this->order_log( 'APS token created ( ' . $response_mode . ')\n\n' . wp_json_encode( $response_params, true ) );
+			        $this->order->add_payment_token($token);
+                }
+			    else{
+                    $gateway_id  = APS_Constants::APS_PAYMENT_TYPE_CC;
+                    $token       = new WC_Payment_Token_CC();
+                    $short_year  = substr( $response_params['expiry_date'], 0, 2 );
+                    $date_format = \DateTime::createFromFormat( 'y', $short_year );
+                    $full_year   = $date_format->format( 'Y' );
+                    $token->set_token( $response_params['token_name'] );
+                    $token->set_gateway_id( $gateway_id );
+                    $token->set_card_type( strtolower( $response_params['payment_option'] ) );
+                    $token->set_last4( substr( $response_params['card_number'], -4 ) );
+                    $token->set_expiry_month( substr( $response_params['expiry_date'], 2, 2 ) );
+                    $token->set_expiry_year( $full_year );
+                    if ( $this->order->get_customer_id() ) {
+                        $token->set_user_id( $this->order->get_customer_id() );
+                    }
+                    $token->save();
+                    $this->order_log( 'APS token created ( ' . $response_mode . ')\n\n' . wp_json_encode( $response_params, true ) );
+                    update_metadata( 'payment_token', $token->get_id(), 'masking_card', $response_params['card_number'] );
+                    if ( isset( $response_params['card_holder_name'] ) ) {
+                        update_metadata( 'payment_token', $token->get_id(), 'card_holder_name', $response_params['card_holder_name'] );
+                    }
+                    $this->order->add_payment_token( $token );
+                }
+
 			}
 		} catch ( \Exception $e ) {
 			return false;

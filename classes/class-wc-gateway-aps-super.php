@@ -309,12 +309,23 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 			} else {
 				$this->aps_helper->log( 'webhook params is empty' );
 			}
-
 		}
 		if ( isset( $response_params['merchant_reference'] ) ) {
 			if (isset($response_params['payment_option']) && 'VALU' === $response_params['payment_option'] && 'offline' === $response_mode ) {
-				$response_params['merchant_reference'] = $this->aps_helper->find_valu_order_by_reference( $response_params['merchant_reference'] );
+				$response_params['merchant_reference'] = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , $response_params['payment_option'] );
 			}
+
+            // check if webhook call for STC refund
+            if ( isset( $response_params['command'] ) && 'REFUND' == $response_params['command'] ) {
+                $order_id_by_reference = '';
+                $order_id_by_reference = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , APS_Constants::APS_PAYMENT_METHOD_STC_PAY);
+                $this->aps_helper->log( 'STC REFUND merchant_reference' . $response_params['merchant_reference']);
+                if ('' != $order_id_by_reference){
+                    $response_params['merchant_reference'] = $order_id_by_reference;
+                }
+                $this->aps_helper->log( 'STC REFUND order_id' . $response_params['merchant_reference']);
+            }
+
 			$success = $this->aps_payment->handle_fort_response( $response_params, $response_mode, $integration_type );
 			if ( $success ) {
 				//handle valu refund webhook
@@ -325,12 +336,15 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 					// check if webhook call for valu refund
 					$order = $this->aps_order->get_loaded_order();
 					if ( ! ( $order && $order->get_id() ) ) {
-						$response_params['merchant_reference'] = $this->aps_helper->find_valu_order_by_reference( $response_params['merchant_reference'] );
-
+						$response_params['merchant_reference'] = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , 'VALU' );
 						$this->aps_helper->log( 'Valu REFUND order_id' . $response_params['merchant_reference']);
 					}
 				}
-				$order = new WC_Order( $response_params['merchant_reference'] );
+                if (isset($response_params['payment_option']) && $response_params['payment_option'] ===  APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
+                    $order = new WC_Order( $response_params['merchant_extra'] );
+                }else{
+                    $order = new WC_Order( $response_params['merchant_reference'] );
+                }
 				WC()->session->set( 'refresh_totals', true );
 				$redirect_url = $this->get_return_url( $order );
 			} else {
@@ -341,7 +355,11 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 				header( 'HTTP/1.1 200 OK' );
 				exit;
 			} else {
-				$order = new WC_Order( $response_params['merchant_reference'] );
+                if (isset($response_params['payment_option']) && $response_params['payment_option'] ===  APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
+                $order = new WC_Order( $response_params['merchant_extra'] );
+                }else{
+                $order = new WC_Order( $response_params['merchant_reference'] );
+                }
 				if ( in_array($order->get_status(), ['processing', 'completed']) ) {
 					$redirect_url = $this->get_return_url( $order );
 					unset( $_SESSION['aps_error'] );

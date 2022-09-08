@@ -479,6 +479,7 @@ class APS_Ajax {
 		wp_die();
 	}
 
+
 	/**
 	 * Create APS Token builder
 	 */
