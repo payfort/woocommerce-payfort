@@ -65,6 +65,9 @@ class APS_Config extends APS_Super {
 	private $show_issuer_name;
 	private $show_issuer_logo;
 	private $enable_valu;
+	private $enable_stc_pay;
+    private $stc_pay_integration_type;
+    private $stc_pay_enabled_tokenization;
 	private $valu_minimum_order_limit;
 	private $apple_pay_production_key;
 	private $apple_pay_domain_name;
@@ -125,12 +128,15 @@ class APS_Config extends APS_Super {
 		$this->visa_checkout_button_url            = 'yes' === $this->get_aps_config( 'sandbox_mode' ) ? 'https://sandbox.secure.checkout.visa.com/wallet-services-web/xo/button.png' : 'https://assets.secure.checkout.visa.com/wallet-services-web/xo/button.png';
 		$this->apple_pay_production_key            = $this->get_aps_config( 'apple_pay_production_key' );
 		$this->apple_pay_domain_name               = $this->get_aps_config( 'apple_pay_domain_name' );
-		$this->apple_pay_display_name               = $this->get_aps_config( 'apple_pay_display_name' );
+		$this->apple_pay_display_name              = $this->get_aps_config( 'apple_pay_display_name' );
 		$this->apple_pay_button_type               = $this->get_aps_config( 'apple_pay_button_type' );
 		$this->apple_pay_supported_networks        = $this->get_aps_config( 'apple_pay_supported_networks' );
 		$this->mada_bins                           = $this->get_aps_config( 'mada_bins' );
 		$this->meeza_bins                          = $this->get_aps_config( 'meeza_bins' );
 		$this->status_cron_duration                = $this->get_aps_config( 'status_cron_duration' );
+        $this->enable_stc_pay                      = $this->get_aps_config( 'enable_stc_pay' );
+        $this->stc_pay_integration_type            = $this->get_aps_config('stc_pay_integration_type');
+        $this->stc_pay_enabled_tokenization        = $this->get_aps_config('stc_pay_enabled_tokenization');
 	}
 
 	/**
@@ -240,7 +246,7 @@ class APS_Config extends APS_Super {
 			APS_Constants::APS_PAYMENT_TYPE_CC,
 			APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
 			APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
-		);
+        );
 		if ( 'AUTHORIZATION' === $command && ! in_array( $payment_method, $authorized_methods, true ) ) {
 			$command = 'PURCHASE';
 		}
@@ -603,6 +609,34 @@ class APS_Config extends APS_Super {
 		return $this->valu_minimum_order_limit;
 	}
 
+    /**
+     * Return enable stc pay
+     *
+     * @return string
+     */
+    public function get_enable_stc_pay() {
+        return $this->enable_stc_pay;
+    }
+
+    /**
+     * Return Stc Pay integration type
+     *
+     * @return string
+     */
+    public function get_stc_pay_integration_type() {
+        return $this->stc_pay_integration_type;
+    }
+
+    /**
+     * Return STC-PAY enable tokenization
+     *
+     * @return string
+     */
+    public function get_stc_pay_enabled_tokenization()
+    {
+        return $this->stc_pay_enabled_tokenization;
+    }
+
 	/**
 	 * Return language
 	 *
@@ -765,6 +799,7 @@ class APS_Config extends APS_Super {
 			$this->enable_knet,
 			$this->enable_naps,
 			$this->enable_apple_pay,
+            $this->enable_stc_pay
 		);
 		if ( in_array('yes', $payment_method_status) ) {
 			return 'yes';

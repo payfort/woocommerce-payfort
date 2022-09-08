@@ -296,7 +296,8 @@ class APS {
 		$this->loader->add_action( 'woocommerce_after_checkout_validation', $aps_wc_hooks, 'aps_checkout_validation', 10, 2 );
 		$this->loader->add_action( 'plugins_loaded', $aps_wc_hooks, 'load_helpers' );
 		$this->loader->add_action( 'woocommerce_scheduled_subscription_payment_' . APS_Constants::APS_PAYMENT_TYPE_CC, $aps_wc_hooks, 'aps_subscription_payment', 10, 2 );
-		$this->loader->add_action( 'woocommerce_payment_token_deleted', $aps_wc_hooks, 'aps_token_deleted', 10, 2 );
+        $this->loader->add_action( 'woocommerce_scheduled_subscription_payment_' . APS_Constants::APS_PAYMENT_TYPE_STC_PAY, $aps_wc_hooks, 'aps_stc_subscription_payment', 10, 2 );
+        $this->loader->add_action( 'woocommerce_payment_token_deleted', $aps_wc_hooks, 'aps_token_deleted', 10, 2 );
 		$this->loader->add_filter( 'woocommerce_payment_methods_list_item', $aps_wc_hooks, 'aps_render_payment_methods', 10, 2 );
 
 		//Add custom messages

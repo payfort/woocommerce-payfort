@@ -187,7 +187,57 @@ label.aps_error {
 	-apple-pay-button-type: top-up;
 }
 
-/* Valu CSS */
+/* STC Pay CSS */
+.stc_pay_form:not(.active){
+	display: none;
+}
+
+section.stc_pay_form {
+	overflow: hidden;
+}
+
+.stc_pay_loader:not(.active){
+	display:none;
+}
+
+.stc_pay_loader.active{
+	display: flex !important;
+	position: relative;
+	height: 25px;
+	width: 100%;
+	align-items: center;
+}
+
+.stc_pay_loader.active .stc_pay_loader_icon{
+	height: 0;
+	width: 0;
+	padding: 5px;
+	border: 5px solid #ccc;
+	border-right-color: #888;
+	border-radius: 10px;
+	-webkit-animation: rotateValuLoader 1s infinite linear;
+	z-index: 99999;
+	position: absolute;
+}
+
+.stc_pay_loader.active .stc_pay_loader_caption{
+	margin-right: 25px;
+}
+
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_stc_pay ,
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_stc_pay li{
+	line-height: 1;
+	padding: 10px 0px;
+}
+.stc_hosted_form , .stc_hosted_form .aps-row{
+	padding: 10px 0px;
+}
+
+.stc_pay_form .otp_generation_msg{
+	padding: 5px 0px;
+}
+
+	/* Valu CSS */
 .valu_form:not(.active) {
 	display: none;
 }
@@ -260,13 +310,13 @@ section.valu_form {
 .valu_loader.active .valu_loader_caption {
 	margin-right: 25px;
 }
-.valu_form .input-text {
+.valu_form .input-text , .stc_pay_form .input-text {
 	width: 100%;
 	line-height: 1.25 !important;
 	padding: .5rem 1rem !important;
 	height: 35px;
 }
-.valu_form .aps-btn {
+.valu_form .aps-btn , .stc_pay_form .aps-btn {
 	width: 100%;
 	font-size: 13px;
 	display: flex;
@@ -278,10 +328,10 @@ section.valu_form {
 	align-items: center;
 	padding: 0px;
 }
-.valu_form .aps-pad-none {
+.valu_form .aps-pad-none ,.stc_pay_form .aps-pad-none {
 	padding:0;
 }
-.valu_form span.country_code {
+.valu_form span.country_code ,.stc_pay_form span.country_code {
 	height: 35px;
 	display: flex;
 	justify-content: center;
@@ -330,7 +380,8 @@ ul.token-box .card-icon {
 	height: auto;
 	float: right !important;
 }
-input.aps_token_card:not(:checked)+.aps_hosted_form {
+input.aps_token_card:not(:checked)+.aps_hosted_form,
+input.aps_token_mobile:not(:checked)+.aps-hosted-form {
 	display: none;
 }
 .aps_saved_card_cvv {

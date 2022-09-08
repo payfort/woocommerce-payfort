@@ -122,7 +122,7 @@ class APS_Public {
 		wp_enqueue_script( $this->plugin_name . '-main', plugin_dir_url( __FILE__ ) . 'js/aps-main.js', array( 'jquery' ), $this->version, true );
 
 		// Register checkout script
-		wp_register_script( $this->plugin_name . '-checkout', plugin_dir_url( __FILE__ ) . 'js/aps-checkout.js', array( 'jquery' ), $this->version, true );
+		wp_register_script( $this->plugin_name . '-checkout', plugin_dir_url( __FILE__ ) . 'js/aps-checkout.js', array( 'jquery' ), null, true );
 		// Localize the script with new data
 		$aps_info = array(
 			'redirection_type'             => APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION,
@@ -133,6 +133,7 @@ class APS_Public {
 			'payment_method_installment'   => APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
 			'payment_method_apple_pay'     => APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
 			'payment_method_valu'          => APS_Constants::APS_PAYMENT_TYPE_VALU,
+			'payment_method_stc_pay'       => APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
 			'payment_method_visa_checkout' => APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
 			'error_msg'                    => array(
 				'invalid_mobile_number'    => __( 'Mobile number is invalid', 'amazon-payment-services' ) . '.',
@@ -145,7 +146,9 @@ class APS_Public {
 				'invalid_expiry_year'      => __( 'Expiry year is invalid', 'amazon-payment-services' ) . '.',
 				'invalid_expiry_date'      => __( 'Expiry date is invalid', 'amazon-payment-services' ) . '.',
 				'valu_pending_msg'         => __( 'Please complete the evaluation process', 'amazon-payment-services' ) . '.',
-				'valu_terms_msg'           => __( 'Please accept the terms and conditions', 'amazon-payment-services' ) . '.',
+                'valu_terms_msg'           => __( 'Please accept the terms and conditions', 'amazon-payment-services' ) . '.',
+                'stc_pay_pending_msg'         => __( 'Please complete the evaluation process', 'amazon-payment-services' ) . '.',
+                'stc_pay_otp_empty_msg'         => __( 'Please enter a valid otp number', 'amazon-payment-services' ) . '.',
 				'required_field'           => __( 'This is a required field', 'amazon-payment-services' ) . '.',
 			),
 			'success_msg'                  => array(
@@ -299,6 +302,22 @@ class APS_Public {
 		include 'terms/terms-' . $language . '.html';
 		$terms_modal_text = ob_get_clean();
 		include 'partials/hosted-valu-wizard.php';
+	}
+
+	/**
+	 * Load valu checkout wizard
+	 *
+	 *  @return void
+	 */
+	public static function load_stc_pay_wizard( $language , $integration_type , $is_enabled_tokenization , $have_subscription ) {
+        ob_start();
+        include 'terms/terms-' . $language . '.html';
+        $terms_modal_text = ob_get_clean();
+        if ( APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION === $integration_type && ('yes' === $is_enabled_tokenization || 'yes' === $have_subscription)  ) {
+            include 'partials/redirection-stc-pay-wizard.php';
+        } elseif ( APS_Constants::APS_INTEGRATION_TYPE_HOSTED_CHECKOUT === $integration_type ) {
+            include 'partials/hosted-stc-pay-wizard.php';
+        }
 	}
 
 	/**

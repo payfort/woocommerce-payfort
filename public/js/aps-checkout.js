@@ -335,6 +335,14 @@
 			}
 			return status;
 		},
+		stcPayOtpVerifyBox: function ( response ) {
+			var mobile_number_string = 'ar' === aps_info.lang ? response.mobile_number_string.replace( '+', '' ) + '+' : response.mobile_number_string;
+			var otp_generated_msg    = aps_info.success_msg.otp_generated_message;
+			otp_generated_msg        = otp_generated_msg.replace( '{mobile_number}',mobile_number_string );
+			$( '.otp_generation_msg' ).html( otp_generated_msg );
+			$( '.stc_pay_form.active' ).slideUp().removeClass( 'active' );
+			$( '#stc_pay_verify_otp_sec' ).slideDown().addClass( 'active' );
+		},
 		valuOtpVerifyBox: function ( response ) {
 			var mobile_number_string = 'ar' === aps_info.lang ? response.mobile_number_string.replace( '+', '' ) + '+' : response.mobile_number_string;
 			var otp_generated_msg    = aps_info.success_msg.otp_generated_message;
@@ -374,7 +382,7 @@
 			var checkoutUrl              = wc_checkout_params.checkout_url;
 			var checkoutData             = checkoutForm.serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay'];
+			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -383,6 +391,7 @@
 				payment_integration_type = $( '.integration_type_' + selected_payment_method ).val().replace( /(<([^>]+)>)/ig,"" );
 			}
 			var aps_card_bin             = $( '.payment_box.payment_method_' + selected_payment_method ).find( '.aps_card_number' );
+
 			if ( aps_info.payment_method_valu === selected_payment_method ) {
 				var valu_status = true;
 				if ( $( '.tenureBox.selected' ).length === 1 ) {
@@ -403,8 +412,39 @@
 				} else {
 					return false;
 				}
-			} else if ( payment_integration_type === aps_info.hosted_type ) {
-				if ( aps_info.payment_method_cc === selected_payment_method ) {
+			}
+			else if ( payment_integration_type === aps_info.hosted_type ) {
+				if(aps_info.payment_method_stc_pay === selected_payment_method){
+
+					let stc_pay_status = true;
+					let stc_pay_error_message = '';
+
+					//handle validation if existing token not used
+					if($('.stc_pay_token .aps_token_stc_pay:checked').length === 0){
+						//check if stc otp section active
+						if(!$('#stc_pay_verify_otp_sec.active')[0]){
+							stc_pay_status = false;
+							stc_pay_error_message = aps_info.error_msg.stc_pay_pending_msg;
+						}
+						else{
+							const stc_pay_otp = $('.aps_stc_pay_otp').val();
+							// check if otp input is empty
+							if(!stc_pay_otp){
+								stc_pay_status = false;
+								stc_pay_error_message = aps_info.error_msg.stc_pay_otp_empty_msg;
+							}
+						}
+					}
+
+					if(stc_pay_status){
+						$('.stc_pay_loader').addClass('active');
+					}
+					else{
+						$('.stc_pay_process_error').show().html(stc_pay_error_message);
+						return false;
+					}
+				}
+				else if ( aps_info.payment_method_cc === selected_payment_method ) {
 					if ( $( '.aps_cc_token' ).is( ':checked' ) ) {
 						var aps_cvv  = $( '.aps_cc_token:checked' ).parents( '.aps-row' ).find( '.aps_saved_card_cvv' );
 						var card_bin = $( '.aps_cc_token:checked' ).attr( 'data-masking-card' );
@@ -492,6 +532,7 @@
 				complete:	function( response ) {
 					response = JSON.parse(response.responseText);
 					$( ".valu_loader" ).removeClass( 'active' );
+					$( ".stc_pay_loader" ).removeClass( 'active' );
 					if ( response.result === 'success' ) {
 						if ( payment_integration_type === aps_info.redirection_type && response.form ) {
 							apsPayment.redirectCheckout( response.url, response.params, selected_payment_method );
@@ -499,12 +540,17 @@
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
 							apsPayment.standardCheckout( response.url, response.params, response.redirect_url, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
-							if ( aps_info.payment_method_valu === selected_payment_method ) {
+							if ( [aps_info.payment_method_valu,aps_info.payment_method_stc_pay ].includes(selected_payment_method) ) {
 								redirect_url = response.redirect_link;
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
 								}
 							} else if ( aps_info.payment_method_visa_checkout === selected_payment_method ) {
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
+							} else if ( aps_info.payment_method_stc_pay === selected_payment_method ) {
 								redirect_url = response.redirect_link;
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
@@ -548,7 +594,7 @@
 			var checkoutUrl              = aps_info.review_order_checkout_url;
 			var checkoutData             = $( 'form#order_review' ).serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay'];
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -648,7 +694,9 @@
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
 								}
-							} else {
+							}else if ( aps_info.payment_method_aps_stc_pay === selected_payment_method ) {
+								console.log(response);
+							}  else {
 								apsPayment.hostedCheckout( response.url, response.params, response.is_hosted_tokenization, response.redirect_url, selected_payment_method );
 							}
 						}
@@ -1105,6 +1153,65 @@
 			}
 		}
 	);
+
+	$( document.body ).on(
+		'click',
+		'.stc_pay_generate_otp',
+		function(e) {
+			var ajaxurl       = aps_info.ajax_url;
+			var mobile_number = $( '.stc_pay_mobile_number' ).val();
+			if (mobile_number.length >= 10 && mobile_number.length <= 19) {
+				var checkoutUrl  = aps_info.checkout_url;
+				var checkoutData = $( checkoutForm ).serialize();
+				$( ".stc_pay_process_error" ).html( "" );
+				$( ".stc_pay_loader" ).addClass('active');
+				$.ajax({
+					type:		'POST',
+					url:		checkoutUrl+'&aps=true',
+					data:		checkoutData,
+					dataType:   'json',
+					success: function (response){
+					},
+					complete:	function( otp_response ) {
+						otp_response = JSON.parse(otp_response.responseText);
+						if ( otp_response.result && otp_response.result === 'failure' ) {
+							$( '.woocommerce-notices-wrapper:first-child' ).html( otp_response.messages );
+							$( 'html, body' ).animate(
+								{
+									scrollTop: $( '.woocommerce-notices-wrapper' ).offset().top
+								},
+								1000
+							);
+						}
+						$( ".stc_pay_loader" ).removeClass( 'active' );
+						if ( 'genotp_error' === otp_response.status ) {
+							$( '.stc_pay_process_error' ).show().html( otp_response.message );
+							//$( "#stc_pay_request_otp_sec" ).hide();
+						} else if ( 'error' === otp_response.status ) {
+							$( '.stc_pay_process_error' ).show().html( otp_response.message );
+						} else if ( 'success' === otp_response.status ) {
+							apsPayment.stcPayOtpVerifyBox( otp_response );
+							$( '.stc_pay_process_error' ).hide();
+						}
+					},
+					error:	function( jqXHR, textStatus, errorThrown ) {
+						$( ".stc_pay_loader" ).removeClass( 'active' );
+						$( '.stc_pay_process_error' ).show().html( response.message );
+					}
+				});
+			} else {
+				$( ".stc_pay_process_error" ).html( aps_info.error_msg.invalid_mobile_number );
+			}
+		}
+	);
+
+	$( document.body ).on(
+		'click',
+		'.stc_pay_aps_token_radio',
+		function(e) {
+			const mobile_number = $(this).data('token-name');
+			$('.stc_pay_token_mobile_number').val(mobile_number);
+		});
 
 	$( document.body ).on(
 		'click',

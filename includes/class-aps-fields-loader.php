@@ -619,6 +619,46 @@ class APS_Fields_Loader {
 				'default'    => 500,
 				'max_length' => 5,
 			),
+            'stc_pay_group'                      =>  array(
+                'title'     => __('STC Pay','amazon-payment-services'),
+                'type'      => 'title'
+            ),
+            'enable_stc_pay'                         => array(
+                'title'       => __( 'Enabled', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    'yes' => __( 'Yes', 'amazon-payment-services' ),
+                    'no'  => __( 'No', 'amazon-payment-services' ),
+                ),
+                'default'     => 'no',
+                'desc_tip'    => true,
+                'placeholder' => '',
+                'class'       => 'wc-enhanced-select',
+            ),
+            'stc_pay_integration_type'      => array(
+                'title'       => __( 'Integration Type', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION   => $this->redirection,
+                    APS_Constants::APS_INTEGRATION_TYPE_HOSTED_CHECKOUT => $this->hosted_checkout,
+                ),
+                'default'     => APS_Constants::APS_DEFAULT_INTEGRATION_TYPE,
+                'desc_tip'    => true,
+                'placeholder' => __( 'Integration Type', 'amazon-payment-services' ),
+                'class'       => 'wc-enhanced-select',
+            ),
+            'stc_pay_enabled_tokenization'      => array(
+                'title'       => __( 'Enable STC-PAY Tokenization', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    'yes' => __( 'Yes', 'amazon-payment-services' ),
+                    'no'  => __( 'No', 'amazon-payment-services' ),
+                ),
+                'default'     => 'no',
+                'desc_tip'    => true,
+                'placeholder' => '',
+                'class'       => 'wc-enhanced-select',
+            )
 		);
 	}
 }

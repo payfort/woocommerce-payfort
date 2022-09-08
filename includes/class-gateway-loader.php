@@ -39,6 +39,7 @@ class Gateway_Loader {
 			$gateways[] = 'WC_Gateway_APS_Valu';
 			$gateways[] = 'WC_Gateway_APS_Installments';
 			$gateways[] = 'WC_Gateway_APS_Visa_Checkout';
+			$gateways[] = 'WC_Gateway_APS_STC_Pay';
 		}
 		return $gateways;
 	}
@@ -75,19 +76,23 @@ class Gateway_Loader {
 
 		/* Require apple pay gateway class */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-apple-pay.php';
+
+		/* Require stc pay gateway class */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-stc-pay.php';
 	}
 
 	/**
 	 * Available Gateways
 	 */
 	public function aps_available_payment_gateways( $available_gateways ) {
-		if ( ! is_checkout() ) {
+        if ( ! is_checkout() ) {
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VALU ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_NAPS ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_KNET ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY ] );
+			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_STC_PAY ] );
 		}
 		return $available_gateways;
 	}

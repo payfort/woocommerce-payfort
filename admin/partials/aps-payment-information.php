@@ -83,6 +83,76 @@ if ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
 			'value' => $tenure_interest . '%',
 		);
 	}
+}elseif (APS_Constants::APS_PAYMENT_TYPE_STC_PAY === $payment_method){
+    if ( isset( $aps_data['amount'] ) && ! empty( $aps_data['amount'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Amount', 'amazon-payment-services' ),
+            'value' => $aps_data['amount'],
+        );
+    }
+
+    if ( isset( $aps_data['digital_wallet'] ) && ! empty( $aps_data['digital_wallet'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Digital Wallet', 'amazon-payment-services' ),
+            'value' => $aps_data['digital_wallet'],
+        );
+    }
+
+    if ( isset( $aps_data['signature'] ) && ! empty( $aps_data['signature'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Signature', 'amazon-payment-services' ),
+            'value' => $aps_data['signature'],
+        );
+    }
+
+    if ( isset( $aps_data['access_code'] ) && ! empty( $aps_data['access_code'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Access Code', 'amazon-payment-services' ),
+            'value' => $aps_data['access_code'],
+        );
+    }
+
+    if ( isset( $aps_data['language'] ) && ! empty( $aps_data['language'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'language', 'amazon-payment-services' ),
+            'value' => $aps_data['language'],
+        );
+    }
+
+    if ( isset( $aps_data['eci'] ) && ! empty( $aps_data['eci'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'ECI', 'amazon-payment-services' ),
+            'value' => $aps_data['eci'],
+        );
+    }
+
+    if ( isset( $aps_data['response_message'] ) && ! empty( $aps_data['response_message'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Response Message', 'amazon-payment-services' ),
+            'value' => $aps_data['response_message'],
+        );
+    }
+
+    if ( isset( $aps_data['currency'] ) && ! empty( $aps_data['currency'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Currency', 'amazon-payment-services' ),
+            'value' => $aps_data['currency'],
+        );
+    }
+
+    if ( isset( $aps_data['customer_name'] ) && ! empty( $aps_data['customer_name'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Customer Name', 'amazon-payment-services' ),
+            'value' => $aps_data['customer_name'],
+        );
+    }
+
+    if ( isset( $aps_data['status'] ) && ! empty( $aps_data['status'] ) ) {
+        $table_data[] = array(
+            'label' => __( 'Status', 'amazon-payment-services' ),
+            'value' => $aps_data['status'],
+        );
+    }
 }
 if ( isset( $aps_data['token_name'] ) && ! empty( $aps_data['token_name'] ) ) {
 	$table_data[] = array(
