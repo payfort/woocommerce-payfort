@@ -26,9 +26,7 @@ $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' 
 		<div class="aps-col-sm-9 aps-pad-none">
 			<input type="password" class="form-control no-outline input-text aps_valu_otp" placeholder="<?php echo esc_html__( 'Enter OTP', 'amazon-payment-services' ); ?>" onKeyPress="return keyLimit(this,10)" autocomplete="off"/>
 		</div>
-		<div class="aps-col-sm-3 aps-pad-none">
-			<button type="button" class="valu_otp_verify aps-btn"><?php echo esc_html__( 'Verify OTP', 'amazon-payment-services' ); ?></button>
-		</div>
+
 	</div>
 </section>
 
@@ -36,8 +34,9 @@ $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' 
 	<input type="hidden" id="aps_active_tenure" name="active_tenure" />
 	<input type="hidden" id="aps_tenure_amount" name="tenure_amount" />
 	<input type="hidden" id="aps_tenure_interest" name="tenure_interest" />
+	<input type="hidden" id="aps_otp" name="aps_otp" />
 	<p id="aps_valu_otp_field" class="form-row">
-		<div class="install-line"><?php echo esc_html__( 'OTP verified successfully, Please select your Installment plan!', 'amazon-payment-services' ); ?></div>
+		<div class="install-line"><?php echo esc_html__( 'Please select your Installment plan!', 'amazon-payment-services' ); ?></div>
 		<div class="tenure">
 		</div>
 		<div class="termRow mt-1">

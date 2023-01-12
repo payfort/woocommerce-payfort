@@ -37,6 +37,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes |
 | :---: | :--- |
+| 2.3.1 |   * Valu payment option is updated | 
 | 2.3.0 |   * STCPay is added as a new payment option | 
 | 2.2.5 |   * Fix - Failed order when back button click from thank you <br/> * Fix - 3DS redirection handling with configuration  <br/> * Fix - Apple Pay button display on dom ready <br/> * Fix - WC compatibility updates | 
 | 2.2.4 |   * Fix - Change Ajax calling to support third party plugin | 

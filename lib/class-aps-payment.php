@@ -770,6 +770,7 @@ class APS_Payment extends APS_Super {
 		$status               = 'success';
 		$message              = 'OTP Generated';
 		$mobile_number_string = null;
+		$tenure_html = '';
 		try {
 			$this->aps_order->load_order( $order_id );
 			$products                    = $this->get_valu_products_data();
@@ -786,6 +787,7 @@ class APS_Payment extends APS_Super {
 				'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
 				'currency'            => $currency,
 				'products'            => $products,
+				'include_installments' => 'YES'
 			);
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 			$gateway_params['signature'] = $signature;
@@ -798,11 +800,31 @@ class APS_Payment extends APS_Super {
 				$status                                     = 'success';
 				$mobile_number_string                       = APS_Constants::APS_VALU_EG_COUNTRY_CODE . $mobile_number;
 				$_SESSION['valu_payment']['order_id']       = wp_kses_data($order_id);
-				$_SESSION['valu_payment']['transaction_id'] = wp_kses_data($result['transaction_id']);
+				$_SESSION['valu_payment']['transaction_id'] = wp_kses_data($result['merchant_order_id']);
 			} else {
 				$status  = 'genotp_error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
 				unset( $_SESSION['valu_payment'] );
+			}
+			if ( isset( $result['response_code'] ) ) {
+				$status                          = 'success';
+				$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
+				$tenure_html                     = "<div class='tenure_carousel'>";
+				if ( isset( $result['installment_detail']['plan_details'] ) ) {
+					foreach ( $result['installment_detail']['plan_details'] as $key => $ten ) {
+						$tenure_html .= '<div class="slide">
+								<div class="tenureBox" data-tenure="' . $ten['number_of_installments'] . '" data-tenure-amount="' . $ten['amount_per_month'] . '" >
+									<p class="tenure">' . $ten['number_of_installments'] . ' {months_txt}</p>
+									<p class="emi"><strong>' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '</strong> EGP/{month_txt}</p>
+									
+								</div>
+							</div>';
+					}
+				}
+				$tenure_html .= '</div>';
+			} else {
+				$status  = 'error';
+				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
 			}
 		} catch ( \Exception $e ) {
 			$status  = 'error';
@@ -812,6 +834,7 @@ class APS_Payment extends APS_Super {
 			'status'               => $status,
 			'message'              => $message,
 			'mobile_number_string' => $mobile_number_string,
+			'tenure_html' => $tenure_html,
 		);
 		return $response_arr;
 	}
@@ -850,29 +873,8 @@ class APS_Payment extends APS_Super {
 			$gateway_params['signature'] = $signature;
 			//execute post
 			$gateway_url          = $this->aps_config->get_gateway_url( 'api' );
-			$result               = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+			
 			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
-			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
-				$_SESSION['valu_payment']['otp'] = sanitize_text_field($otp);
-				$status                          = 'success';
-				$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
-				$tenure_html                     = "<div class='tenure_carousel'>";
-				if ( isset( $result['tenure']['TENURE_VM'] ) ) {
-					foreach ( $result['tenure']['TENURE_VM'] as $key => $ten ) {
-						$tenure_html .= '<div class="slide">
-								<div class="tenureBox" data-tenure="' . $ten['TENURE'] . '" data-tenure-amount="' . $ten['EMI'] . '" data-tenure-interest="' . $ten['InterestRate'] . '" >
-									<p class="tenure">' . $ten['TENURE'] . ' {months_txt}</p>
-									<p class="emi"><strong>' . ( $ten['EMI'] ) . '</strong> EGP/{month_txt}</p>
-									<p class="int_rate">' . $ten['InterestRate'] . '% {interest_txt}</p>
-								</div>
-							</div>';
-					}
-				}
-				$tenure_html .= '</div>';
-			} else {
-				$status  = 'error';
-				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
-			}
 		} catch ( \Exception $e ) {
 			$status  = 'error';
 			$message = $e->getMessage();
@@ -880,7 +882,6 @@ class APS_Payment extends APS_Super {
 		return array(
 			'status'      => $status,
 			'message'     => $message,
-			'tenure_html' => $tenure_html,
 		);
 	}
 
@@ -889,7 +890,7 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return array
 	 */
-	public function valu_execute_purchase( $active_tenure ) {
+	public function valu_execute_purchase( $active_tenure, $otp ) {
 		$status  = 'success';
 		$message = '';
 		try {
@@ -897,7 +898,7 @@ class APS_Payment extends APS_Super {
 			$this->aps_order->load_order( $order_id );
 			$reference_id                = wp_kses_data($_SESSION['valu_payment']['reference_id']);
 			$mobile_number               = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
-			$otp                         = wp_kses_data($_SESSION['valu_payment']['otp']);
+			$otp                         = wp_kses_data($otp);
 			$customer_email              = $this->aps_order->get_email();
 			$customer_code               = $mobile_number;
 			$currency                    = $this->aps_helper->get_front_currency();
@@ -921,6 +922,13 @@ class APS_Payment extends APS_Super {
 				'purchase_description' => 'Order' . $order_id,
 				'transaction_id'       => $transaction_id,
 			);
+			
+			if($otp === "" || empty($otp)){
+				
+				$message = __( 'Please provide the OTP', 'amazon-payment-services' );
+				throw new \Exception( $message );
+			}
+			
 			$plugin_params               = $this->aps_config->plugin_params();
 			$gateway_params              = array_merge( $gateway_params, $plugin_params );
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );

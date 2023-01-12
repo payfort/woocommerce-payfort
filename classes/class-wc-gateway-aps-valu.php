@@ -84,8 +84,9 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		if ( ! empty( $active_tenure ) ) {
 			$tenure_amount     = filter_input( INPUT_POST, 'tenure_amount' );
 			$tenure_interest   = filter_input( INPUT_POST, 'tenure_interest' );
+			$otp   = filter_input( INPUT_POST, 'aps_otp' );
 			update_post_meta( $order_id, 'aps_redirected', 1 );
-			$purchase_response = $this->aps_payment->valu_execute_purchase( $active_tenure );
+			$purchase_response = $this->aps_payment->valu_execute_purchase( $active_tenure, $otp );
 			$redirect_link     = '';
 			if ( 'success' === $purchase_response['status'] ) {
 				$order = new WC_Order( $order_id );
@@ -165,9 +166,9 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		}
 		$order        = new WC_Order( $order_id );
 		$total_amount = $order->get_total();
-		if ( $amount < $total_amount ) {
+		if ( $amount > $total_amount ) {
 			$error = new WP_Error();
-			$error->add( 'aps_refund_error', __( 'Partial refund is not available in this payment method', 'amazon-payment-services' ) );
+			$error->add( 'aps_refund_error', __( 'Refund amount should be less than purchase amount', 'amazon-payment-services' ) );
 			return $error;
 		} else {
 			$refund_status = $this->aps_refund->submit_refund( $order_id, $amount, $reason );
