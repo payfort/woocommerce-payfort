@@ -33,7 +33,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently plugin version.
  */
-define( 'APS_VERSION', '2.3.0' );
+define( 'APS_VERSION', '2.3.1' );
 define( 'APS_NAME', 'amazon-payment-services' );
 
 /**
