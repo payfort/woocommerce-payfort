@@ -807,7 +807,6 @@ class APS_Payment extends APS_Super {
 				unset( $_SESSION['valu_payment'] );
 			}
 			if ( isset( $result['response_code'] ) ) {
-				//$_SESSION['valu_payment']['otp'] = sanitize_text_field($otp);
 				$status                          = 'success';
 				$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
 				$tenure_html                     = "<div class='tenure_carousel'>";
@@ -874,29 +873,8 @@ class APS_Payment extends APS_Super {
 			$gateway_params['signature'] = $signature;
 			//execute post
 			$gateway_url          = $this->aps_config->get_gateway_url( 'api' );
-			//$result               = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+			
 			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
-			// if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
-			// 	$_SESSION['valu_payment']['otp'] = sanitize_text_field($otp);
-			// 	$status                          = 'success';
-			// 	$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
-			// 	$tenure_html                     = "<div class='tenure_carousel'>";
-			// 	if ( isset( $result['tenure']['TENURE_VM'] ) ) {
-			// 		foreach ( $result['tenure']['TENURE_VM'] as $key => $ten ) {
-			// 			$tenure_html .= '<div class="slide">
-			// 					<div class="tenureBox" data-tenure="' . $ten['TENURE'] . '" data-tenure-amount="' . $ten['EMI'] . '" data-tenure-interest="' . $ten['InterestRate'] . '" >
-			// 						<p class="tenure">' . $ten['TENURE'] . ' {months_txt}</p>
-			// 						<p class="emi"><strong>' . ( $ten['EMI'] ) . '</strong> EGP/{month_txt}</p>
-			// 						<p class="int_rate">' . $ten['InterestRate'] . '% {interest_txt}</p>
-			// 					</div>
-			// 				</div>';
-			// 		}
-			// 	}
-			// 	$tenure_html .= '</div>';
-			// } else {
-			// 	$status  = 'error';
-			// 	$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
-			// }
 		} catch ( \Exception $e ) {
 			$status  = 'error';
 			$message = $e->getMessage();
@@ -904,7 +882,6 @@ class APS_Payment extends APS_Super {
 		return array(
 			'status'      => $status,
 			'message'     => $message,
-			//'tenure_html' => $tenure_html,
 		);
 	}
 
