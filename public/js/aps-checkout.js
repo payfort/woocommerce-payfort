@@ -356,7 +356,7 @@
 			tenure_html     = tenure_html.replace( /{months_txt}/gi, aps_info.general_text.months_txt );
 			tenure_html     = tenure_html.replace( /{month_txt}/gi, aps_info.general_text.month_txt );
 			tenure_html     = tenure_html.replace( /{interest_txt}/gi, aps_info.general_text.interest_txt );
-			$( '.valu_form.active' ).slideUp().removeClass( 'active' );
+			//$( '.valu_form.active' ).slideUp().removeClass( 'active' );
 			$( '#tenure_sec' ).slideDown().addClass( 'active' );
 			$( '#tenure_sec .tenure' ).html( tenure_html );
 			num_col = getNumOfColumn($( '#tenure_sec .tenure' ).width());
@@ -1262,6 +1262,7 @@
 											$( '.aps_valu_otp_verfiy_error' ).html( otp_response.message );
 										} else if ( 'success' === otp_response.status ) {
 											apsPayment.valuOtpVerifyBox( otp_response );
+											apsPayment.valuTenureBox( otp_response );
 										}
 									},
 									error:	function( jqXHR, textStatus, errorThrown ) {
@@ -1300,7 +1301,7 @@
 						$( ".valu_loader" ).removeClass( 'active' );
 						response = JSON.parse( response );
 						if ( 'success' === response.status ) {
-							apsPayment.valuTenureBox( response );
+							//apsPayment.valuTenureBox( response );
 						} else {
 							$( '.valu_process_error' ).html( response.message );
 						}
@@ -1319,9 +1320,11 @@
 			var tenure          = ele.attr( 'data-tenure' );
 			var tenure_amount   = ele.attr( 'data-tenure-amount' );
 			var tenure_interest = ele.attr( 'data-tenure-interest' );
+			var aps_otp         = $( '.aps_valu_otp' ).val();
 			$( '#aps_active_tenure' ).val( tenure );
 			$( '#aps_tenure_amount' ).val( tenure_amount );
 			$( '#aps_tenure_interest' ).val( tenure_interest );
+			$( '#aps_otp' ).val( aps_otp );
 			$( '.tenureBox.selected' ).removeClass( 'selected' );
 			ele.addClass( 'selected' );
 		}

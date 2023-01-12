@@ -11,6 +11,9 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Amazon payment services makes it really easy to start accepting online payments (credit & debit cards) in the Middle East. Sign up is instant, at https://paymentservices.amazon.com/
 
 == Changelog ==
+`v2.3.1`
+* New - Valu payment option is updated.
+
 `v2.3.0`
 * New - New payment option (STC Pay) is integrated.
 
