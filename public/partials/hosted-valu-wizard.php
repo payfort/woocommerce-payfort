@@ -8,10 +8,19 @@ $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' 
 ?>
 <section id="request_otp_sec" class="valu_form active">
 	<div class="aps-row">
+		<div class="aps-col-sm-8 aps-pad-none">
+			<span class="aps-pull-left"><?php echo esc_html__( 'Enter valU downpayment amount (Optional):', 'amazon-payment-services' ); ?></span>
+		</div>
+		<div class="aps-col-sm-4 aps-pad-none">
+			<input type="text" value="0" autocomplete="off" placeholder="<?php echo esc_html__( 'Enter valU downpayment amount (Optional):', 'amazon-payment-services' ); ?>" class="input-text aps_valu_downpayment onlynum"/>
+		</div>
+	</div>
+	<div class="aps-row">
 		<div class="aps-col-sm-1 aps-pad-none">
 			<span class="country_code"><?php echo esc_html(APS_Constants::APS_VALU_EG_COUNTRY_CODE); ?></span>
 		</div>
 		<div class="aps-col-sm-8 aps-pad-none">
+			
 			<input type="text" value="" autocomplete="off" maxlength="19" placeholder="<?php echo esc_html__( 'Enter your mobile number', 'amazon-payment-services' ); ?>" class="input-text aps_valu_mob_number onlynum" />
 		</div>
 		<div class="aps-col-sm-3 aps-pad-none">
@@ -23,8 +32,11 @@ $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' 
 <section id="verfiy_otp_sec" class="valu_form">
 	<div class="otp_generation_msg aps_success"></div>
 	<div class="aps-row">
-		<div class="aps-col-sm-9 aps-pad-none">
-			<input type="password" class="form-control no-outline input-text aps_valu_otp" placeholder="<?php echo esc_html__( 'Enter OTP', 'amazon-payment-services' ); ?>" onKeyPress="return keyLimit(this,10)" autocomplete="off"/>
+		<div class="aps-col-sm-8 aps-pad-none">
+			<span class="aps-pull-left"><?php echo esc_html__( 'Enter OTP:', 'amazon-payment-services' ); ?></span>
+		</div>
+		<div class="aps-col-sm-4 aps-pad-none">
+			<input type="password" class="form-control no-outline input-text aps_valu_otp" placeholder="<?php echo esc_html__( 'Enter OTP', 'amazon-payment-services' ); ?>" onKeyPress="return keyLimit(this,10)" autocomplete="new-password"/>
 		</div>
 
 	</div>
@@ -40,7 +52,7 @@ $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' 
 		<div class="tenure">
 		</div>
 		<div class="termRow mt-1">
-			<input type="checkbox" name="valu_terms" id="valu_terms" /> <?php echo wp_kses_post($terms_text); ?>
+			<input type="checkbox" name="valu_terms" id="valu_terms"checked/> <?php echo wp_kses_post($terms_text); ?>
 		</div>
 		<label class="tenure_term_error aps_error"></label>
 	</p>

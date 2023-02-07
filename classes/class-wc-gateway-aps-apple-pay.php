@@ -135,6 +135,7 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 	public function aps_applepay_response() {
 		$redirect_url   = '';
 		$apple_pay_data = filter_input_array( INPUT_POST, FILTER_SANITIZE_STRING );
+		session_start();
 		if ( isset( $apple_pay_data['data'] ) && ! empty( $apple_pay_data['data'] ) ) {
 			$params          = html_entity_decode( $apple_pay_data['data'] );
 			$response_params = json_decode(filter_var($params, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
@@ -166,6 +167,7 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 				unset( $_SESSION['aps_error'] );
 			}
 		}
+		session_write_close();
 		//echo '<script>window.top.location.href = "' . esc_url_raw( $redirect_url ) . '"</script>';
 		ob_start();
 		header('Location: ' . esc_url_raw($redirect_url));

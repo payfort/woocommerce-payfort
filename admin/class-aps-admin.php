@@ -145,6 +145,7 @@ class APS_Admin {
 		$aps_error_messages = array();
 		$aps_success        = 'success';
 		$certificates       = array();
+		session_start();
 		if ( isset($_POST['_upload_apple_certificates_nonce']) && wp_verify_nonce( sanitize_key($_POST['_upload_apple_certificates_nonce']), 'upload_apple_certificates' ) ) {
 			$upload_dir    = wp_upload_dir();
 			$uploding_path = $upload_dir['basedir'] . '/aps-certificates/';
@@ -214,6 +215,7 @@ class APS_Admin {
 		} elseif ( ! empty( $aps_success ) ) {
 			$_SESSION['aps_success_message'] = wp_kses_data($aps_success);
 		}
+		session_write_close();
 		wp_safe_redirect( admin_url( 'options-general.php?page=apple-pay-certificates' ) );
 	}
 
@@ -221,22 +223,26 @@ class APS_Admin {
 	 * Display success notice
 	 */
 	public function aps_success_notice() {
+		session_start();
 		if ( isset( $_SESSION['aps_success_message'] ) ) {
 			echo '<div class="notice notice-success is-dismissible"><p> ' . wp_kses_data( $_SESSION['aps_success_message'] ) . '</p></div>';
 		}
 		unset( $_SESSION['aps_success_message'] );
+		session_write_close();
 	}
 
 	/**
 	 * Display error notice
 	 */
 	public function aps_error_notice() {
+		session_start();
 		if ( isset( $_SESSION['aps_error_messages'] ) ) {
 			foreach ( $_SESSION['aps_error_messages'] as $msg ) {
 				echo '<div class="notice notice-error is-dismissible"><p> ' . wp_kses_data( $msg ) . '</p></div>';
 			}
 		}
 		unset( $_SESSION['aps_error_messages'] );
+		session_write_close();
 	}
 
 	/**

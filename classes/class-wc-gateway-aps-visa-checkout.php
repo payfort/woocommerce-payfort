@@ -162,7 +162,9 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 					'redirect_link' => $payment_data['3ds_url'],
 				);
 			} else {
+				session_start();
 				$_SESSION['aps_error'] = wp_kses_data($payment_data['response_message']);
+				session_write_close();
 				$result                = array(
 					'result'        => 'failure',
 					'redirect_link' => wc_get_checkout_url(),

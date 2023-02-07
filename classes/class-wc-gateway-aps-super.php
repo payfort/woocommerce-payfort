@@ -362,7 +362,9 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
                 }
 				if ( in_array($order->get_status(), ['processing', 'completed']) ) {
 					$redirect_url = $this->get_return_url( $order );
+					session_start();
 					unset( $_SESSION['aps_error'] );
+					session_write_close();
 				}
 
 				if ( APS_Constants::APS_INTEGRATION_TYPE_STANDARD_CHECKOUT == $integration_type ) {
@@ -486,13 +488,19 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 						update_metadata( 'payment_token', $token->get_id(), 'card_holder_name', $response_params['card_holder_name'] );
 					}
 					$this->aps_helper->log( 'APS token created \n\n' . wp_json_encode( $response_params, true ) );
+					session_start();
 					$_SESSION['aps_token_success'] = __( 'Payment method successfully added.', 'woocommerce' );
+					 session_write_close();
 				}
 			} else {
+				session_start();
 				$_SESSION['aps_token_error'] = wp_kses_data($response_params['response_message']);
+				 session_write_close();
 			}
 		} catch ( Exception $e ) {
+			session_start();
 			$_SESSION['aps_token_error'] = wp_kses_data($e->getMessage());
+			 session_write_close();
 		}
 		$redirect_to = wc_get_account_endpoint_url( 'payment-methods' );
 		wp_safe_redirect( $redirect_to );
@@ -505,6 +513,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	 * @return void
 	 */
 	public function show_checkout_payment_errors() {
+		session_start();
 		if ( isset( $_SESSION['aps_error'] ) ) {
 			$aps_error = wp_kses_data($_SESSION['aps_error']);
 			/* translators: %s: aps_error */
@@ -512,6 +521,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 			$this->aps_helper->set_flash_msg( $aps_error_msg, APS_Constants::APS_FLASH_MESSAGE_ERROR );
 			unset( $_SESSION['aps_error'] );
 		}
+		session_write_close();
 	}
 
 	/**

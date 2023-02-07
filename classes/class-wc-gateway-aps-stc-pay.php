@@ -115,7 +115,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
         $stc_token = filter_input(INPUT_POST, 'aps_payment_token_stc_pay');
         $order = new WC_Order($order_id);
         $stc_pay_mobile = filter_input(INPUT_POST, 'token_mobile_number');
-
+        session_start();
         if (!empty($stc_pay_mobile)) {
             $_SESSION['stc_pay_payment']['mobile_number'] = wp_kses_data($stc_pay_mobile);
         }
@@ -176,7 +176,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
             }
             // generate OTP number
             $mobile_number = filter_input(INPUT_POST, 'stc_pay_mobile_number');
-
+            session_write_close();
             if (empty($mobile_number)) {
                 throw new \Exception('Mobile number is missing');
             }

@@ -54,9 +54,7 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	 */
 	public function check_availability() {
 		$available = 'yes' === $this->aps_config->get_enable_valu() && in_array( strtoupper( $this->aps_helper->get_front_currency() ), $this->supported_currencies, true ) ? 'yes' : 'no';
-		if (WC()->cart && floatval( WC()->cart->total ) < $this->aps_config->get_valu_minimum_order_limit() ) {
-			$available = 'no';
-		}
+
 		if ( 'yes' === $this->aps_config->have_subscription() ) {
 			$available = 'no';
 		}
@@ -102,7 +100,9 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 				$redirect_link = $this->get_return_url( $order );
 			} else {
 				$redirect_link         = wc_get_checkout_url();
+				session_start();
 				$_SESSION['aps_error'] = wp_kses_data($purchase_response['message']);
+				session_write_close();
 			}
 			$result = array(
 				'result'        => 'success',
@@ -110,9 +110,12 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 			);
 			wp_send_json( $result );
 		} else {
+			session_start();
 			$reference_id          = wp_kses_data($_SESSION['valu_payment']['reference_id']);
 			$mobile_number         = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
-			$generate_otp_response = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id );
+			$down_payment          = wp_kses_data($_SESSION['valu_payment']['down_payment']);
+			session_write_close();
+			$generate_otp_response = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id , $down_payment);
 			update_post_meta( $order_id, 'valu_reference_id', $reference_id );
 			wp_send_json( $generate_otp_response );
 		}
@@ -147,10 +150,9 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	 */
 	public function display_valu_data( $order_id ) {
 		$aps_response_meta = get_post_meta( $order_id, 'aps_payment_response', true );
-		echo '<h2> ' . wp_kses_data( __( 'VALU Details', 'amazon-payment-services' ) ) . '</h2>';
-		echo '<h4> ' . wp_kses_data( __( 'Tenure', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_active_tenure', true )) . '</h4>';
-		echo '<h4> ' . wp_kses_data( __( 'Tenure Amount', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_tenure_amount', true )) . ' ' . esc_attr($aps_response_meta['currency']) . '/ ' . esc_html__( 'Month', 'amazon-payment-services' ) . '</h4>';
-		echo '<h4> ' . wp_kses_data( __( 'Tenure Interest', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_tenure_interest', true )) . '</h4>';
+		echo '<h2> ' . wp_kses_data( __( 'valU Details', 'amazon-payment-services' ) ) . '</h2>';
+		echo '<h4> ' . wp_kses_data( __( 'Installment Plan', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_tenure_amount', true )) . ' ' . esc_attr($aps_response_meta['currency']) . ' per ' . esc_html__( 'Month', 'amazon-payment-services' ) . ' for ' . esc_attr(get_post_meta( $order_id, 'valu_active_tenure', true )) . ' ' . esc_html__( 'Month', 'amazon-payment-services' ) . '</h4>';
+		echo '<h4> ' . wp_kses_data( __( 'Admin Fee', 'amazon-payment-services' ) ) . ' : ' . esc_attr(get_post_meta( $order_id, 'valu_tenure_interest', true )) . ' ' . esc_attr($aps_response_meta['currency']) . '</h4>';
 	}
 
 	/**

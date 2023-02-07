@@ -157,7 +157,7 @@ class APS_Public {
 			'general_text'                 => array(
 				'months_txt'   => __( 'Months', 'amazon-payment-services' ),
 				'month_txt'    => __( 'month', 'amazon-payment-services' ),
-				'interest_txt' => __( 'Interest', 'amazon-payment-services' ),
+				'interest_txt' => __( 'Admin Fee:', 'amazon-payment-services' ),
 			),
 			'ajax_url'                     => admin_url( 'admin-ajax.php' ),
 			'checkout_url'                 => site_url( '?wc-ajax=checkout' ),

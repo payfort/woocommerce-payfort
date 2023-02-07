@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( isset( $_GET['delete_certificate'] ) ) {
 	$upload_dir    = wp_upload_dir();
 	$certificate_path = $upload_dir['basedir'] . '/aps-certificates/';
+	session_start();
 	if ( 'pathfile' === $_GET['delete_certificate'] ) {
 		$existing_apple_certificates = get_option( 'aps_apple_pay_certificates' );
 		if ( isset( $existing_apple_certificates['apple_certificate_path_file'] ) ) {
@@ -30,6 +31,7 @@ if ( isset( $_GET['delete_certificate'] ) ) {
 			$_SESSION['aps_success_message'] = wp_kses_data('Certificate deleted successfully');
 		}
 	}
+	session_write_close();
 	wp_safe_redirect( admin_url( 'options-general.php?page=apple-pay-certificates' ) );
 }
 $apple_certificates = get_option( 'aps_apple_pay_certificates' );

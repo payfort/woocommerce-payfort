@@ -340,7 +340,11 @@ msgstr "أدخل المبلغ"
 msgid "Enter OTP"
 msgstr "أدخل OTP"
 
-#: public/partials/hosted-valu-wizard.php:11
+#: public/partials/hosted-valu-wizard.php:15
+msgid "Enter valU downpayment amount (Optional):"
+msgstr "أدخل valU مبلغ الدفعة المقدمة (اختياري):"
+
+#: public/partials/hosted-valu-wizard.php:16
 msgid "Enter your mobile number"
 msgstr "أدخل رقم هاتفك المحمول"
 
