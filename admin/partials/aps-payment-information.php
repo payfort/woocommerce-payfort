@@ -79,8 +79,8 @@ if ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
 	}
 	if ( ! empty( $tenure_interest ) ) {
 		$table_data[] = array(
-			'label' => __( 'Tenure Interest', 'amazon-payment-services' ),
-			'value' => $tenure_interest . '%',
+			'label' => __( 'Admin Fee', 'amazon-payment-services' ),
+			'value' => $tenure_interest . '',
 		);
 	}
 }elseif (APS_Constants::APS_PAYMENT_TYPE_STC_PAY === $payment_method){

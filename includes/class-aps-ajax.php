@@ -225,7 +225,8 @@ class APS_Ajax {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
 			$parse_apple = wp_parse_url( $apple_url );
-			if ( ! isset( $parse_apple['scheme'] ) || ! in_array( $parse_apple['scheme'], array( 'https' ), true ) ) {
+			$matched_apple = preg_match('/^(?:[^.]+\.)*apple\.com[^.]+$/', $apple_url);
+			if ( ! isset( $parse_apple['scheme'] ) || ! in_array( $parse_apple['scheme'], array( 'https' ), true ) || ! $matched_apple ) {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
 			echo wp_kses_data($this->aps_helper->init_apple_pay_api( $apple_url ) );
@@ -417,10 +418,17 @@ class APS_Ajax {
 		);
 		try {
 			$mobile_number = filter_input( INPUT_POST, 'mobile_number' );
+			$down_payment = filter_input( INPUT_POST, 'down_payment' );
+			if (intval($down_payment) >= 0){
+				//EGP currency ISO code requires 2 decimal points
+				$down_payment = $down_payment * 100;
+			} else {
+				throw new \Exception( 'Incorrect down payment amount' );
+			}
 			if ( empty( $mobile_number ) ) {
 				throw new \Exception( 'Mobile number is missing' );
 			}
-			$verfiy_response         = $this->aps_payment->valu_verify_customer( $mobile_number );
+			$verfiy_response         = $this->aps_payment->valu_verify_customer( $mobile_number, $down_payment  );
 			$response_arr['status']  = $verfiy_response['status'];
 			$response_arr['message'] = $verfiy_response['message'];
 		} catch ( \Exception $e ) {
@@ -469,7 +477,9 @@ class APS_Ajax {
 			if ( empty( $otp ) ) {
 				throw new \Exception( 'Tenure is missing' );
 			}
+			session_start();
 			$_SESSION['valu_payment'] = wp_kses_data($tenure);
+			session_write_close();
 			$response_arr['status']   = 'success';
 		} catch ( \Exception $e ) {
 			$response_arr['status']  = 'error';

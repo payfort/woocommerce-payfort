@@ -98,6 +98,7 @@ class APS_WC_Hooks {
 	 * Messages
 	 */
 	public function show_token_response_messages() {
+		session_start();
 		if ( isset( $_SESSION['aps_token_error'] ) ) {
 			$aps_error_msg = wp_kses_data($_SESSION['aps_token_error']);
 			$this->aps_helper->set_flash_msg( $aps_error_msg, APS_Constants::APS_FLASH_MESSAGE_ERROR );
@@ -107,6 +108,7 @@ class APS_WC_Hooks {
 			$this->aps_helper->set_flash_msg( $aps_success_msg, APS_Constants::APS_FLASH_MESSAGE_SUCCESS );
 			unset( $_SESSION['aps_token_success'] );
 		}
+		session_write_close();
 	}
 
 	/**

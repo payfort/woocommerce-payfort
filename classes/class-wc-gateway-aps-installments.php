@@ -131,7 +131,7 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		if ( $this->aps_config->get_installment_integration_type() == APS_Constants::APS_INTEGRATION_TYPE_EMBEDDED_HOSTED_CHECKOUT ) {
 			$is_enabled = 'no';
 		}
-		if ( 'yes' === $is_enabled && in_array( strtoupper( $this->aps_helper->get_front_currency() ), $this->price_limit_currencies, true ) ) {
+		/** if ( 'yes' === $is_enabled && in_array( strtoupper( $this->aps_helper->get_front_currency() ), $this->price_limit_currencies, true ) ) {
 			$cart_min_limit = 0;
 			if ( 'SAR' === $this->aps_helper->get_front_currency() ) {
 				$cart_min_limit = $this->aps_config->get_installment_sar_minimum_order_limit();
@@ -144,7 +144,7 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 			if ( WC()->cart && floatval( WC()->cart->total ) < $cart_min_limit ) {
 				$is_enabled = 'no';
 			}
-		}
+		} */
 		if ( 'yes' === $this->aps_config->have_subscription() ) {
 			$is_enabled = 'no';
 		}

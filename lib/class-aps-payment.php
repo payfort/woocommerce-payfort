@@ -165,7 +165,9 @@ class APS_Payment extends APS_Super {
 					$aps_error_log = "APS handler ERROR::\n\n" . wp_json_encode( $aps_notify_params, true );
 					$this->aps_helper->log( $aps_error_log );
 					$result                = $this->aps_order->decline_order( $aps_notify_params, $notify_response_message );
+					session_start();
 					$_SESSION['aps_error'] = wp_kses_data($notify_response_message);
+					session_write_close();
 					$redirect_url          = wc_get_checkout_url();
 				}
 			}
@@ -371,7 +373,9 @@ class APS_Payment extends APS_Super {
 			}
 		} catch ( Exception $e ) {
 			//need to store data in session here
+			session_start();
 			$_SESSION['aps_error'] = wp_kses_data($e->getMessage());
+			session_write_close();
 			return false;
 		}
 		return true;
@@ -661,8 +665,10 @@ class APS_Payment extends APS_Super {
 				}
 			}
 		} catch ( \Exception $e ) {
+			session_start();
 			$status                = 'error';
 			$_SESSION['aps_error'] = wp_kses_data($e->getMessage());
+			session_write_close();
 		}
 		return array(
 			'status'   => $status,
@@ -716,7 +722,7 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return array
 	 */
-	public function valu_verify_customer( $mobile_number ) {
+	public function valu_verify_customer( $mobile_number, $down_payment ) {
 		$status  = 'success';
 		$message = 'Customer verified';
 		try {
@@ -739,16 +745,23 @@ class APS_Payment extends APS_Super {
 			$this->aps_helper->log( 'Valu verfiy customer ' . json_encode( $result ) );
 			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
 			if ( isset( $result['status'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+				session_start();
 				$_SESSION['valu_payment']['reference_id']  = wp_kses_data($reference_id);
 				$_SESSION['valu_payment']['mobile_number'] = wp_kses_data($mobile_number);
+				$_SESSION['valu_payment']['down_payment'] = wp_kses_data($down_payment);
+				session_write_close();
 			} elseif ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_FAILED_RESPONSE_CODE === $result['response_code'] ) {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? 'Customer does not exist.' : $valuapi_stop_message;
+				session_start();
 				unset( $_SESSION['valu_payment'] );
+				session_write_close();
 			} else {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
+				session_start();
 				unset( $_SESSION['valu_payment'] );
+				session_write_close();
 			}
 		} catch ( \Exception $e ) {
 			$status  = 'error';
@@ -766,7 +779,7 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return array
 	 */
-	public function valu_generate_otp( $reference_id, $mobile_number, $order_id ) {
+	public function valu_generate_otp( $reference_id, $mobile_number, $order_id, $down_payment) {
 		$status               = 'success';
 		$message              = 'OTP Generated';
 		$mobile_number_string = null;
@@ -787,6 +800,7 @@ class APS_Payment extends APS_Super {
 				'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
 				'currency'            => $currency,
 				'products'            => $products,
+				'total_downpayment'	  => $down_payment,
 				'include_installments' => 'YES'
 			);
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
@@ -799,12 +813,16 @@ class APS_Payment extends APS_Super {
 			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_GENERATE_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
 				$status                                     = 'success';
 				$mobile_number_string                       = APS_Constants::APS_VALU_EG_COUNTRY_CODE . $mobile_number;
+				session_start();
 				$_SESSION['valu_payment']['order_id']       = wp_kses_data($order_id);
 				$_SESSION['valu_payment']['transaction_id'] = wp_kses_data($result['merchant_order_id']);
+				session_write_close();
 			} else {
 				$status  = 'genotp_error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
+				session_start();
 				unset( $_SESSION['valu_payment'] );
+				session_write_close();
 			}
 			if ( isset( $result['response_code'] ) ) {
 				$status                          = 'success';
@@ -813,9 +831,10 @@ class APS_Payment extends APS_Super {
 				if ( isset( $result['installment_detail']['plan_details'] ) ) {
 					foreach ( $result['installment_detail']['plan_details'] as $key => $ten ) {
 						$tenure_html .= '<div class="slide">
-								<div class="tenureBox" data-tenure="' . $ten['number_of_installments'] . '" data-tenure-amount="' . $ten['amount_per_month'] . '" >
+								<div class="tenureBox" data-tenure="' . $ten['number_of_installments'] . '" data-tenure-amount="' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '" data-tenure-interest="' . ( number_format($ten['fees_amount']/100,2,'.','') ) . '" >
 									<p class="tenure">' . $ten['number_of_installments'] . ' {months_txt}</p>
 									<p class="emi"><strong>' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '</strong> EGP/{month_txt}</p>
+									<p class="int_rate"> {interest_txt}' . ( number_format($ten['fees_amount']/100,2,'.','') )  . '</p>
 									
 								</div>
 							</div>';
@@ -849,10 +868,12 @@ class APS_Payment extends APS_Super {
 		$message     = '';
 		$tenure_html = '';
 		try {
+			session_start();
 			$reference_id = wp_kses_data($_SESSION['valu_payment']['reference_id']);
 			$order_id     = ! empty( $this->aps_order->get_session_order_id() ) ? $this->aps_order->get_session_order_id() : wp_kses_data($_SESSION['valu_payment']['order_id']);
 			$this->aps_order->load_order( $order_id );
 			$mobile_number = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
+			session_write_close();
 			$currency      = $this->aps_helper->get_front_currency();
 
 			$gateway_params              = array(
@@ -896,13 +917,16 @@ class APS_Payment extends APS_Super {
 		try {
 			$order_id = $this->aps_order->get_session_order_id();
 			$this->aps_order->load_order( $order_id );
+			session_start();
 			$reference_id                = wp_kses_data($_SESSION['valu_payment']['reference_id']);
 			$mobile_number               = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
+			$total_down_payment          = wp_kses_data($_SESSION['valu_payment']['down_payment']);
 			$otp                         = wp_kses_data($otp);
 			$customer_email              = $this->aps_order->get_email();
 			$customer_code               = $mobile_number;
 			$currency                    = $this->aps_helper->get_front_currency();
 			$transaction_id              = wp_kses_data($_SESSION['valu_payment']['transaction_id']);
+			session_write_close();
 			$gateway_params              = array(
 				'command'              => 'PURCHASE',
 				'merchant_identifier'  => $this->aps_config->get_merchant_identifier(),
@@ -916,7 +940,7 @@ class APS_Payment extends APS_Super {
 				'currency'             => strtoupper( $currency ),
 				'otp'                  => $otp,
 				'tenure'               => $active_tenure,
-				'total_down_payment'   => 0,
+				'total_down_payment'   => $total_down_payment,
 				'customer_code'        => $customer_code,
 				'customer_email'       => $customer_email,
 				'purchase_description' => 'Order' . $order_id,
@@ -941,13 +965,21 @@ class APS_Payment extends APS_Super {
 				$status  = 'success';
 				$message = __( 'Transaction Verified successfully', 'amazon-payment-services' );
 				$this->aps_order->success_order( $result, 'online' );
+			} elseif ( in_array( $response['response_code'], APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ){
+				$this->aps_order->on_hold_order( $response['response_message'] );
+				$aps_error_log = "APS valU on hold stage : \n\n" . wp_json_encode( $response, true );
+				$this->aps_helper->log( $aps_error_log );
+				$status = 'success';
+				$message = __( 'The transaction has been processed, but failed to receive confirmation. Please contact to verify', 'amazon-payment-services' );
 			} else {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
 				$this->aps_order->decline_order( $response, $message );
 				throw new \Exception( $message );
 			}
+			session_start();
 			unset( $_SESSION['valu_payment'] );
+			session_write_close();
 		} catch ( \Exception $e ) {
 			$status  = 'error';
 			$message = $e->getMessage();
@@ -995,13 +1027,17 @@ class APS_Payment extends APS_Super {
             if ( isset( $result['response_code'] ) && APS_Constants::APS_STC_PAY_OTP_GENERATE_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
                 $status                                     = 'success';
                 $mobile_number_string                       = APS_Constants::APS_STC_PAY_SAR_COUNTRY_CODE . $mobile_number;
+                session_start();
                 $_SESSION['stc_pay_payment']['reference_id']       = wp_kses_data($reference_id);
                 $_SESSION['stc_pay_payment']['mobile_number']       = wp_kses_data($mobile_number);
                 $_SESSION['stc_pay_payment']['order_id']       = wp_kses_data($order_id);
+                session_write_close();
             } else {
                 $status  = 'genotp_error';
                 $message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $stc_pay_api_error_message;
+                session_start();
                 unset( $_SESSION['stc_pay_payment'] );
+                session_write_close();
             }
         } catch ( \Exception $e ) {
             $status  = 'error';
@@ -1026,8 +1062,10 @@ class APS_Payment extends APS_Super {
         try {
             $order_id = $this->aps_order->get_session_order_id();
             $this->aps_order->load_order( $order_id );
+            session_start();
             $reference_id                = wp_kses_data($_SESSION['stc_pay_payment']['reference_id']);
             $mobile_number               = wp_kses_data($_SESSION['stc_pay_payment']['mobile_number']);
+            session_write_close();
             $customer_email              = $this->aps_order->get_email();
             $customer_name               = $this->aps_order->get_customer_name();
             $currency                    = $this->aps_helper->get_front_currency();
@@ -1077,7 +1115,9 @@ class APS_Payment extends APS_Super {
                 $this->aps_order->decline_order( $result, $message );
                 throw new \Exception( $message );
             }
+            session_start();
             unset( $_SESSION['stc_pay_payment'] );
+            session_write_close();
         } catch ( \Exception $e ) {
             $status  = 'error';
             $message = $e->getMessage();

@@ -1,7 +1,7 @@
 === Amazon payment services ===
 Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa Checkout, KNET, NAPS, Valu
 Requires at least: 5.3
-Tested up to: 6.0.2
+Tested up to: 6.1.1
 Requires PHP: 7.0
 Stable tag: 2.3.0
 License: GPLv2 or later
@@ -11,6 +11,10 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Amazon payment services makes it really easy to start accepting online payments (credit & debit cards) in the Middle East. Sign up is instant, at https://paymentservices.amazon.com/
 
 == Changelog ==
+`v2.3.2`
+* New - valu V2 down payment field added. 
+* Fix - Healthcheck observation due to open session is fixed 
+
 `v2.3.1`
 * New - Valu payment option is updated.
 

@@ -356,6 +356,7 @@
 			tenure_html     = tenure_html.replace( /{months_txt}/gi, aps_info.general_text.months_txt );
 			tenure_html     = tenure_html.replace( /{month_txt}/gi, aps_info.general_text.month_txt );
 			tenure_html     = tenure_html.replace( /{interest_txt}/gi, aps_info.general_text.interest_txt );
+			
 			$( '#tenure_sec' ).slideDown().addClass( 'active' );
 			$( '#tenure_sec .tenure' ).html( tenure_html );
 			num_col = getNumOfColumn($( '#tenure_sec .tenure' ).width());
@@ -950,6 +951,17 @@
 		}
 	);
 
+	$( document.body ).on(
+		'blur',
+		'.valu_form .aps_valu_otp',
+		function(e) {
+			var aps_otp  = $( '.aps_valu_otp' ).val();
+			if( aps_otp.length == 6) {
+				$( '#aps_otp' ).val( aps_otp );
+			}
+		}
+	);
+
 	//CC with installment start
 	$( document.body ).on(
 		'blur',
@@ -1115,7 +1127,7 @@
 		'paste',
 		'.aps_card_number',
 		function(e) {
-			return false;
+			return true;
 		}
 	);
 
@@ -1218,6 +1230,10 @@
 		function(e) {
 			var ajaxurl       = aps_info.ajax_url;
 			var mobile_number = $( '.aps_valu_mob_number' ).val();
+			var down_payment  = $( '.aps_valu_downpayment' ).val();
+			down_payment = down_payment >= 0 ? down_payment : 0 ;
+			var aps_otp       = $( '.aps_valu_otp' ).val();
+			$('#payment_method_aps_valu').prop("checked",true);
 			if (mobile_number.length >= 11 && mobile_number.length <= 19) {
 				var checkoutUrl  = aps_info.checkout_url;
 				var checkoutData = $( checkoutForm ).serialize();
@@ -1230,6 +1246,7 @@
 						data: {
 							action:'valu_verify_customer',
 							mobile_number,
+							down_payment,
 						},
 						success: function(response) {
 							response = JSON.parse( response );
@@ -1319,11 +1336,9 @@
 			var tenure          = ele.attr( 'data-tenure' );
 			var tenure_amount   = ele.attr( 'data-tenure-amount' );
 			var tenure_interest = ele.attr( 'data-tenure-interest' );
-			var aps_otp         = $( '.aps_valu_otp' ).val();
 			$( '#aps_active_tenure' ).val( tenure );
 			$( '#aps_tenure_amount' ).val( tenure_amount );
 			$( '#aps_tenure_interest' ).val( tenure_interest );
-			$( '#aps_otp' ).val( aps_otp );
 			$( '.tenureBox.selected' ).removeClass( 'selected' );
 			ele.addClass( 'selected' );
 		}
