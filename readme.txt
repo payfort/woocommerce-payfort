@@ -3,14 +3,40 @@ Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa
 Requires at least: 5.3
 Tested up to: 6.1.1
 Requires PHP: 7.0
-Stable tag: 2.3.0
+Stable tag: 2.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 == Description ==
 Amazon payment services makes it really easy to start accepting online payments (credit & debit cards) in the Middle East. Sign up is instant, at https://paymentservices.amazon.com/
 
+== Payment Options ==
+
+* Integration Types
+   * Redirection
+   * Merchant Page
+   * Hosted Merchant Page
+   * Installments
+   * Embedded Hosted Installments
+
+* Payment methods
+   * Mastercard
+   * VISA
+   * American Express
+   * VISA Checkout
+   * valU
+   * mada
+   * Meeza
+   * KNET
+   * NAPS
+   * Apple Pay
+   * STCPay
+
 == Changelog ==
+`v2.3.3`
+* Fix - nonce is introduced at certificate deletion
+* Fix - certificate names are generated with hashed strings
+
 `v2.3.2`
 * New - valu V2 down payment field added. 
 * Fix - Healthcheck observation due to open session is fixed 

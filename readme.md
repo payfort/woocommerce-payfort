@@ -37,6 +37,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes |
 | :---: | :--- |
+| 2.3.3 |   * New - nonce is introduced at certificate deletion. <br/> * Fix - certificate names are generated with hashed strings |
 | 2.3.2 |   * New - valu V2 down payment field added. <br/> * Fix - Healthcheck observation due to open session is fixed |
 | 2.3.1 |   * Valu payment option is updated | 
 | 2.3.0 |   * STCPay is added as a new payment option | 
