@@ -224,11 +224,12 @@ class APS_Ajax {
 			if ( ! filter_var( $apple_url, FILTER_VALIDATE_URL ) ) {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
-			$parse_apple = wp_parse_url( $apple_url );
-			$matched_apple = preg_match('/^(?:[^.]+\.)*apple\.com[^.]+$/', $apple_url);
-			if ( ! isset( $parse_apple['scheme'] ) || ! in_array( $parse_apple['scheme'], array( 'https' ), true ) || ! $matched_apple ) {
+
+			$matched_apple = preg_match('/^https\:\/\/[^\.\/]+\.apple\.com\//', $apple_url);
+			if ( ! $matched_apple ) {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
+
 			echo wp_kses_data($this->aps_helper->init_apple_pay_api( $apple_url ) );
 		} catch ( \Exception $e ) {
 			echo wp_json_encode( array( 'error' => $e->getMessage() ) );

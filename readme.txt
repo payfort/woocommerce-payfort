@@ -3,7 +3,7 @@ Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa
 Requires at least: 5.3
 Tested up to: 6.1.1
 Requires PHP: 7.0
-Stable tag: 2.3.3
+Stable tag: 2.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -33,6 +33,9 @@ Amazon payment services makes it really easy to start accepting online payments 
    * STCPay
 
 == Changelog ==
+`v2.3.4`
+* Fix -  Curl hardening, url validation, follow redirect limitation and recurring API IP fix
+
 `v2.3.3`
 * Fix - nonce is introduced at certificate deletion
 * Fix - certificate names are generated with hashed strings
