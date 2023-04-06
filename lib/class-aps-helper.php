@@ -322,9 +322,9 @@ class APS_Helper extends APS_Super {
 				'charset'=> 'UTF-8',
 			],
 			'timeout'     => 60,
-			'redirection' => 5,
+			'redirection' => 0,
 			'blocking'    => true,
-			'sslverify'   => false,
+			'sslverify'   => true,
 			'httpversion' => '1.0',
 			'data_format' => 'body',
 		];
@@ -375,19 +375,18 @@ class APS_Helper extends APS_Super {
 
 			$useragent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0';
 			$options = [
-				'body'        => $data,
-				'user_Agent'  => $useragent,
-				'headers'     => [
-					'Content-Type' => 'application/json',
-					'charset'=> 'UTF-8',
+				'body'              => $data,
+				'user_Agent'        => $useragent,
+				'headers'           => [
+					'Content-Type'      => 'application/json',
+					'charset'           => 'UTF-8',
 				],
-				'timeout'     => 60,
-				'redirection' => 5,
-				'blocking'    => true,
-				'sslverify'   => true,
-				'sslcertificates' => $certificate_path,
-				'httpversion' => '1.0',
-				'data_format' => 'body',
+				'timeout'           => 60,
+				'redirection'       => 0,
+				'blocking'          => true,
+				'sslverify'         => true,
+				'httpversion'       => '1.0',
+				'data_format'       => 'body',
 			];
 			add_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
 			$response = wp_remote_post( $apple_url, $options );

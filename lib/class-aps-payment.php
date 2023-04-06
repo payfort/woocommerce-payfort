@@ -495,7 +495,7 @@ class APS_Payment extends APS_Super {
 			'merchant_reference'  => $renewal_order_id,
 			'language'            => $language,
 			'command'             => APS_Constants::APS_COMMAND_PURCHASE,
-			'customer_ip'         => $this->aps_helper->get_customer_ip(),
+			'customer_ip'         => $this->resolve_customer_ip(),
 			'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
 			'currency'            => strtoupper( $currency ),
 			'customer_email'      => $this->aps_order->get_email(),
@@ -524,7 +524,6 @@ class APS_Payment extends APS_Super {
 		return $payment_status;
 	}
 
-
     public function stc_process_subscription_payment( $renewal_order, $recurring_amount ) {
         $payment_status = false;
         $this->aps_order->load_order( $renewal_order->get_id() );
@@ -542,7 +541,7 @@ class APS_Payment extends APS_Super {
             'merchant_reference'  => $this->aps_helper->generate_random_key(),
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,
-            'customer_ip'         => $this->aps_helper->get_customer_ip(),
+            'customer_ip'         => $this->resolve_customer_ip(),
             'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
             'currency'            => strtoupper( $currency ),
             'customer_email'      => $this->aps_order->get_email(),
@@ -1128,5 +1127,22 @@ class APS_Payment extends APS_Super {
         );
     }
 
+
+    /**
+     * Try to resolve the customer IP address,
+     * take the PHP SERVER value first, and it that is empty
+     * try to take it from the original order
+     *
+     * @return string
+     */
+    private function resolve_customer_ip(): string
+    {
+        $customerIp = $this->aps_helper->get_customer_ip();
+        if (empty($customerIp)) {
+            $customerIp = $this->aps_order->get_customer_ip();
+        }
+
+        return $customerIp;
+    }
 }
 
