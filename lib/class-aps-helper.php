@@ -322,9 +322,9 @@ class APS_Helper extends APS_Super {
 				'charset'=> 'UTF-8',
 			],
 			'timeout'     => 60,
-			'redirection' => 5,
+			'redirection' => 0,
 			'blocking'    => true,
-			'sslverify'   => false,
+			'sslverify'   => true,
 			'httpversion' => '1.0',
 			'data_format' => 'body',
 		];
@@ -371,23 +371,24 @@ class APS_Helper extends APS_Super {
 			$certificate_path              = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
 			$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
 			$certificate_key               = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
+            $apple_com_certificate_path    = __DIR__ . '/../apple-pay-gateway-cert-apple-com-chain.pem';
 			$data                          = '{"merchantIdentifier":"' . $apple_pay_merchant_identifier . '", "domainName":"' . $domain_name . '", "displayName":"' . $apple_pay_display_name . '"}';
 
 			$useragent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0';
 			$options = [
-				'body'        => $data,
-				'user_Agent'  => $useragent,
-				'headers'     => [
-					'Content-Type' => 'application/json',
-					'charset'=> 'UTF-8',
+				'body'              => $data,
+				'user_Agent'        => $useragent,
+				'headers'           => [
+					'Content-Type'      => 'application/json',
+					'charset'           => 'UTF-8',
 				],
-				'timeout'     => 60,
-				'redirection' => 5,
-				'blocking'    => true,
-				'sslverify'   => true,
-				'sslcertificates' => $certificate_path,
-				'httpversion' => '1.0',
-				'data_format' => 'body',
+				'timeout'           => 60,
+				'redirection'       => 0,
+				'blocking'          => true,
+				'sslverify'         => true,
+				'sslcertificates'   => $apple_com_certificate_path,
+				'httpversion'       => '1.0',
+				'data_format'       => 'body',
 			];
 			add_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
 			$response = wp_remote_post( $apple_url, $options );

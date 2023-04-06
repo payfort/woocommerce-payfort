@@ -157,6 +157,16 @@ class APS_Order extends APS_Super {
 		return $this->order->get_billing_email();
 	}
 
+    /**
+     * Get customer IP
+     *
+     * @return string
+     */
+    public function get_customer_ip(): string
+    {
+        return $this->order->get_customer_ip_address();
+    }
+
 	/**
 	 * Get order status
 	 *
