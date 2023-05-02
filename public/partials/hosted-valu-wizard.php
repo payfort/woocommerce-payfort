@@ -7,14 +7,37 @@ $terms_text .= ' <span class="aps-modal-open" data-modal="terms-modal">' . __( '
 $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' );
 ?>
 <section id="request_otp_sec" class="valu_form active">
-	<div class="aps-row">
+    <?php
+    if("yes" == $is_valu_down_payment_enabled){
+
+    ?>
+    <div class="aps-row">
 		<div class="aps-col-sm-8 aps-pad-none">
-			<span class="aps-pull-left"><?php echo esc_html__( 'Enter valU downpayment amount (Optional):', 'amazon-payment-services' ); ?></span>
+			<span class="aps-pull-left"><?php echo esc_html__( 'Down Payment(Optional):', 'amazon-payment-services' ); ?></span>
 		</div>
 		<div class="aps-col-sm-4 aps-pad-none">
-			<input type="text" value="0" autocomplete="off" placeholder="<?php echo esc_html__( 'Enter valU downpayment amount (Optional):', 'amazon-payment-services' ); ?>" class="input-text aps_valu_downpayment onlynum"/>
+			<input type="text" value="<?php echo $valu_down_payment_value?>" autocomplete="off" placeholder="<?php echo esc_html__( 'Enter valU downpayment amount (Optional):', 'amazon-payment-services' ); ?>" class="input-text aps_valu_downpayment onlynum"/>
 		</div>
 	</div>
+    <?php
+    }
+    ?>
+    <div class="aps-row">
+        <div class="aps-col-sm-8 aps-pad-none">
+            <span class="aps-pull-left"><?php echo esc_html__( 'ToU (Optional):', 'amazon-payment-services' ); ?></span>
+        </div>
+        <div class="aps-col-sm-4 aps-pad-none">
+            <input type="text" value="0" autocomplete="off" placeholder="<?php echo esc_html__( 'ToU (Optional):', 'amazon-payment-services' ); ?>" class="input-text aps_valu_tou onlynum"/>
+        </div>
+    </div>
+    <div class="aps-row">
+        <div class="aps-col-sm-8 aps-pad-none">
+            <span class="aps-pull-left"><?php echo esc_html__( 'Cashback (Optional):', 'amazon-payment-services' ); ?></span>
+        </div>
+        <div class="aps-col-sm-4 aps-pad-none">
+            <input type="text" value="0" autocomplete="off" placeholder="<?php echo esc_html__( 'Cashback (Optional):', 'amazon-payment-services' ); ?>" class="input-text aps_valu_cashback onlynum"/>
+        </div>
+    </div>
 	<div class="aps-row">
 		<div class="aps-col-sm-1 aps-pad-none">
 			<span class="country_code"><?php echo esc_html(APS_Constants::APS_VALU_EG_COUNTRY_CODE); ?></span>

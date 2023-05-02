@@ -400,6 +400,8 @@
 						$( ".tenure_term_error" ).html( aps_info.error_msg.valu_terms_msg );
 						var valu_status = false;
 					} else {
+						var otp     		= $( '.aps_valu_otp' ).val();
+						$( '#aps_otp' ).val( otp );
 						$( ".tenure_term_error" ).html( "" );
 					}
 				} else {
@@ -607,6 +609,8 @@
 						$( ".tenure_term_error" ).html( aps_info.error_msg.valu_terms_msg );
 						var valu_status = false;
 					} else {
+						var otp     		= $( '.aps_valu_otp' ).val();
+						$( '#aps_otp' ).val( otp );
 						$( ".tenure_term_error" ).html( "" );
 					}
 				} else {
@@ -1231,6 +1235,8 @@
 			var ajaxurl       = aps_info.ajax_url;
 			var mobile_number = $( '.aps_valu_mob_number' ).val();
 			var down_payment  = $( '.aps_valu_downpayment' ).val();
+			var tou  = $( '.aps_valu_tou' ).val();
+			var cash_back  = $( '.aps_valu_cashback' ).val();
 			down_payment = down_payment >= 0 ? down_payment : 0 ;
 			var aps_otp       = $( '.aps_valu_otp' ).val();
 			$('#payment_method_aps_valu').prop("checked",true);
@@ -1247,6 +1253,8 @@
 							action:'valu_verify_customer',
 							mobile_number,
 							down_payment,
+							tou,
+							cash_back
 						},
 						success: function(response) {
 							response = JSON.parse( response );
@@ -1336,6 +1344,8 @@
 			var tenure          = ele.attr( 'data-tenure' );
 			var tenure_amount   = ele.attr( 'data-tenure-amount' );
 			var tenure_interest = ele.attr( 'data-tenure-interest' );
+			var otp     		= $( '.aps_valu_otp' ).val();
+			$( '#aps_otp' ).val( otp );
 			$( '#aps_active_tenure' ).val( tenure );
 			$( '#aps_tenure_amount' ).val( tenure_amount );
 			$( '#aps_tenure_interest' ).val( tenure_interest );

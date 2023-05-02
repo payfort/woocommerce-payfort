@@ -341,8 +341,17 @@ msgid "Enter OTP"
 msgstr "أدخل OTP"
 
 #: public/partials/hosted-valu-wizard.php:15
-msgid "Enter valU downpayment amount (Optional):"
+msgid "Down Payment(Optional):"
 msgstr "أدخل valU مبلغ الدفعة المقدمة (اختياري):"
+
+#: public/partials/hosted-valu-wizard.php:23
+msgid "ToU (Optional):"
+msgstr "أدخل مبلغ ال valU ToU (اختياري):"
+
+
+#: public/partials/hosted-valu-wizard.php:28
+msgid "Cashback (Optional):"
+msgstr "أدخل مبلغ ال valU المرتجع (اختياري):"
 
 #: public/partials/hosted-valu-wizard.php:16
 msgid "Enter your mobile number"
@@ -823,6 +832,14 @@ msgstr "إجمالي الالتقاط"
 #: lib/class-aps-payment.php:222 lib/class-aps-payment.php:432
 msgid "Transaction Cancelled"
 msgstr "تم إلغاء الصفقة"
+
+#: lib/class-aps-payment.php:960
+msgid "Please provide the OTP"
+msgstr "يرجي إدخال ال OTP"
+
+#: lib/class-aps-payment.php:965
+msgid "Cashback, Downpayment, and ToU amounts sum cannot be greater than Cart Total"
+msgstr "'لا يمكن أن يكون ال Cashback و Downpayment و ToU أكبر من المبلغ الإجمالي"
 
 #: lib/class-aps-payment.php:748
 msgid "Transaction Verified successfully"

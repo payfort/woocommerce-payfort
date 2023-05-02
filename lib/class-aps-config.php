@@ -65,6 +65,8 @@ class APS_Config extends APS_Super {
 	private $show_issuer_name;
 	private $show_issuer_logo;
 	private $enable_valu;
+    private $enable_valu_down_payment;
+    private $valu_down_payment_value;
 	private $enable_stc_pay;
     private $stc_pay_integration_type;
     private $stc_pay_enabled_tokenization;
@@ -122,6 +124,8 @@ class APS_Config extends APS_Super {
 		$this->show_issuer_logo                    = $this->get_aps_config( 'show_issuer_logo' );
 		$this->enable_valu                         = $this->get_aps_config( 'enable_valu' );
 		$this->valu_minimum_order_limit            = $this->get_aps_config( 'valu_minimum_order_limit' );
+        $this->enable_valu_down_payment            = $this->get_aps_config('enable_valu_down_payment');
+        $this->valu_down_payment_value             = $this->get_aps_config('valu_down_payment_value');
 		$this->gateway_api_url                     = 'yes' === $this->get_aps_config( 'sandbox_mode' ) ? 'https://sbpaymentservices.payfort.com/FortAPI/paymentApi' : 'https://paymentservices.payfort.com/FortAPI/paymentApi';
 		$this->gateway_host_url                    = 'yes' === $this->get_aps_config( 'sandbox_mode' ) ? 'https://sbcheckout.payfort.com/FortAPI/paymentPage' : 'https://checkout.payfort.com/FortAPI/paymentPage';
 		$this->visa_checkout_sdk_url               = 'yes' === $this->get_aps_config( 'sandbox_mode' ) ? 'https://sandbox-assets.secure.checkout.visa.com/checkout-widget/resources/js/integration/v1/sdk.js' : 'https://assets.secure.checkout.visa.com/checkout-widget/resources/js/integration/v1/sdk.js';
@@ -607,6 +611,14 @@ class APS_Config extends APS_Super {
 	 */
 	public function get_valu_minimum_order_limit() {
 		return $this->valu_minimum_order_limit;
+	}
+
+    public function get_enable_valu_down_payment() {
+		return $this->enable_valu_down_payment;
+	}
+
+    public function get_valu_down_payment_value() {
+		return $this->valu_down_payment_value;
 	}
 
     /**

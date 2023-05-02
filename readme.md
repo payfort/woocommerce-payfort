@@ -37,6 +37,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes |
 | :---: | :--- |
+| 2.3.5 |   * New - ToU and Cashback Parameters are added to valU payment option |
 | 2.3.4 |   * Curl hardening, url validation, follow redirect limitation and recurring API IP fix | 
 | 2.3.3 |   * New - nonce is introduced at certificate deletion. <br/> * Fix - certificate names are generated with hashed strings |
 | 2.3.2 |   * New - valu V2 down payment field added. <br/> * Fix - Healthcheck observation due to open session is fixed |

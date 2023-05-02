@@ -1,4 +1,10 @@
 ## Changelog
+`v2.3.5`
+* New - ToU and Cashback Parameters are added to valU payment option
+
+`v2.3.4`
+* Fix -  Curl hardening, url validation, follow redirect limitation and recurring API IP fix
+
 `v2.3.3`
 * Fix - nonce is introduced at certificate deletion
 * Fix - certificate names are generated with hashed strings
