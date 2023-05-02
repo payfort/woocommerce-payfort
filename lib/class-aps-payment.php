@@ -721,7 +721,7 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return array
 	 */
-	public function valu_verify_customer( $mobile_number, $down_payment ) {
+	public function valu_verify_customer( $mobile_number, $down_payment, $tou, $cash_back ) {
 		$status  = 'success';
 		$message = 'Customer verified';
 		try {
@@ -748,6 +748,8 @@ class APS_Payment extends APS_Super {
 				$_SESSION['valu_payment']['reference_id']  = wp_kses_data($reference_id);
 				$_SESSION['valu_payment']['mobile_number'] = wp_kses_data($mobile_number);
 				$_SESSION['valu_payment']['down_payment'] = wp_kses_data($down_payment);
+                $_SESSION['valu_payment']['tou'] = wp_kses_data($tou);
+                $_SESSION['valu_payment']['cash_back'] = wp_kses_data($cash_back);
 				session_write_close();
 			} elseif ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_FAILED_RESPONSE_CODE === $result['response_code'] ) {
 				$status  = 'error';
@@ -778,11 +780,17 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return array
 	 */
-	public function valu_generate_otp( $reference_id, $mobile_number, $order_id, $down_payment) {
+	public function valu_generate_otp( $reference_id, $mobile_number, $order_id, $down_payment, $tou, $cash_back) {
 		$status               = 'success';
 		$message              = 'OTP Generated';
 		$mobile_number_string = null;
 		$tenure_html = '';
+        if($this->aps_config->get_enable_valu_down_payment() =="yes") {
+            if (empty($down_payment) || $down_payment == "") {
+                $down_payment = $this->aps_config->get_valu_down_payment_value();
+            }
+        }else{$down_payment=0;}
+
 		try {
 			$this->aps_order->load_order( $order_id );
 			$products                    = $this->get_valu_products_data();
@@ -800,6 +808,8 @@ class APS_Payment extends APS_Super {
 				'currency'            => $currency,
 				'products'            => $products,
 				'total_downpayment'	  => $down_payment,
+                'wallet_amount'       => intval($tou)*100,
+                'cashback_wallet_amount' => intval($cash_back)*100,
 				'include_installments' => 'YES'
 			);
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
@@ -823,7 +833,7 @@ class APS_Payment extends APS_Super {
 				unset( $_SESSION['valu_payment'] );
 				session_write_close();
 			}
-			if ( isset( $result['response_code'] ) ) {
+			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_GENERATE_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
 				$status                          = 'success';
 				$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
 				$tenure_html                     = "<div class='tenure_carousel'>";
@@ -920,12 +930,19 @@ class APS_Payment extends APS_Super {
 			$reference_id                = wp_kses_data($_SESSION['valu_payment']['reference_id']);
 			$mobile_number               = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
 			$total_down_payment          = wp_kses_data($_SESSION['valu_payment']['down_payment']);
+            $tou                         = wp_kses_data($_SESSION['valu_payment']['tou']);
+            $cash_back                   = wp_kses_data($_SESSION['valu_payment']['cash_back']);
 			$otp                         = wp_kses_data($otp);
 			$customer_email              = $this->aps_order->get_email();
 			$customer_code               = $mobile_number;
 			$currency                    = $this->aps_helper->get_front_currency();
 			$transaction_id              = wp_kses_data($_SESSION['valu_payment']['transaction_id']);
 			session_write_close();
+            if($this->aps_config->get_enable_valu_down_payment() =="yes") {
+                if (empty($total_down_payment) || $total_down_payment == "") {
+                    $total_down_payment = $this->aps_config->get_valu_down_payment_value();
+                }
+            }else{$total_down_payment=0;}
 			$gateway_params              = array(
 				'command'              => 'PURCHASE',
 				'merchant_identifier'  => $this->aps_config->get_merchant_identifier(),
@@ -940,6 +957,8 @@ class APS_Payment extends APS_Super {
 				'otp'                  => $otp,
 				'tenure'               => $active_tenure,
 				'total_down_payment'   => $total_down_payment,
+                'wallet_amount'       => intval($tou)*100,
+                'cashback_wallet_amount' => intval($cash_back)*100,
 				'customer_code'        => $customer_code,
 				'customer_email'       => $customer_email,
 				'purchase_description' => 'Order' . $order_id,
@@ -951,9 +970,14 @@ class APS_Payment extends APS_Super {
 				$message = __( 'Please provide the OTP', 'amazon-payment-services' );
 				throw new \Exception( $message );
 			}
+            if($total_down_payment + $tou + $cash_back > $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency )){
+            	
+                $message = __( 'Cashback, Downpayment, and ToU amounts sum cannot be greater than Cart Total', 'amazon-payment-services' );
+                throw new \Exception( $message );
+            }
 			
-			$plugin_params               = $this->aps_config->plugin_params();
-			$gateway_params              = array_merge( $gateway_params, $plugin_params );
+			//$plugin_params               = $this->aps_config->plugin_params();
+			//$gateway_params              = array_merge( $gateway_params, $plugin_params );
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 			$gateway_params['signature'] = $signature;
 			//execute post
@@ -986,6 +1010,8 @@ class APS_Payment extends APS_Super {
 		return array(
 			'status'  => $status,
 			'message' => $message,
+            'valu_transaction_id' =>$result['valu_transaction_id'],
+            'loan_number' =>$result['loan_number'],
 		);
 	}
 

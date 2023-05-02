@@ -297,7 +297,7 @@ class APS_Public {
 	 *
 	 *  @return void
 	 */
-	public static function load_valu_wizard( $language ) {
+	public static function load_valu_wizard( $language, $is_valu_down_payment_enabled, $valu_down_payment_value ) {
 		ob_start();
 		include 'terms/terms-' . $language . '.html';
 		$terms_modal_text = ob_get_clean();

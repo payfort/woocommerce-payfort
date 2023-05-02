@@ -1,9 +1,9 @@
 === Amazon payment services ===
 Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa Checkout, KNET, NAPS, Valu
 Requires at least: 5.3
-Tested up to: 6.1.1
+Tested up to: 6.2
 Requires PHP: 7.0
-Stable tag: 2.3.4
+Stable tag: 2.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -33,6 +33,9 @@ Amazon payment services makes it really easy to start accepting online payments 
    * STCPay
 
 == Changelog ==
+`v2.3.5`
+* New - ToU and Cashback Parameters are added to valU payment option
+
 `v2.3.4`
 * Fix -  Curl hardening, url validation, follow redirect limitation and recurring API IP fix
 

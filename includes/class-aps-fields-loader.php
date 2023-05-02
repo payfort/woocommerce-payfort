@@ -619,6 +619,24 @@ class APS_Fields_Loader {
 				'default'    => 500,
 				'max_length' => 5,
 			),
+            'enable_valu_down_payment'            => array(
+                'title'       => __( 'Down Payment', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    'yes' => __( 'Yes', 'amazon-payment-services' ),
+                    'no'  => __( 'No', 'amazon-payment-services' ),
+                ),
+                'default'     => 'no',
+                'desc_tip'    => true,
+                'placeholder' => '',
+                'class'       => 'wc-enhanced-select',
+			),
+            'valu_down_payment_value'            => array(
+				'title'      => __( 'VALU Down Payment Default Value', 'amazon-payment-services' ),
+				'type'       => 'number',
+				'default'    => 1,
+				'max_length' => 5,
+			),
             'stc_pay_group'                      =>  array(
                 'title'     => __('STC Pay','amazon-payment-services'),
                 'type'      => 'title'

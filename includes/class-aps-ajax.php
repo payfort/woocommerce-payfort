@@ -420,6 +420,8 @@ class APS_Ajax {
 		try {
 			$mobile_number = filter_input( INPUT_POST, 'mobile_number' );
 			$down_payment = filter_input( INPUT_POST, 'down_payment' );
+            $tou = filter_input( INPUT_POST, 'tou' );
+            $cash_back = filter_input( INPUT_POST, 'cash_back' );
 			if (intval($down_payment) >= 0){
 				//EGP currency ISO code requires 2 decimal points
 				$down_payment = $down_payment * 100;
@@ -429,7 +431,7 @@ class APS_Ajax {
 			if ( empty( $mobile_number ) ) {
 				throw new \Exception( 'Mobile number is missing' );
 			}
-			$verfiy_response         = $this->aps_payment->valu_verify_customer( $mobile_number, $down_payment  );
+			$verfiy_response         = $this->aps_payment->valu_verify_customer( $mobile_number, $down_payment, $tou, $cash_back  );
 			$response_arr['status']  = $verfiy_response['status'];
 			$response_arr['message'] = $verfiy_response['message'];
 		} catch ( \Exception $e ) {

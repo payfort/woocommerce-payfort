@@ -764,6 +764,15 @@ msgstr ""
 msgid "Transaction Verified successfully"
 msgstr ""
 
+#: lib/class-aps-payment.php:960
+msgid "Please provide the OTP"
+msgstr ""
+
+#: lib/class-aps-payment.php:965
+msgid "Cashback, Downpayment, and ToU amounts sum cannot be greater than Cart Total"
+msgstr ""
+
+
 #: public/class-aps-public.php:139
 msgid "Invalid card length"
 msgstr ""
@@ -868,8 +877,18 @@ msgid "to proceed with the transaction"
 msgstr ""
 
 #: public/partials/hosted-valu-wizard.php:15
-msgid "Enter valU downpayment amount (Optional):"
-msgstr ""
+msgid "Down Payment(Optional):"
+msgstr "Down Payment(Optional):"
+
+#: public/partials/hosted-valu-wizard.php:23
+msgid "ToU (Optional):"
+msgstr "ToU (Optional):"
+
+
+#: public/partials/hosted-valu-wizard.php:28
+msgid "Cashback (Optional):"
+msgstr "Cashback (Optional):"
+
 
 #: public/partials/hosted-valu-wizard.php:16
 msgid "Enter your mobile number"

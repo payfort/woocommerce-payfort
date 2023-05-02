@@ -65,7 +65,13 @@ if ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
 	$tenure          = get_post_meta( $order_id, 'valu_active_tenure', true );
 	$tenure_amount   = get_post_meta( $order_id, 'valu_tenure_amount', true );
 	$tenure_interest = get_post_meta( $order_id, 'valu_tenure_interest', true );
-	if ( ! empty( $tenure ) ) {
+	$down_payment = get_post_meta( $order_id, 'valu_down_payment', true );
+	$tou = get_post_meta( $order_id, 'valu_tou', true );
+	$cash_back = get_post_meta( $order_id, 'valu_cash_back', true );
+    $valu_transaction_id = get_post_meta( $order_id, 'valu_transaction_id', true );
+    $loan_number = get_post_meta( $order_id, 'loan_number', true );
+
+    if ( ! empty( $tenure ) ) {
 		$table_data[] = array(
 			'label' => __( 'Tenure', 'amazon-payment-services' ),
 			'value' => $tenure,
@@ -78,11 +84,41 @@ if ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
 		);
 	}
 	if ( ! empty( $tenure_interest ) ) {
+        $table_data[] = array(
+            'label' => __('Admin Fee', 'amazon-payment-services'),
+            'value' => $tenure_interest . '',
+        );
+    }
+    if ( ! empty( $down_payment ) ) {
+        $table_data[] = array(
+            'label' => __('Down Payment', 'amazon-payment-services'),
+            'value' => $down_payment . '',
+        );
+    }
+    if ( ! empty( $tou ) ) {
+        $table_data[] = array(
+            'label' => __('ToU', 'amazon-payment-services'),
+            'value' => $tou . '',
+        );
+    }
+    if ( ! empty( $cash_back ) ) {
 		$table_data[] = array(
-			'label' => __( 'Admin Fee', 'amazon-payment-services' ),
-			'value' => $tenure_interest . '',
+			'label' => __( 'Cash Back', 'amazon-payment-services' ),
+			'value' => $cash_back . '',
 		);
 	}
+    if ( ! empty( $valu_transaction_id ) ) {
+        $table_data[] = array(
+            'label' => __( 'Transaction ID', 'amazon-payment-services' ),
+            'value' => $valu_transaction_id . '',
+        );
+    }
+    if ( ! empty( $loan_number ) ) {
+        $table_data[] = array(
+            'label' => __( 'Loan Number', 'amazon-payment-services' ),
+            'value' => $loan_number . '',
+        );
+    }
 }elseif (APS_Constants::APS_PAYMENT_TYPE_STC_PAY === $payment_method){
     if ( isset( $aps_data['amount'] ) && ! empty( $aps_data['amount'] ) ) {
         $table_data[] = array(
