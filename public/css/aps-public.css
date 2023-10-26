@@ -239,6 +239,57 @@ section.stc_pay_form {
 }
 
 
+/* TABBY CSS */
+.tabby_form:not(.active){
+	display: none;
+}
+
+section.tabby_form {
+	overflow: hidden;
+}
+
+.tabby_loader:not(.active){
+	display:none;
+}
+
+.tabby_loader.active{
+	display: flex !important;
+	position: relative;
+	height: 25px;
+	width: 100%;
+	align-items: center;
+}
+
+.tabby_loader.active .tabby_loader_icon{
+	height: 0;
+	width: 0;
+	padding: 5px;
+	border: 5px solid #ccc;
+	border-right-color: #888;
+	border-radius: 10px;
+	-webkit-animation: rotateValuLoader 1s infinite linear;
+	z-index: 99999;
+	position: absolute;
+}
+
+.tabby_loader.active .tabby_loader_caption{
+	margin-left: 25px;
+}
+
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_tabby ,
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_tabby li{
+	line-height: 1;
+	padding: 10px 0px;
+}
+.tabby_hosted_form , .tabby_hosted_form .aps-row{
+	padding: 10px 0px;
+}
+
+.tabby_form .otp_generation_msg{
+	padding: 5px 0px;
+}
+
+
 /* OTP Form / Valu CSS */
 .valu_form:not(.active), .otp_form:not(.active) {
 	display: none;

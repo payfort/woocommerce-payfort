@@ -676,7 +676,23 @@ class APS_Fields_Loader {
                 'desc_tip'    => true,
                 'placeholder' => '',
                 'class'       => 'wc-enhanced-select',
-            )
+            ),
+            'tabby_group'                      =>  array(
+                'title'     => __('Tabby','amazon-payment-services'),
+                'type'      => 'title'
+            ),
+            'enable_tabby'                         => array(
+                'title'       => __( 'Enabled', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    'yes' => __( 'Yes', 'amazon-payment-services' ),
+                    'no'  => __( 'No', 'amazon-payment-services' ),
+                ),
+                'default'     => 'no',
+                'desc_tip'    => true,
+                'placeholder' => '',
+                'class'       => 'wc-enhanced-select',
+            ),
 		);
 	}
 }

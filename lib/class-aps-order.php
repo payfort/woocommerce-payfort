@@ -134,7 +134,7 @@ class APS_Order extends APS_Super {
 	 * @return integration_type string
 	 */
 	public function get_payment_integration_type() {
-		return get_post_meta( $this->order_id, 'APS_INTEGEATION_TYPE', true );
+		return get_post_meta( $this->order_id, 'APS_INTEGRATION_TYPE', true );
 	}
 
 	/**
@@ -158,13 +158,12 @@ class APS_Order extends APS_Super {
 	}
 
     /**
-     * Get customer IP
+     * Get customer phone number
      *
-     * @return string
+     * @return phone number string
      */
-    public function get_customer_ip(): string
-    {
-        return $this->order->get_customer_ip_address();
+    public function get_phone_number() {
+        return $this->order->get_billing_phone();
     }
 
 	/**
@@ -432,7 +431,7 @@ class APS_Order extends APS_Super {
 
 			$aps_helper      = new APS_Helper();
 			$is_stc_pay = isset($response_params['digital_wallet']) && $response_params['digital_wallet'] === APS_Constants::APS_PAYMENT_METHOD_STC_PAY;
-			$existing_tokens = $aps_helper->find_token_row( $response_params['token_name'], $this->order->get_customer_id(), $is_stc_pay ? APS_Constants::APS_PAYMENT_TYPE_STC_PAY : ''  );
+			$existing_tokens = $aps_helper->find_token_row( $response_params['token_name'], $this->order->get_customer_id(), ($is_stc_pay ? APS_Constants::APS_PAYMENT_TYPE_STC_PAY:'' ));
 			if ( ! empty( $existing_tokens ) ) {
 				$old_token_row = WC_Payment_Tokens::get( $existing_tokens['token_id'] );
 				if ( isset( $response_params['payment_option'] ) ) {

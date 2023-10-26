@@ -322,7 +322,7 @@ class APS_Helper extends APS_Super {
 				'charset'=> 'UTF-8',
 			],
 			'timeout'     => 60,
-			'redirection' => 0,
+			'redirection' => 5,
 			'blocking'    => true,
 			'sslverify'   => true,
 			'httpversion' => '1.0',
@@ -426,6 +426,9 @@ class APS_Helper extends APS_Super {
 
         if ($payment_option === APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
             $meta_key = 'stc_pay_reference_id';
+        }
+        if ($payment_option === APS_Constants::APS_PAYMENT_METHOD_TABBY){
+            $meta_key = 'tabby_reference_id';
         }
 
 		$meta = $wpdb->get_row(
@@ -587,6 +590,14 @@ class APS_Helper extends APS_Super {
             if ( !empty($stc_reference_id) ) {
                 $this->log( 'APS aps_status_checker stc order_id#' . $order_id . 'stc_pay_reference_id#' . $stc_reference_id );
                 $order_id = $stc_reference_id;
+            }
+        }
+
+        if ( APS_Constants::APS_PAYMENT_TYPE_TABBY == $payment_method ) {
+            $tabby_reference_id = get_post_meta( $order_id, 'tabby_reference_id', true );
+            if ( !empty($tabby_reference_id) ) {
+                $this->log( 'APS aps_status_checker tabby order_id#' . $order_id . 'tabby_reference_id#' . $tabby_reference_id );
+                $order_id = $tabby_reference_id;
             }
         }
 

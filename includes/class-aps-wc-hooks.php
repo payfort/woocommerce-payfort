@@ -58,6 +58,20 @@ class APS_WC_Hooks {
         }
     }
 
+    /**
+     * APS_TABBY Subscription Payment
+     */
+    public function aps_tabby_subscription_payment( $amount_to_charge, $order ) {
+        if ( class_exists( 'WC_Subscriptions_Manager' ) ) {
+            $result = $this->aps_payment->tabby_process_subscription_payment( $order, $amount_to_charge );
+            if ( $result ) {
+                WC_Subscriptions_Manager::activate_subscriptions_for_order( $order );
+            } else {
+                WC_Subscriptions_Manager::put_subscription_on_hold_for_order( $order );
+            }
+        }
+    }
+
 	/**
 	 * APS Delete token
 	 */
@@ -131,7 +145,9 @@ class APS_WC_Hooks {
 			APS_Constants::APS_PAYMENT_TYPE_KNET,
 			APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
 			APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
-                APS_Constants::APS_PAYMENT_TYPE_STC_PAY);
+                APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
+            APS_Constants::APS_PAYMENT_TYPE_TABBY
+            );
 			if (in_array($payment_method, $payment_methods)) {
 				if (isset($errors->errors) && empty($errors->errors)) {
 					$last_order_id = WC()->session->get( 'order_awaiting_payment');
@@ -162,7 +178,8 @@ class APS_WC_Hooks {
 			APS_Constants::APS_PAYMENT_TYPE_KNET,
 			APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
 			APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
-            APS_Constants::APS_PAYMENT_TYPE_STC_PAY
+            APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
+            APS_Constants::APS_PAYMENT_TYPE_TABBY
         );
 
 		$args          = array(
