@@ -74,6 +74,14 @@ class APS_Refund extends APS_Super {
                 }
             }
 
+            if($this->aps_order->get_payment_method() == APS_Constants::APS_PAYMENT_TYPE_TABBY){
+                $tabby_reference_id = get_post_meta( $order_id, 'tabby_reference_id', true );
+                if ( !empty($tabby_reference_id) && $merchant_reference !== $tabby_reference_id ){
+                    $merchant_reference = $tabby_reference_id;
+                    $this->aps_helper->log( 'APS refund tabby order_id#' . $order_id . 'tabby_reference_id#' . $tabby_reference_id );
+                }
+            }
+
             if ($merchant_reference)
 			if ( empty($merchant_reference) ) {
 				$payment_method = $this->aps_order->get_payment_method();

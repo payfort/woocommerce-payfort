@@ -382,7 +382,7 @@
 			var checkoutUrl              = wc_checkout_params.checkout_url;
 			var checkoutData             = checkoutForm.serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay'];
+			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay', 'aps_tabby'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -443,6 +443,21 @@
 					}
 					else{
 						$('.stc_pay_process_error').show().html(stc_pay_error_message);
+						return false;
+					}
+				}
+				else if(aps_info.payment_method_tabby === selected_payment_method){
+
+					let tabby_status = true;
+					let tabby_error_message = '';
+
+					//handle validation if existing token not used
+
+					if(tabby_status){
+						$('.tabby_loader').addClass('active');
+					}
+					else{
+						$('.tabby_process_error').show().html(tabby_error_message);
 						return false;
 					}
 				}
@@ -535,6 +550,7 @@
 					response = JSON.parse(response.responseText);
 					$( ".valu_loader" ).removeClass( 'active' );
 					$( ".stc_pay_loader" ).removeClass( 'active' );
+					$( ".tabby_loader" ).removeClass( 'active' );
 					if ( response.result === 'success' ) {
 						if ( payment_integration_type === aps_info.redirection_type && response.form ) {
 							apsPayment.redirectCheckout( response.url, response.params, selected_payment_method );
@@ -542,7 +558,7 @@
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
 							apsPayment.standardCheckout( response.url, response.params, response.redirect_url, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
-							if ( [aps_info.payment_method_valu,aps_info.payment_method_stc_pay ].includes(selected_payment_method) ) {
+							if ( [aps_info.payment_method_valu,aps_info.payment_method_stc_pay,aps_info.payment_method_tabby ].includes(selected_payment_method) ) {
 								redirect_url = response.redirect_link;
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
@@ -553,6 +569,11 @@
 									window.location.href = redirect_url;
 								}
 							} else if ( aps_info.payment_method_stc_pay === selected_payment_method ) {
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
+							} else if ( aps_info.payment_method_tabby === selected_payment_method ) {
 								redirect_url = response.redirect_link;
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
@@ -596,7 +617,7 @@
 			var checkoutUrl              = aps_info.review_order_checkout_url;
 			var checkoutData             = $( 'form#order_review' ).serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay'];
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -699,6 +720,8 @@
 									window.location.href = redirect_url;
 								}
 							}else if ( aps_info.payment_method_aps_stc_pay === selected_payment_method ) {
+								console.log(response);
+							}else if ( aps_info.payment_method_aps_tabby === selected_payment_method ) {
 								console.log(response);
 							}  else {
 								apsPayment.hostedCheckout( response.url, response.params, response.is_hosted_tokenization, response.redirect_url, selected_payment_method );

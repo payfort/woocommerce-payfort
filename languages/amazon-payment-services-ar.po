@@ -884,6 +884,10 @@ msgstr "Visa Checkout"
 msgid "Void"
 msgstr "فارغ"
 
+#: classes/class-wc-gateway-aps-tabby.php:31
+msgid "Pay in 4. No interest, no fees."
+msgstr "قسّمها على 4. بدون أي فوائد، أو رسوم."
+
 #: includes/class-aps-fields-loader.php:124
 #: includes/class-aps-fields-loader.php:174
 #: includes/class-aps-fields-loader.php:194

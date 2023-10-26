@@ -37,6 +37,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes |
 | :---: | :--- |
+| 2.3.6 |   * New - Tabby is added as a new payment option <br/> * Fix - mada bin list is updated<br/>* Fix - STCPay tokenization parameter is ignored if tokenization is disabled in config |
 | 2.3.5 |   * New - ToU and Cashback Parameters are added to valU payment option |
 | 2.3.4 |   * Curl hardening, url validation, follow redirect limitation and recurring API IP fix | 
 | 2.3.3 |   * New - nonce is introduced at certificate deletion. <br/> * Fix - certificate names are generated with hashed strings |

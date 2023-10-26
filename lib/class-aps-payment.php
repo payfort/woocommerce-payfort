@@ -122,9 +122,17 @@ class APS_Payment extends APS_Super {
                 $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
                 $gateway_params['merchant_extra'] =  $order_id;
             }
+            if ( APS_Constants::APS_PAYMENT_TYPE_TABBY === $payment_method ) {
+                $gateway_params['payment_option'] =  APS_Constants::APS_PAYMENT_METHOD_TABBY;
+                $gateway_params['merchant_reference'] = $order_id;
+                update_post_meta( $order_id , 'tabby_reference_id' , $gateway_params['merchant_reference'] );
+                $gateway_params['customer_ip'] = $this->aps_helper->get_customer_ip();
+                $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
+                $gateway_params['phone_number'] =  $this->aps_order->get_phone_number();
+            }
 			$plugin_params  = $this->aps_config->plugin_params();
 			$gateway_params = array_merge( $gateway_params, $plugin_params );
-			if ( APS_Constants::APS_PAYMENT_TYPE_CC !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_STC_PAY !== $payment_method ) {
+			if ( APS_Constants::APS_PAYMENT_TYPE_CC !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_STC_PAY !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_TABBY !== $payment_method) {
 				unset( WC()->session->order_awaiting_payment );
 			}
 		} else {
@@ -216,7 +224,7 @@ class APS_Payment extends APS_Super {
             if (isset($response_params['payment_option']) && $response_params['payment_option'] ===  APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
                 $order_id = $response_params['merchant_extra'];
                 $this->aps_order->load_order( $order_id );
-            }else{
+            } else{
                 $order_id = $response_params['merchant_reference'];
                 $this->aps_order->load_order( $order_id );
             }
@@ -272,14 +280,28 @@ class APS_Payment extends APS_Super {
             if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_STC_PAY || APS_Constants::APS_PAYMENT_METHOD_STC_PAY === $response_params['payment_option'] ){
                 $stc_ignore_signature = false;
             }
+
+            $isTabbyPay = false;
+            if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_TABBY || APS_Constants::APS_PAYMENT_METHOD_TABBY === $response_params['payment_option'] ){
+                $isTabbyPay = true;
+            }
+
 			// check the signature
-			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] && $stc_ignore_signature ) {
+			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] && $stc_ignore_signature) {
 				$response_message = __( 'Invalid Singature', 'amazon-payment-services' );
 				// There is a problem in the response we got
 				$this->aps_order->on_hold_order( 'Invalid Signature.' );
 				$aps_invalid_signature_log = "APS Response invalid signature ERROR\n\n Original array : " . wp_json_encode( $response_params, true ) . "\n\n\n Final array : " . wp_json_encode( $response_gateway_params, true );
 				$this->aps_helper->log( $aps_invalid_signature_log );
-				return true;
+
+                if ($isTabbyPay) {
+                    $result = $this->aps_order->decline_order( $response_params, $response_status_message );
+                    $this->aps_helper->log( $aps_error_log );
+                    throw new Exception( $response_status_message);
+                }
+
+                // this was like this, BUT it should be false
+                return true;
 			}
 			if ( APS_Constants::APS_PAYMENT_CANCEL_RESPONSE_CODE === $response_code ) {
 				$response_message = __( 'Transaction Cancelled', 'amazon-payment-services' );
@@ -495,7 +517,7 @@ class APS_Payment extends APS_Super {
 			'merchant_reference'  => $renewal_order_id,
 			'language'            => $language,
 			'command'             => APS_Constants::APS_COMMAND_PURCHASE,
-			'customer_ip'         => $this->resolve_customer_ip(),
+			'customer_ip'         => $this->aps_helper->get_customer_ip(),
 			'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
 			'currency'            => strtoupper( $currency ),
 			'customer_email'      => $this->aps_order->get_email(),
@@ -524,6 +546,7 @@ class APS_Payment extends APS_Super {
 		return $payment_status;
 	}
 
+
     public function stc_process_subscription_payment( $renewal_order, $recurring_amount ) {
         $payment_status = false;
         $this->aps_order->load_order( $renewal_order->get_id() );
@@ -541,7 +564,51 @@ class APS_Payment extends APS_Super {
             'merchant_reference'  => $this->aps_helper->generate_random_key(),
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,
-            'customer_ip'         => $this->resolve_customer_ip(),
+            'customer_ip'         => $this->aps_helper->get_customer_ip(),
+            'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
+            'currency'            => strtoupper( $currency ),
+            'customer_email'      => $this->aps_order->get_email(),
+            'token_name'          => $aps_response['token_name'],
+            'return_url'          => create_wc_api_url( 'aps_online_response' ),
+        );
+        $customer_name          = $this->aps_order->get_customer_name();
+        if ( ! empty( $customer_name ) ) {
+            $gateway_params['customer_name'] = $customer_name;
+        }
+        $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
+        $gateway_params['signature'] = $signature;
+
+        $gateway_url = $this->aps_config->get_gateway_url( 'api' );
+        $this->aps_helper->log( 'APS recurring request \n\n' . wp_json_encode( $gateway_params, true ) );
+        $response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+        if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
+            $this->aps_order->success_order( $response, 'online' );
+            $payment_status = true;
+        } else {
+            $result         = $this->aps_order->decline_order( $response, $response['response_message'] );
+            $payment_status = false;
+        }
+        $this->aps_helper->log( 'APS recurring response \n\n' . wp_json_encode( $response, true ) );
+        return $payment_status;
+    }
+    public function tabby_process_subscription_payment( $renewal_order, $recurring_amount ) {
+        $payment_status = false;
+        $this->aps_order->load_order( $renewal_order->get_id() );
+        $renewal_order_id       = $renewal_order->get_id();
+        $subscription_order_id  = get_post_meta( $renewal_order_id, '_subscription_renewal', true );
+        $subscription_order_obj = get_post( $subscription_order_id );
+        $parent_order_id        = $subscription_order_obj->post_parent;
+        $aps_response           = get_post_meta( $parent_order_id, 'aps_payment_response', true );
+        $currency               = $aps_response['currency'];
+        $language               = $aps_response['language'];
+        $gateway_params         = array(
+            'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
+            'access_code'         => $this->aps_config->get_access_code(),
+            'digital_wallet'      => APS_Constants::APS_PAYMENT_METHOD_TABBY,
+            'merchant_reference'  => $this->aps_helper->generate_random_key(),
+            'language'            => $language,
+            'command'             => APS_Constants::APS_COMMAND_PURCHASE,
+            'customer_ip'         => $this->aps_helper->get_customer_ip(),
             'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
             'currency'            => strtoupper( $currency ),
             'customer_email'      => $this->aps_order->get_email(),
@@ -1119,7 +1186,9 @@ class APS_Payment extends APS_Super {
                 update_post_meta( $order_id, 'stc_pay_reference_id', $gateway_params['merchant_reference'] );
             }
             else{
-                $gateway_params['remember_me'] = $remember_me ? 'YES' : 'NO';
+                if($this->aps_config->get_enabled_tokenization() == 'yes') {
+                    $gateway_params['remember_me'] = $remember_me ? 'YES' : 'NO';
+                }
                 $gateway_params['otp'] = $otp;
                 $gateway_params['merchant_reference'] = $reference_id;
             }
@@ -1153,22 +1222,5 @@ class APS_Payment extends APS_Super {
         );
     }
 
-
-    /**
-     * Try to resolve the customer IP address,
-     * take the PHP SERVER value first, and it that is empty
-     * try to take it from the original order
-     *
-     * @return string
-     */
-    private function resolve_customer_ip(): string
-    {
-        $customerIp = $this->aps_helper->get_customer_ip();
-        if (empty($customerIp)) {
-            $customerIp = $this->aps_order->get_customer_ip();
-        }
-
-        return $customerIp;
-    }
 }
 

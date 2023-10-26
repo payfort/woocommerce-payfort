@@ -134,6 +134,7 @@ class APS_Public {
 			'payment_method_apple_pay'     => APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
 			'payment_method_valu'          => APS_Constants::APS_PAYMENT_TYPE_VALU,
 			'payment_method_stc_pay'       => APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
+            'payment_method_tabby'         => APS_Constants::APS_PAYMENT_TYPE_TABBY,
 			'payment_method_visa_checkout' => APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
 			'error_msg'                    => array(
 				'invalid_mobile_number'    => __( 'Mobile number is invalid', 'amazon-payment-services' ) . '.',
@@ -149,6 +150,7 @@ class APS_Public {
                 'valu_terms_msg'           => __( 'Please accept the terms and conditions', 'amazon-payment-services' ) . '.',
                 'stc_pay_pending_msg'         => __( 'Please complete the evaluation process', 'amazon-payment-services' ) . '.',
                 'stc_pay_otp_empty_msg'         => __( 'Please enter a valid otp number', 'amazon-payment-services' ) . '.',
+                'tabby_pending_msg'        => __( 'Please complete the evaluation process', 'amazon-payment-services' ) . '.',
 				'required_field'           => __( 'This is a required field', 'amazon-payment-services' ) . '.',
 			),
 			'success_msg'                  => array(
@@ -319,6 +321,13 @@ class APS_Public {
             include 'partials/hosted-stc-pay-wizard.php';
         }
 	}
+    public static function load_tabby_wizard( $language , $integration_type , $is_enabled_tokenization , $have_subscription ) {
+        ob_start();
+        include 'terms/terms-' . $language . '.html';
+        $terms_modal_text = ob_get_clean();
+        include 'partials/redirection-tabby-wizard.php';
+
+    }
 
 	/**
 	 * Load apple pay checkout wizard

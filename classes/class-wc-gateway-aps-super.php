@@ -326,6 +326,17 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
                 $this->aps_helper->log( 'STC REFUND order_id' . $response_params['merchant_reference']);
             }
 
+            // check if webhook call for TABBY refund
+            if ( isset( $response_params['command'] ) && 'REFUND' == $response_params['command'] ) {
+                $order_id_by_reference = '';
+                $order_id_by_reference = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , APS_Constants::APS_PAYMENT_METHOD_TABBY);
+                $this->aps_helper->log( 'TABBY REFUND merchant_reference' . $response_params['merchant_reference']);
+                if ('' != $order_id_by_reference){
+                    $response_params['merchant_reference'] = $order_id_by_reference;
+                }
+                $this->aps_helper->log( 'TABBY REFUND order_id' . $response_params['merchant_reference']);
+            }
+
 			$success = $this->aps_payment->handle_fort_response( $response_params, $response_mode, $integration_type );
 			if ( $success ) {
 				//handle valu refund webhook
@@ -342,7 +353,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 				}
                 if (isset($response_params['payment_option']) && $response_params['payment_option'] ===  APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
                     $order = new WC_Order( $response_params['merchant_extra'] );
-                }else{
+                } else{
                     $order = new WC_Order( $response_params['merchant_reference'] );
                 }
 				WC()->session->set( 'refresh_totals', true );

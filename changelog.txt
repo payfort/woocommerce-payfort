@@ -1,4 +1,9 @@
 ## Changelog
+`v2.3.6`
+* New - Tabby is added as a new payment option
+* Fix - mada bin list is updated
+* Fix - STCPay tokenization parameter is ignored if tokenization is disabled in config
+
 `v2.3.5`
 * New - ToU and Cashback Parameters are added to valU payment option
 
