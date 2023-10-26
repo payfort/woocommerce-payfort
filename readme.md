@@ -32,8 +32,29 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
    * NAPS
    * Apple Pay
    
+# Installation 
+## Admin Panel
+- Login to [Admin Panel] of WordPress website 
+- Navigate to Plugins -> Add New  
+- Click on “Upload Login” and choose the plugin zip file 
+- Click on “Install Now” and activate the plugin 
+- Follow the configuration steps mentioned in Step 3 
+## SFTP 
+- Connect via SFTP and navigate to [your site root folder]/wp-content/plugins 
+- Copy WooCommerce APS plugin folder under plugins folder 
+- Navigate to Admin Panel -> Plugins 
+- Find and activate Amazon Payment Services plugin. 
+- Follow the configuration steps mentioned in Step 3 
+## Configuration
+
+Follow the below instruction to access configuration page of APS WooCommerce plugin:  
+
+- Navigate to WooCommerce -> Settings -> Payments 
+- On the Payment page find a payment methods names as “Amazon Payment Service – Credit / Debit card” 
+- Click on Manage and provide General and Multiple payment options configurations 
 
 ## Changelog
+[Changelog](https://github.com/payfort/woocommerce-payfort/wiki/Change-Log#change-log-details)
 
 | Plugin Version | Release Notes |
 | :---: | :--- |
