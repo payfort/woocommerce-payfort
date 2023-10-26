@@ -324,7 +324,7 @@ class APS_Helper extends APS_Super {
 			'timeout'     => 60,
 			'redirection' => 5,
 			'blocking'    => true,
-			'sslverify'   => false,
+			'sslverify'   => true,
 			'httpversion' => '1.0',
 			'data_format' => 'body',
 		];
