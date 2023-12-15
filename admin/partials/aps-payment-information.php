@@ -329,7 +329,7 @@ if ( isset( $aps_data['phone_number'] ) && ! empty( $aps_data['phone_number'] ) 
 }
 if ( isset( $aps_data['third_party_transaction_number'] ) && ! empty( $aps_data['third_party_transaction_number'] ) ) {
 	$table_data[] = array(
-		'label' => __( 'KNET third party transaction number', 'amazon-payment-services' ),
+		'label' => __( 'third party transaction number (KNET, Benefit, OmanNet)', 'amazon-payment-services' ),
 		'value' => $aps_data['third_party_transaction_number'],
 	);
 }

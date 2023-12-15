@@ -58,6 +58,10 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		if ( 'yes' === $this->aps_config->have_subscription() ) {
 			$available = 'no';
 		}
+		$cart_min_limit = $this->aps_config->get_valu_minimum_order_limit();
+		if ( WC()->cart && floatval( WC()->cart->total ) < $cart_min_limit ) {
+				$available = 'no';
+			}
 		return $available;
 	}
 

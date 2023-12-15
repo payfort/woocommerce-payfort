@@ -382,7 +382,7 @@
 			var checkoutUrl              = wc_checkout_params.checkout_url;
 			var checkoutData             = checkoutForm.serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay', 'aps_tabby'];
+			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay', 'aps_tabby', 'aps_benefit', 'aps_omannet'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -617,7 +617,7 @@
 			var checkoutUrl              = aps_info.review_order_checkout_url;
 			var checkoutData             = $( 'form#order_review' ).serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby'];
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby', 'aps_benefit', 'aps_omannet'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -753,7 +753,7 @@
 		function(e){
 			var can_execute_ajax         = true;
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay'];
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby', 'aps_benefit', 'aps_omannet'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -1292,8 +1292,8 @@
 									},
 									complete:	function( otp_response ) {
 										otp_response = JSON.parse(otp_response.responseText);
-										if ( otp_response.result && otp_response.result === 'failure' ) {
-											$( '.woocommerce-notices-wrapper:first-child' ).html( otp_response.messages );
+										if ( otp_response.status && otp_response.status === 'error' ) {
+											$( '.woocommerce-notices-wrapper:first-child' ).html( otp_response.message );
 											$( 'html, body' ).animate(
 												{
 													scrollTop: $( '.woocommerce-notices-wrapper' ).offset().top

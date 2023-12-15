@@ -35,7 +35,9 @@ class Gateway_Loader {
 			$gateways[] = 'WC_Gateway_APS_Apple_Pay';
 			$gateways[] = 'WC_Gateway_APS';
 			$gateways[] = 'WC_Gateway_APS_Knet';
+            $gateways[] = 'WC_Gateway_APS_Omannet';
 			$gateways[] = 'WC_Gateway_APS_Naps';
+			$gateways[] = 'WC_Gateway_APS_Benefit';
 			$gateways[] = 'WC_Gateway_APS_Valu';
 			$gateways[] = 'WC_Gateway_APS_Installments';
 			$gateways[] = 'WC_Gateway_APS_Visa_Checkout';
@@ -69,8 +71,14 @@ class Gateway_Loader {
 		/* Require Naps gateway class */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-naps.php';
 
-		/* Require knet gateway class */
+        /* Require Naps gateway class */
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-benefit.php';
+
+        /* Require knet gateway class */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-knet.php';
+
+        /* Require Omannet gateway class */
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-omannet.php';
 
 		/* Require visa checkout gateway class */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-visa-checkout.php';
@@ -93,7 +101,9 @@ class Gateway_Loader {
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VALU ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_NAPS ] );
+			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_BENEFIT ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_KNET ] );
+            unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_OMANNET ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_STC_PAY ] );

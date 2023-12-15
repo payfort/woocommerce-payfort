@@ -294,11 +294,11 @@ class APS_Payment extends APS_Super {
 				$aps_invalid_signature_log = "APS Response invalid signature ERROR\n\n Original array : " . wp_json_encode( $response_params, true ) . "\n\n\n Final array : " . wp_json_encode( $response_gateway_params, true );
 				$this->aps_helper->log( $aps_invalid_signature_log );
 
-                if ($isTabbyPay) {
+                //if ($isTabbyPay) {
                     $result = $this->aps_order->decline_order( $response_params, $response_status_message );
                     $this->aps_helper->log( $aps_error_log );
                     throw new Exception( $response_status_message);
-                }
+                //}
 
                 // this was like this, BUT it should be false
                 return true;

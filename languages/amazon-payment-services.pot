@@ -299,7 +299,43 @@ msgstr ""
 msgid "Accept NAPS"
 msgstr ""
 
+
+#: class-wc-gateway-aps-omannet.php:28
+msgid "Amazon Payment Service - OMANNET"
+msgstr ""
+
+#: class-wc-gateway-aps-omannet.php:29
+msgid "OMANNET"
+msgstr ""
+
+#: class-wc-gateway-aps-omannet.php:30
+msgid "Amazon Payment Service - OMANNET"
+msgstr ""
+
+#: class-wc-gateway-aps-omannet.php:31
+msgid "Accept OMANNET"
+msgstr ""
+
 #: classes/class-wc-gateway-aps-naps.php:99
+
+#: classes/class-wc-gateway-aps-benefit.php:28
+msgid "Amazon Payment Service - BENEFIT"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-benefit.php:29
+#: includes/class-aps-fields-loader.php:392
+msgid "Pay With BENEFIT"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-benefit.php:30
+msgid "Amazon Payment Service - Benefit"
+msgstr ""
+
+#: classes/class-wc-gateway-aps-benefit.php:31
+msgid "Accept Benefit"
+msgstr ""
+
+
 #: classes/class-wc-gateway-aps-valu.php:165
 msgid "Partial refund is not available in this payment method"
 msgstr ""

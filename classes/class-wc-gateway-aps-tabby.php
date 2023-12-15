@@ -128,7 +128,7 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
         if (isset($payment_data['form'])) {
             $result['form'] = $payment_data['form'];
         }
-        update_post_meta($order_id, 'APS_INTEGEATION_TYPE', $integration_type);
+        update_post_meta($order_id, 'APS_INTEGRATION_TYPE', $integration_type);
         update_post_meta($order_id, 'aps_redirected', 1);
         wp_send_json($result);
 

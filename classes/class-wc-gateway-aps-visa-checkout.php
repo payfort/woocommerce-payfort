@@ -172,7 +172,7 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 			}
 		}
 		//save integration type
-		update_post_meta( $order_id, 'APS_INTEGEATION_TYPE', $integration_type );
+		update_post_meta( $order_id, 'APS_INTEGRATION_TYPE', $integration_type );
 		update_post_meta( $order_id, 'aps_redirected', 1 );
 		wp_send_json( $result );
 		wp_die();

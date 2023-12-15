@@ -481,6 +481,38 @@ class APS_Fields_Loader {
 				'placeholder' => '',
 				'class'       => 'wc-enhanced-select',
 			),
+            'omannet_group'                          => array(
+                'title' => __( 'OMANNET', 'amazon-payment-services' ),
+                'type'  => 'title',
+            ),
+            'enable_omannet'                         => array(
+                'title'       => __( 'Enabled', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    'yes' => __( 'Yes', 'amazon-payment-services' ),
+                    'no'  => __( 'No', 'amazon-payment-services' ),
+                ),
+                'default'     => 'no',
+                'desc_tip'    => true,
+                'placeholder' => '',
+                'class'       => 'wc-enhanced-select',
+            ),
+            'benefit_group'                          => array(
+                'title' => __( 'Benefit', 'amazon-payment-services' ),
+                'type'  => 'title',
+            ),
+            'enable_benefit'                         => array(
+                'title'       => __( 'Enabled', 'amazon-payment-services' ),
+                'type'        => 'select',
+                'options'     => array(
+                    'yes' => __( 'Yes', 'amazon-payment-services' ),
+                    'no'  => __( 'No', 'amazon-payment-services' ),
+                ),
+                'default'     => 'no',
+                'desc_tip'    => true,
+                'placeholder' => '',
+                'class'       => 'wc-enhanced-select',
+            ),
 			'visa_checkout_group'                 => array(
 				'title' => __( 'Visa Checkout', 'amazon-payment-services' ),
 				'type'  => 'title',
