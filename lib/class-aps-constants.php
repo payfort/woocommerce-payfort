@@ -29,7 +29,9 @@ class APS_Constants {
 	const APS_PAYMENT_TYPE_VALU          = 'aps_valu';
 	const APS_PAYMENT_TYPE_INSTALLMENT   = 'aps_installment';
 	const APS_PAYMENT_TYPE_NAPS          = 'aps_naps';
+	const APS_PAYMENT_TYPE_BENEFIT          = 'aps_benefit';
 	const APS_PAYMENT_TYPE_KNET          = 'aps_knet';
+    const APS_PAYMENT_TYPE_OMANNET       = 'aps_omannet';
 	const APS_PAYMENT_TYPE_VISA_CHECKOUT = 'aps_visa_checkout';
 	const APS_PAYMENT_TYPE_APPLE_PAY     = 'aps_apple_pay';
 	const APS_PAYMENT_TYPE_STC_PAY       = 'aps_stc_pay';
@@ -50,7 +52,9 @@ class APS_Constants {
 	// Payment Method Name
 	const APS_PAYMENT_METHOD_NAPS      = 'NAPS';
 	const APS_PAYMENT_METHOD_KNET      = 'KNET';
+    const APS_PAYMENT_METHOD_OMANNET      = 'OMANNET';
 	const APS_PAYMENT_METHOD_VALU      = 'VALU';
+	const APS_PAYMENT_METHOD_BENEFIT     = 'BENEFIT';
 	const APS_PAYMENT_METHOD_APPLE_PAY = 'APPLE_PAY';
 	const APS_PAYMENT_METHOD_STC_PAY   = 'STCPAY';
     const APS_PAYMENT_METHOD_TABBY     = 'TABBY';

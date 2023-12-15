@@ -1,9 +1,9 @@
 === Amazon payment services ===
 Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa Checkout, KNET, NAPS, Valu
 Requires at least: 5.3
-Tested up to: 6.3.1
+Tested up to: 6.4.2
 Requires PHP: 7.0
-Stable tag: 2.3.6
+Stable tag: 2.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -31,8 +31,14 @@ Amazon payment services makes it really easy to start accepting online payments 
    * NAPS
    * Apple Pay
    * STCPay
+   * Tabby
+   * Benefit
+   * OmanNet
 
 == Changelog ==
+`v2.3.7`
+* New - Benefit and OmanNet are added as a new payment option
+
 `v2.3.6`
 * New - Tabby is added as a new payment option
 * Fix - mada bin list is updated

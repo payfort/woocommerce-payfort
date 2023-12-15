@@ -50,7 +50,9 @@ class APS_Config extends APS_Super {
 	private $enable_apple_pay_product_page;
 	private $enable_apple_pay_cart_page;
 	private $enable_knet;
+    private $enable_omannet;
 	private $enable_naps;
+	private $enable_benefit;
 	private $enable_visa_checkout;
 	private $visa_checkout_integration_type;
 	private $visa_checkout_api_key;
@@ -113,7 +115,9 @@ class APS_Config extends APS_Super {
 		$this->enable_apple_pay_product_page       = $this->get_aps_config( 'enable_apple_pay_product_page' );
 		$this->enable_apple_pay_cart_page          = $this->get_aps_config( 'enable_apple_pay_cart_page' );
 		$this->enable_knet                         = $this->get_aps_config( 'enable_knet' );
+        $this->enable_omannet                      = $this->get_aps_config( 'enable_omannet' );
 		$this->enable_naps                         = $this->get_aps_config( 'enable_naps' );
+		$this->enable_benefit                      = $this->get_aps_config( 'enable_benefit' );
 		$this->enable_visa_checkout                = $this->get_aps_config( 'enable_visa_checkout' );
 		$this->visa_checkout_integration_type      = $this->get_aps_config( 'visa_checkout_integration_type' );
 		$this->visa_checkout_api_key               = $this->get_aps_config( 'visa_checkout_api_key' );
@@ -493,6 +497,16 @@ class APS_Config extends APS_Super {
 		return $this->enable_knet;
 	}
 
+    /**
+     * Return enable omannet
+     *
+     * @return string
+     */
+
+    public function get_enable_omannet() {
+        return $this->enable_omannet;
+    }
+
 	/**
 	 * Return enable naps
 	 *
@@ -501,6 +515,15 @@ class APS_Config extends APS_Super {
 	public function get_enable_naps() {
 		return $this->enable_naps;
 	}
+
+    /**
+     * Return enable benefit
+     *
+     * @return string
+     */
+    public function get_enable_benefit() {
+        return $this->enable_benefit;
+    }
 
 	/**
 	 * Return enable visa checkout
@@ -844,7 +867,9 @@ class APS_Config extends APS_Super {
 			$this->enable_visa_checkout,
 			$this->enable_valu,
 			$this->enable_knet,
+            $this->enable_omannet,
 			$this->enable_naps,
+			$this->enable_benefit,
 			$this->enable_apple_pay,
             $this->enable_stc_pay,
             $this->enable_tabby

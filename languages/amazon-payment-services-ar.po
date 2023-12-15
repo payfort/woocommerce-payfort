@@ -37,6 +37,30 @@ msgstr "قبول Knet"
 msgid "Accept NAPS"
 msgstr "قبول NAPS"
 
+#: class-wc-gateway-aps-omannet.php:28
+msgid "خدمة الدفع من أمازون - عُمان نت"
+msgstr ""
+
+#: class-wc-gateway-aps-omannet.php:30
+msgid "خدمة الدفع من أمازون - عُمان نت"
+msgstr ""
+
+#: class-wc-gateway-aps-benefit.php:28
+msgid "خدمة الدفع من أمازون - بنفت"
+msgstr ""
+
+#: class-wc-gateway-aps-benefit.php:30
+msgid "خدمة الدفع من أمازون - بنفت"
+msgstr ""
+
+#: class-wc-gateway-aps-benefit.php:29
+msgid "Pay With BENEFIT"
+msgstr "الدفع بإستخدام بنفت"
+
+#: class-wc-gateway-aps-benefit.php:31
+msgid "Accept BENEFIT"
+msgstr "اقبل بنفت"
+
 #: classes/class-wc-gateway-aps-valu.php:30
 msgid "Accept valu payment"
 msgstr "قبول الدفع ببطاقة الائتمان / الخصم"

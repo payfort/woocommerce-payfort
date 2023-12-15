@@ -1,4 +1,7 @@
 ## Changelog
+`v2.3.7`
+* New - Benefit and OmanNet are added as a new payment option
+
 `v2.3.6`
 * New - Tabby is added as a new payment option
 * Fix - mada bin list is updated

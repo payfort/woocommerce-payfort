@@ -140,7 +140,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
                 if (isset($payment_data['form'])) {
                     $result['form'] = $payment_data['form'];
                 }
-                update_post_meta($order_id, 'APS_INTEGEATION_TYPE', $integration_type);
+                update_post_meta($order_id, 'APS_INTEGRATION_TYPE', $integration_type);
                 update_post_meta($order_id, 'aps_redirected', 1);
                 wp_send_json($result);
         }
@@ -148,7 +148,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
             // handle hosted integration
             if (!empty($stc_pay_otp) || !empty($stc_token)) {
                 // Verify OTP and execute purchase
-                update_post_meta($order_id, 'APS_INTEGEATION_TYPE', $integration_type);
+                update_post_meta($order_id, 'APS_INTEGRATION_TYPE', $integration_type);
                 update_post_meta($order_id, 'aps_redirected', 1);
                 $remember_me = filter_input(INPUT_POST, 'stc_pay_remember_me');
                 if ('yes' === $this->aps_config->have_subscription() && 'yes' === $this->get_enabled_tokenization()){
