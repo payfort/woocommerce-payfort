@@ -41,6 +41,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes |
 |:--------------:| :--- |
+|     2.3.8      |   * Fix - Use password input type to hide sensitive information. | 
 |     2.3.7      |   * New - Benefit and OmanNet are added as a new payment option | 
 |     2.3.6      |   * New - Tabby is added as a new payment option <br/> * Fix - mada bin list is updated<br/>* Fix - STCPay tokenization parameter is ignored if tokenization is disabled in config |
 |     2.3.5      |   * New - ToU and Cashback Parameters are added to valU payment option |

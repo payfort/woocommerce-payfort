@@ -80,7 +80,7 @@ class APS_Fields_Loader {
 			),
 			'merchant_identifier'                 => array(
 				'title'            => __( 'Merchant Identifier', 'amazon-payment-services' ),
-				'type'             => 'text',
+				'type'             => 'password',
 				'default'          => '',
 				'desc_tip'         => true,
 				'placeholder'      => '',
@@ -90,7 +90,7 @@ class APS_Fields_Loader {
 			),
 			'access_code'                         => array(
 				'title'            => __( 'Access Code', 'amazon-payment-services' ),
-				'type'             => 'text',
+				'type'             => 'password',
 				'default'          => '',
 				'desc_tip'         => true,
 				'placeholder'      => '',
@@ -100,7 +100,7 @@ class APS_Fields_Loader {
 			),
 			'request_sha_phrase'                  => array(
 				'title'            => __( 'Request SHA Phrase', 'amazon-payment-services' ),
-				'type'             => 'text',
+				'type'             => 'password',
 				'default'          => '',
 				'desc_tip'         => true,
 				'placeholder'      => '',
@@ -110,7 +110,7 @@ class APS_Fields_Loader {
 			),
 			'response_sha_phrase'                 => array(
 				'title'            => __( 'Response SHA Phrase', 'amazon-payment-services' ),
-				'type'             => 'text',
+				'type'             => 'password',
 				'default'          => '',
 				'desc_tip'         => true,
 				'placeholder'      => '',
@@ -380,7 +380,7 @@ class APS_Fields_Loader {
 			),
 			'apple_pay_access_code'               => array(
 				'title'            => __( 'Access Code', 'amazon-payment-services' ),
-				'type'             => 'text',
+				'type'             => 'password',
 				'default'          => '',
 				'desc_tip'         => true,
 				'placeholder'      => '',

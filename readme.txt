@@ -36,6 +36,9 @@ Amazon payment services makes it really easy to start accepting online payments 
    * OmanNet
 
 == Changelog ==
+`v2.3.8`
+* Fix - Use password input type to hide sensitive information
+
 `v2.3.7`
 * New - Benefit and OmanNet are added as a new payment option
 
