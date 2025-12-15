@@ -276,18 +276,13 @@ class APS_Payment extends APS_Super {
 
 			$payment_method = $this->aps_order->get_payment_method();
 
-            $stc_ignore_signature = true;
-            if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_STC_PAY || APS_Constants::APS_PAYMENT_METHOD_STC_PAY === $response_params['payment_option'] ){
-                $stc_ignore_signature = false;
-            }
-
             $isTabbyPay = false;
             if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_TABBY || APS_Constants::APS_PAYMENT_METHOD_TABBY === $response_params['payment_option'] ){
                 $isTabbyPay = true;
             }
 
 			// check the signature
-			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] && $stc_ignore_signature) {
+			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] ) {
 				$response_message = __( 'Invalid Singature', 'amazon-payment-services' );
 				// There is a problem in the response we got
 				$this->aps_order->on_hold_order( 'Invalid Signature.' );

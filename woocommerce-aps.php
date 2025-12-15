@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Plugin Name:       Amazon payment services
  * Plugin URI:        https://paymentservices.amazon.com/
  * Description:       Amazon payment services makes it really easy to start accepting online payments (credit &amp; debit cards) in the Middle East. Sign up is instant, at https://paymentservices.amazon.com/
- * Version:           2.3.7
+ * Version:           2.3.9
  * Author:            Amazon Payment Services
  * Author URI:        https://paymentservices.amazon.com/
  * Text Domain:       amazon-payment-services
@@ -33,7 +33,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently plugin version.
  */
-define( 'APS_VERSION', '2.3.7' );
+define( 'APS_VERSION', '2.3.9' );
 define( 'APS_NAME', 'amazon-payment-services' );
 
 /**
