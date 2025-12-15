@@ -277,7 +277,7 @@ class APS_Payment extends APS_Super {
 			$payment_method = $this->aps_order->get_payment_method();
 
             $stc_ignore_signature = true;
-            if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_STC_PAY || APS_Constants::APS_PAYMENT_METHOD_STC_PAY === $response_params['payment_option'] ){
+            if ( ($payment_method == APS_Constants::APS_PAYMENT_TYPE_STC_PAY || APS_Constants::APS_PAYMENT_METHOD_STC_PAY === $response_params['payment_option'] ) and isset($response_params['service_command']) && APS_Constants::APS_STC_GENERATE_OTP_COMMAND === $response_params['service_command']){
                 $stc_ignore_signature = false;
             }
 

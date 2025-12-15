@@ -138,6 +138,8 @@ class APS_Constants {
 	const APS_COMMAND_ECOMMERCE             = 'ECOMMERCE';
 	const APS_COMMAND_CHECK_STATUS          = 'CHECK_STATUS';
 
+    const APS_STC_GENERATE_OTP_COMMAND      = 'GENERATE_OTP';
+
 	// Generic Constants
 	const APS_VALU_EG_COUNTRY_CODE         = '+20';
 

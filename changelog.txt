@@ -1,4 +1,10 @@
 ## Changelog
+`v2.3.9`
+* Fix - Signature calculation flag fix.
+
+`v2.3.8`
+* Fix - Use password input type to hide sensitive information
+
 `v2.3.7`
 * New - Benefit and OmanNet are added as a new payment option
 
