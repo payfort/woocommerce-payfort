@@ -1,4 +1,7 @@
 ## Changelog
+`v2.4.0`
+* Fix - Signature calculation valu fix.
+
 `v2.3.9`
 * Fix - Signature calculation flag fix.
 
