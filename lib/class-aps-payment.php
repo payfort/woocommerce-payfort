@@ -282,7 +282,7 @@ class APS_Payment extends APS_Super {
             }
 
 			// check the signature
-			if ( strtolower( $response_signature ) !== strtolower( $signature ) && 'VALU' !== $response_params['payment_option'] ) {
+			if ( strtolower( $response_signature ) !== strtolower( $signature ) ) {
 				$response_message = __( 'Invalid Singature', 'amazon-payment-services' );
 				// There is a problem in the response we got
 				$this->aps_order->on_hold_order( 'Invalid Signature.' );
