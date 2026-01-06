@@ -130,9 +130,17 @@ class APS_Payment extends APS_Super {
                 $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
                 $gateway_params['phone_number'] =  $this->aps_order->get_phone_number();
             }
+            if ( APS_Constants::APS_PAYMENT_TYPE_TAMARA === $payment_method ) {
+                $gateway_params['payment_option'] =  APS_Constants::APS_PAYMENT_METHOD_TAMARA;
+                $gateway_params['merchant_reference'] = $order_id;
+                update_post_meta( $order_id , 'tamara_reference_id' , $gateway_params['merchant_reference'] );
+                $gateway_params['customer_ip'] = $this->aps_helper->get_customer_ip();
+                $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
+                $gateway_params['phone_number'] =  $this->aps_order->get_phone_number();
+            }
 			$plugin_params  = $this->aps_config->plugin_params();
 			$gateway_params = array_merge( $gateway_params, $plugin_params );
-			if ( APS_Constants::APS_PAYMENT_TYPE_CC !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_STC_PAY !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_TABBY !== $payment_method) {
+			if ( APS_Constants::APS_PAYMENT_TYPE_CC !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_STC_PAY !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_TABBY !== $payment_method && APS_Constants::APS_PAYMENT_TYPE_TAMARA !== $payment_method) {
 				unset( WC()->session->order_awaiting_payment );
 			}
 		} else {
@@ -279,6 +287,11 @@ class APS_Payment extends APS_Super {
             $isTabbyPay = false;
             if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_TABBY || APS_Constants::APS_PAYMENT_METHOD_TABBY === $response_params['payment_option'] ){
                 $isTabbyPay = true;
+            }
+
+            $isTamaraPay = false;
+            if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_TAMARA || APS_Constants::APS_PAYMENT_METHOD_TAMARA === $response_params['payment_option'] ){
+                $isTamaraPay = true;
             }
 
 			// check the signature
@@ -600,6 +613,50 @@ class APS_Payment extends APS_Super {
             'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
             'access_code'         => $this->aps_config->get_access_code(),
             'digital_wallet'      => APS_Constants::APS_PAYMENT_METHOD_TABBY,
+            'merchant_reference'  => $this->aps_helper->generate_random_key(),
+            'language'            => $language,
+            'command'             => APS_Constants::APS_COMMAND_PURCHASE,
+            'customer_ip'         => $this->aps_helper->get_customer_ip(),
+            'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
+            'currency'            => strtoupper( $currency ),
+            'customer_email'      => $this->aps_order->get_email(),
+            'token_name'          => $aps_response['token_name'],
+            'return_url'          => create_wc_api_url( 'aps_online_response' ),
+        );
+        $customer_name          = $this->aps_order->get_customer_name();
+        if ( ! empty( $customer_name ) ) {
+            $gateway_params['customer_name'] = $customer_name;
+        }
+        $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
+        $gateway_params['signature'] = $signature;
+
+        $gateway_url = $this->aps_config->get_gateway_url( 'api' );
+        $this->aps_helper->log( 'APS recurring request \n\n' . wp_json_encode( $gateway_params, true ) );
+        $response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+        if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
+            $this->aps_order->success_order( $response, 'online' );
+            $payment_status = true;
+        } else {
+            $result         = $this->aps_order->decline_order( $response, $response['response_message'] );
+            $payment_status = false;
+        }
+        $this->aps_helper->log( 'APS recurring response \n\n' . wp_json_encode( $response, true ) );
+        return $payment_status;
+    }
+    public function tamara_process_subscription_payment( $renewal_order, $recurring_amount ) {
+        $payment_status = false;
+        $this->aps_order->load_order( $renewal_order->get_id() );
+        $renewal_order_id       = $renewal_order->get_id();
+        $subscription_order_id  = get_post_meta( $renewal_order_id, '_subscription_renewal', true );
+        $subscription_order_obj = get_post( $subscription_order_id );
+        $parent_order_id        = $subscription_order_obj->post_parent;
+        $aps_response           = get_post_meta( $parent_order_id, 'aps_payment_response', true );
+        $currency               = $aps_response['currency'];
+        $language               = $aps_response['language'];
+        $gateway_params         = array(
+            'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
+            'access_code'         => $this->aps_config->get_access_code(),
+            'digital_wallet'      => APS_Constants::APS_PAYMENT_METHOD_TAMARA,
             'merchant_reference'  => $this->aps_helper->generate_random_key(),
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,

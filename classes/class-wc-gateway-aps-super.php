@@ -337,6 +337,17 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
                 $this->aps_helper->log( 'TABBY REFUND order_id' . $response_params['merchant_reference']);
             }
 
+            // check if webhook call for TAMARA refund
+            if ( isset( $response_params['command'] ) && 'REFUND' == $response_params['command'] ) {
+                $order_id_by_reference = '';
+                $order_id_by_reference = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , APS_Constants::APS_PAYMENT_METHOD_TAMARA);
+                $this->aps_helper->log( 'TAMARA REFUND merchant_reference' . $response_params['merchant_reference']);
+                if ('' != $order_id_by_reference){
+                    $response_params['merchant_reference'] = $order_id_by_reference;
+                }
+                $this->aps_helper->log( 'TAMARA REFUND order_id' . $response_params['merchant_reference']);
+            }
+
 			$success = $this->aps_payment->handle_fort_response( $response_params, $response_mode, $integration_type );
 			if ( $success ) {
 				//handle valu refund webhook

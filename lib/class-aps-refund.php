@@ -73,12 +73,19 @@ class APS_Refund extends APS_Super {
                     $this->aps_helper->log( 'APS refund stc_pay order_id#' . $order_id . 'stc_pay_reference_id#' . $stc_pay_reference_id );
                 }
             }
-
+			
             if($this->aps_order->get_payment_method() == APS_Constants::APS_PAYMENT_TYPE_TABBY){
                 $tabby_reference_id = get_post_meta( $order_id, 'tabby_reference_id', true );
                 if ( !empty($tabby_reference_id) && $merchant_reference !== $tabby_reference_id ){
                     $merchant_reference = $tabby_reference_id;
                     $this->aps_helper->log( 'APS refund tabby order_id#' . $order_id . 'tabby_reference_id#' . $tabby_reference_id );
+                }
+            }
+            if($this->aps_order->get_payment_method() == APS_Constants::APS_PAYMENT_TYPE_TAMARA){
+                $tamara_reference_id = get_post_meta( $order_id, 'tamara_reference_id', true );
+                if ( !empty($tamara_reference_id) && $merchant_reference !== $tamara_reference_id ){
+                    $merchant_reference = $tamara_reference_id;
+                    $this->aps_helper->log( 'APS refund tamara order_id#' . $order_id . 'tamara_reference_id#' . $tamara_reference_id );
                 }
             }
 

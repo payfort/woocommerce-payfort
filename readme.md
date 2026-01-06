@@ -33,6 +33,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
    * Apple Pay
    * STCPay
    * Tabby
+   * Tamara
    * Benefit
    * OmanNet
    
@@ -41,6 +42,7 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
 
 | Plugin Version | Release Notes                                                                                                                                                                                                                                                                                                                                                                      |
 |:--------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     2.4.1      | * New - Tamara is added as a new payment option                                                                                                                                                                                                                                                                                                                                    |
 |     2.4.0      | * Fix - Signature calculation valu fix.                                                                                                                                                                                                                                                                                                                                            |
 |     2.3.9      | * Fix - Signature calculation flag fix.                                                                                                                                                                                                                                                                                                                                            |
 |     2.3.8      | * Fix - Use password input type to hide sensitive information.                                                                                                                                                                                                                                                                                                                     | 

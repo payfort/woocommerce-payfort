@@ -36,6 +36,7 @@ class APS_Constants {
 	const APS_PAYMENT_TYPE_APPLE_PAY     = 'aps_apple_pay';
 	const APS_PAYMENT_TYPE_STC_PAY       = 'aps_stc_pay';
     const APS_PAYMENT_TYPE_TABBY       = 'aps_tabby';
+    const APS_PAYMENT_TYPE_TAMARA       = 'aps_tamara';
 	const APS_RETRY_PAYMENT_METHODS      = array(
 		'aps_cc',
 		'aps_installment',
@@ -58,6 +59,7 @@ class APS_Constants {
 	const APS_PAYMENT_METHOD_APPLE_PAY = 'APPLE_PAY';
 	const APS_PAYMENT_METHOD_STC_PAY   = 'STCPAY';
     const APS_PAYMENT_METHOD_TABBY     = 'TABBY';
+    const APS_PAYMENT_METHOD_TAMARA     = 'TAMARA';
 	const APS_RETRY_PAYMENT_OPTIONS    = array(
 		'VISA',
 		'MASTERCARD',
@@ -85,6 +87,8 @@ class APS_Constants {
 	const APS_STC_PAY_OTP_VERIFY_SUCCESS_RESPONSE_CODE    = '92182';
     const APS_TABBY_OTP_GENERATE_SUCCESS_RESPONSE_CODE     = '88000';
     const APS_TABBY_OTP_VERIFY_SUCCESS_RESPONSE_CODE       = '92182';
+    const APS_TAMARA_OTP_GENERATE_SUCCESS_RESPONSE_CODE     = '88000';
+    const APS_TAMARA_OTP_VERIFY_SUCCESS_RESPONSE_CODE       = '92182';
 	const APS_REFUND_SUCCESS_RESPONSE_CODE                = '06000';
 	const APS_PAYMENT_AUTHORIZATION_SUCCESS_RESPONSE_CODE = '02000';
 	const APS_TOKEN_SUCCESS_RESPONSE_CODE                 = '52062';
@@ -143,6 +147,8 @@ class APS_Constants {
 	const APS_STC_PAY_SAR_COUNTRY_CODE      = '+966';
 
     const APS_TABBY_SAR_COUNTRY_CODE      = '+966';
+	
+    const APS_TAMARA_SAR_COUNTRY_CODE      = '+966';
 
 	const APS_STATUS_CRON_DEFAULT_DURATION = '60';
 

@@ -279,6 +279,53 @@ section.tabby_form {
 	line-height: 1;
 	padding: 10px 0px;
 }
+/* TAMARA CSS */
+.tamara_form:not(.active){
+	display: none;
+}
+
+section.tamara_form {
+	overflow: hidden;
+	max-width: 3rem;
+}
+
+.wc_payment_method.payment_method_aps_tamara img {
+	max-width: 3rem;
+}
+
+.tamara_loader:not(.active){
+	display:none;
+}
+
+.tamara_loader.active{
+	display: flex !important;
+	position: relative;
+	height: 25px;
+	width: 100%;
+	align-items: center;
+}
+
+.tamara_loader.active .tamara_loader_icon{
+	height: 0;
+	width: 0;
+	padding: 5px;
+	border: 5px solid #ccc;
+	border-right-color: #888;
+	border-radius: 10px;
+	-webkit-animation: rotateValuLoader 1s infinite linear;
+	z-index: 99999;
+	position: absolute;
+}
+
+.tamara_loader.active .tamara_loader_caption{
+	margin-right: 25px;
+}
+
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_tamara ,
+.woocommerce-checkout #payment ul.payment_methods li.payment_method_aps_tamara li{
+	line-height: 1;
+	padding: 10px 0px;
+}
 
 	/* Valu CSS */
 .valu_form:not(.active) {

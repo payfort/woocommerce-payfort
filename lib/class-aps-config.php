@@ -72,9 +72,12 @@ class APS_Config extends APS_Super {
 	private $enable_stc_pay;
     private $stc_pay_integration_type;
     private $stc_pay_enabled_tokenization;
-    private $enable_tabby;
+	private $enable_tabby;
     private $tabby_integration_type;
     private $tabby_enabled_tokenization;
+    private $enable_tamara;
+    private $tamara_integration_type;
+    private $tamara_enabled_tokenization;
 	private $valu_minimum_order_limit;
 	private $apple_pay_production_key;
 	private $apple_pay_domain_name;
@@ -148,9 +151,12 @@ class APS_Config extends APS_Super {
         $this->enable_stc_pay                      = $this->get_aps_config( 'enable_stc_pay' );
         $this->stc_pay_integration_type            = $this->get_aps_config('stc_pay_integration_type');
         $this->stc_pay_enabled_tokenization        = $this->get_aps_config('stc_pay_enabled_tokenization');
-        $this->enable_tabby                         = $this->get_aps_config( 'enable_tabby' );
+		$this->enable_tabby                         = $this->get_aps_config( 'enable_tabby' );
         $this->tabby_integration_type               = APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION;
         $this->tabby_enabled_tokenization           = 'no';
+        $this->enable_tamara                         = $this->get_aps_config( 'enable_tamara' );
+        $this->tamara_integration_type               = APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION;
+        $this->tamara_enabled_tokenization           = 'no';
 	}
 
 	/**
@@ -705,6 +711,33 @@ class APS_Config extends APS_Super {
     {
         return $this->tabby_enabled_tokenization;
     }
+    /**
+     * Return enable TAMARA
+     *
+     * @return string
+     */
+    public function get_enable_tamara() {
+        return $this->enable_tamara;
+    }
+
+    /**
+     * Return TAMARA integration type
+     *
+     * @return string
+     */
+    public function get_tamara_integration_type() {
+        return $this->tamara_integration_type;
+    }
+
+    /**
+     * Return TAMARA enable tokenization
+     *
+     * @return string
+     */
+    public function get_tamara_enabled_tokenization()
+    {
+        return $this->tamara_enabled_tokenization;
+    }
 
 
     /**
@@ -872,7 +905,8 @@ class APS_Config extends APS_Super {
 			$this->enable_benefit,
 			$this->enable_apple_pay,
             $this->enable_stc_pay,
-            $this->enable_tabby
+            $this->enable_tabby,
+            $this->enable_tamara
 		);
 		if ( in_array('yes', $payment_method_status) ) {
 			return 'yes';
