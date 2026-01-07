@@ -32,10 +32,15 @@ Amazon payment services makes it really easy to start accepting online payments 
    * Apple Pay
    * STCPay
    * Tabby
+   * Tamara
    * Benefit
    * OmanNet
 
 == Changelog ==
+
+`v2.4.1`
+* New - Tamara is added as a new payment option
+
 `v2.4.0`
 * Fix - Signature calculation valu fix.
 

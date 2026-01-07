@@ -43,6 +43,7 @@ class Gateway_Loader {
 			$gateways[] = 'WC_Gateway_APS_Visa_Checkout';
 			$gateways[] = 'WC_Gateway_APS_STC_Pay';
             $gateways[] = 'WC_Gateway_APS_TABBY';
+            $gateways[] = 'WC_Gateway_APS_TAMARA';
 		}
 		return $gateways;
 	}
@@ -91,6 +92,9 @@ class Gateway_Loader {
 
         /* Require tabby gateway class */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-tabby.php';
+
+        /* Require tamara gateway class */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/class-wc-gateway-aps-tamara.php';
 	}
 
 	/**
@@ -108,6 +112,7 @@ class Gateway_Loader {
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY ] );
 			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_STC_PAY ] );
             unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_TABBY ] );
+            unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_TAMARA ] );
 		}
 		return $available_gateways;
 	}

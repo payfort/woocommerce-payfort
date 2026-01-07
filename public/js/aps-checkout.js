@@ -382,7 +382,7 @@
 			var checkoutUrl              = wc_checkout_params.checkout_url;
 			var checkoutData             = checkoutForm.serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay', 'aps_tabby', 'aps_benefit', 'aps_omannet'];
+			var aps_payment_methods = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay', 'aps_stc_pay', 'aps_tabby', 'aps_tamara', 'aps_benefit', 'aps_omannet'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -458,6 +458,21 @@
 					}
 					else{
 						$('.tabby_process_error').show().html(tabby_error_message);
+						return false;
+					}
+				}
+				else if(aps_info.payment_method_tamara === selected_payment_method){
+
+					let tamara_status = true;
+					let tamara_error_message = '';
+
+					//handle validation if existing token not used
+
+					if(tamara_status){
+						$('.tamara_loader').addClass('active');
+					}
+					else{
+						$('.tamara_process_error').show().html(tamara_error_message);
 						return false;
 					}
 				}
@@ -551,6 +566,7 @@
 					$( ".valu_loader" ).removeClass( 'active' );
 					$( ".stc_pay_loader" ).removeClass( 'active' );
 					$( ".tabby_loader" ).removeClass( 'active' );
+					$( ".tamara_loader" ).removeClass( 'active' );
 					if ( response.result === 'success' ) {
 						if ( payment_integration_type === aps_info.redirection_type && response.form ) {
 							apsPayment.redirectCheckout( response.url, response.params, selected_payment_method );
@@ -558,7 +574,7 @@
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
 							apsPayment.standardCheckout( response.url, response.params, response.redirect_url, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
-							if ( [aps_info.payment_method_valu,aps_info.payment_method_stc_pay,aps_info.payment_method_tabby ].includes(selected_payment_method) ) {
+							if ( [aps_info.payment_method_valu,aps_info.payment_method_stc_pay,aps_info.payment_method_tabby,aps_info.payment_method_tamara ].includes(selected_payment_method) ) {
 								redirect_url = response.redirect_link;
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
@@ -569,6 +585,11 @@
 									window.location.href = redirect_url;
 								}
 							} else if ( aps_info.payment_method_stc_pay === selected_payment_method ) {
+								redirect_url = response.redirect_link;
+								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
+									window.location.href = redirect_url;
+								}
+							} else if ( aps_info.payment_method_tamara === selected_payment_method ) {
 								redirect_url = response.redirect_link;
 								if ((redirect_url !== null)|| (typeof redirect_url !== 'undefined') || (redirect_url.length > 0)) {
 									window.location.href = redirect_url;
@@ -617,7 +638,7 @@
 			var checkoutUrl              = aps_info.review_order_checkout_url;
 			var checkoutData             = $( 'form#order_review' ).serialize();
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby', 'aps_benefit', 'aps_omannet'];
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby', 'aps_tamara', 'aps_benefit', 'aps_omannet'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}
@@ -721,6 +742,8 @@
 								}
 							}else if ( aps_info.payment_method_aps_stc_pay === selected_payment_method ) {
 								console.log(response);
+							}else if ( aps_info.payment_method_aps_tamara === selected_payment_method ) {
+								console.log(response);
 							}else if ( aps_info.payment_method_aps_tabby === selected_payment_method ) {
 								console.log(response);
 							}  else {
@@ -753,7 +776,7 @@
 		function(e){
 			var can_execute_ajax         = true;
 			var selected_payment_method  = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby', 'aps_benefit', 'aps_omannet'];
+			var aps_payment_methods      = ['aps_cc', 'aps_valu', 'aps_installment', 'aps_naps', 'aps_knet', 'aps_visa_checkout', 'aps_apple_pay' , 'aps_stc_pay', 'aps_tabby', 'aps_tamara', 'aps_benefit', 'aps_omannet'];
 			if($.inArray(selected_payment_method, aps_payment_methods) === -1){
 				return;
 			}

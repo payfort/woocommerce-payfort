@@ -430,6 +430,9 @@ class APS_Helper extends APS_Super {
         if ($payment_option === APS_Constants::APS_PAYMENT_METHOD_TABBY){
             $meta_key = 'tabby_reference_id';
         }
+        if ($payment_option === APS_Constants::APS_PAYMENT_METHOD_TAMARA){
+            $meta_key = 'tamara_reference_id';
+        }
 
 		$meta = $wpdb->get_row(
 			$wpdb->prepare(
@@ -598,6 +601,13 @@ class APS_Helper extends APS_Super {
             if ( !empty($tabby_reference_id) ) {
                 $this->log( 'APS aps_status_checker tabby order_id#' . $order_id . 'tabby_reference_id#' . $tabby_reference_id );
                 $order_id = $tabby_reference_id;
+            }
+        }
+        if ( APS_Constants::APS_PAYMENT_TYPE_TAMARA == $payment_method ) {
+            $tamara_reference_id = get_post_meta( $order_id, 'tamara_reference_id', true );
+            if ( !empty($tamara_reference_id) ) {
+                $this->log( 'APS aps_status_checker tamara order_id#' . $order_id . 'tamara_reference_id#' . $tamara_reference_id );
+                $order_id = $tamara_reference_id;
             }
         }
 
