@@ -265,10 +265,6 @@ class APS_Payment extends APS_Super {
 
 			$payment_method = $this->aps_order->get_payment_method();
 
-			// SECURITY FIX: Determine signature type from the order's stored payment method
-			// (trusted server-side data) instead of attacker-controlled digital_wallet parameter.
-			// This prevents key confusion attacks where an attacker forces Apple Pay key selection
-			// by setting digital_wallet=APPLE_PAY in the webhook request.
 			$signature_type = ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $payment_method ) ? 'apple_pay' : 'regular';
 
 			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );

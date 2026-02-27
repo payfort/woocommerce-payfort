@@ -267,10 +267,6 @@ class APS_Helper extends APS_Super {
 			}
 		}
 
-		// SECURITY FIX: Reject empty passphrases for response signature verification.
-		// An empty passphrase means the signature has no secret component, allowing
-		// anyone to forge valid signatures. This prevents key confusion attacks where
-		// unconfigured payment method credentials (e.g., Apple Pay) are exploited.
 		if ( 'response' === $sign_type && empty( $sha_passphrase ) ) {
 			$this->log( 'SECURITY: Attempted signature verification with empty SHA passphrase (type=' . $type . '). Returning unmatchable signature.' );
 			return '___INVALID_EMPTY_PASSPHRASE___';
