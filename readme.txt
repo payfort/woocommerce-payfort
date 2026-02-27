@@ -3,7 +3,7 @@ Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa
 Requires at least: 5.3
 Tested up to: 6.4.2
 Requires PHP: 7.0
-Stable tag: 2.4.0
+Stable tag: 2.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 

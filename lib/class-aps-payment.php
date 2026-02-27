@@ -254,16 +254,6 @@ class APS_Payment extends APS_Super {
 					unset( $response_gateway_params[ $k ] );
 				}
 			}
-			$signature_type     = isset( $response_params['digital_wallet'] ) && APS_Constants::APS_PAYMENT_METHOD_APPLE_PAY === $response_params['digital_wallet'] ? 'apple_pay' : 'regular';
-
-			//check webhook call for apple pay
-			if ( isset( $response_params['command'] ) && in_array($response_params['command'], array('REFUND', 'CAPTURE', 'VOID_AUTHORIZATION')) ) {
-				if ( isset($response_params['access_code']) && $response_params['access_code'] == $this->aps_config->get_apple_pay_access_code() ) {
-					$signature_type = 'apple_pay';
-				}
-			}
-
-			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );
 
 			//update order id if webhook call for valu refund
 			if ( '' != $order_id_by_reference && ( ! ( $order && $order->get_id() ) ) ) {
@@ -273,8 +263,15 @@ class APS_Payment extends APS_Super {
 				$this->aps_helper->log( 'Valu REFUND order_id from reference_id' . $order_id);
 			}
 
-
 			$payment_method = $this->aps_order->get_payment_method();
+
+			// SECURITY FIX: Determine signature type from the order's stored payment method
+			// (trusted server-side data) instead of attacker-controlled digital_wallet parameter.
+			// This prevents key confusion attacks where an attacker forces Apple Pay key selection
+			// by setting digital_wallet=APPLE_PAY in the webhook request.
+			$signature_type = ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $payment_method ) ? 'apple_pay' : 'regular';
+
+			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );
 
             $isTabbyPay = false;
             if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_TABBY || APS_Constants::APS_PAYMENT_METHOD_TABBY === $response_params['payment_option'] ){

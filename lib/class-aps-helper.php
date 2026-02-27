@@ -252,23 +252,32 @@ class APS_Helper extends APS_Super {
 			$hash_algorithm = $this->aps_config->get_hash_algorithm();
 		}
 		$hmac_key = '';
+		$sha_passphrase = '';
 		if ( 'apple_pay' === $type ) {
 			if ( 'request' === $sign_type ) {
-				$sha_string = $this->aps_config->get_apple_pay_request_sha_phrase() . $sha_string . $this->aps_config->get_apple_pay_request_sha_phrase();
-				$hmac_key   = $this->aps_config->get_apple_pay_request_sha_phrase();
+				$sha_passphrase = $this->aps_config->get_apple_pay_request_sha_phrase();
 			} else {
-				$sha_string = $this->aps_config->get_apple_pay_response_sha_phrase() . $sha_string . $this->aps_config->get_apple_pay_response_sha_phrase();
-				$hmac_key   = $this->aps_config->get_apple_pay_response_sha_phrase();
+				$sha_passphrase = $this->aps_config->get_apple_pay_response_sha_phrase();
 			}
 		} else {
 			if ( 'request' === $sign_type ) {
-				$sha_string = $this->aps_config->get_request_sha_phrase() . $sha_string . $this->aps_config->get_request_sha_phrase();
-				$hmac_key   = $this->aps_config->get_request_sha_phrase();
+				$sha_passphrase = $this->aps_config->get_request_sha_phrase();
 			} else {
-				$sha_string = $this->aps_config->get_response_sha_phrase() . $sha_string . $this->aps_config->get_response_sha_phrase();
-				$hmac_key   = $this->aps_config->get_response_sha_phrase();
+				$sha_passphrase = $this->aps_config->get_response_sha_phrase();
 			}
 		}
+
+		// SECURITY FIX: Reject empty passphrases for response signature verification.
+		// An empty passphrase means the signature has no secret component, allowing
+		// anyone to forge valid signatures. This prevents key confusion attacks where
+		// unconfigured payment method credentials (e.g., Apple Pay) are exploited.
+		if ( 'response' === $sign_type && empty( $sha_passphrase ) ) {
+			$this->log( 'SECURITY: Attempted signature verification with empty SHA passphrase (type=' . $type . '). Returning unmatchable signature.' );
+			return '___INVALID_EMPTY_PASSPHRASE___';
+		}
+
+		$sha_string = $sha_passphrase . $sha_string . $sha_passphrase;
+		$hmac_key   = $sha_passphrase;
 		if ( in_array( $hash_algorithm, array( 'sha256', 'sha512' ), true ) ) {
 			$signature = hash( $hash_algorithm, $sha_string );
 		} elseif ( 'hmac256' === $hash_algorithm ) {
