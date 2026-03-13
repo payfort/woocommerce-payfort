@@ -271,48 +271,62 @@ class APS_Admin {
     /**
      * Setup Meta boxes
      */
-    public function aps_meta_boxes() {
-        add_meta_box( 'aps_payment_information', __( 'APS Payment Information', 'woocommerce' ), array( $this, 'render_aps_payment_information' ), 'shop_order', 'side', 'core' );
+    public function aps_meta_boxes()
+    {
+        add_meta_box(
+            'aps_payment_information',
+            __( 'APS Payment Information', 'woocommerce' ),
+            'APS_Admin::render_aps_payment_information',
+            'woocommerce_page_wc-orders',
+            'side',
+            'default'
+        );
 
-        global $post;
-        $order_id = $post->ID;
-        $aps_data = get_post_meta( $order_id, 'aps_payment_response', true );
-        if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && 'AUTHORIZATION' == $aps_data['command'] ) {
-            add_meta_box( 'aps_payment_authorization_info', __( 'Capture/Void Authorization', 'woocommerce' ), array( $this, 'render_capture_aps_payment' ), 'shop_order', 'normal', 'high' );
-        }
+        add_meta_box(
+            'aps_payment_authorization_info',
+            __( 'Capture/Void Authorization', 'woocommerce' ),
+            'APS_Admin::render_capture_aps_payment',
+            'woocommerce_page_wc-orders',
+            'normal',
+            'high'
+        );
+
     }
 
-    public function render_capture_aps_payment() {
-        global $post;
-        $order_id                 = $post->ID;
-        $order                    = wc_get_order( $order_id );
-        $aps_data                 = get_post_meta( $order_id, 'aps_payment_response', true );
-        $aps_authorization_action = get_post_meta( $order_id, 'aps_authorization_command', true );
-        if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && 'AUTHORIZATION' == $aps_data['command'] ) {
-            $payment_method = $order->get_payment_method();
-            $amount         = $order->get_total();
-            $order_total    = $order->get_total();
+    public static function render_capture_aps_payment($order)
+    {
+        if ( $order instanceof WC_Order ) {
+            $order_id = $order->get_id();
+            $aps_data = get_post_meta($order_id, 'aps_payment_response', true);
+            if ( ! empty( $aps_data ) && isset( $aps_data['command'] ) && 'AUTHORIZATION' == $aps_data['command'] ) {
+                $aps_authorization_action = get_post_meta($order_id, 'aps_authorization_command', true);
+                $payment_method = $order->get_payment_method();
+                $amount = $order->get_total();
+                $order_total = $order->get_total();
 
-            $total_captured      = 0;
-            $total_void          = 0;
-            $aps_capture_history = array();
+                $total_captured = 0;
+                $total_void = 0;
+                $aps_capture_history = array();
 
-            if ( ! empty( $aps_authorization_action ) ) {
-                $aps_capture_history = $this->get_captured_amount_history( $order_id, $aps_authorization_action );
-                $amt                 = array_sum( array_column( $aps_capture_history, 'amount' ) );
-                if ( 'CAPTURE' === $aps_authorization_action ) {
-                    $total_captured = $amt;
-                } else {
-                    $total_void = $amt;
+                if (!empty($aps_authorization_action)) {
+                    $aps_capture_history = self::get_captured_amount_history($order_id, $aps_authorization_action);
+                    $amt = array_sum(array_column($aps_capture_history, 'amount'));
+                    if ('CAPTURE' === $aps_authorization_action) {
+                        $total_captured = $amt;
+                    } else {
+                        $total_void = $amt;
+                    }
                 }
+                $remain_capture = $order_total - $total_captured;
+                include 'partials/aps-payment-capture.php';
             }
-            $remain_capture = $order_total - $total_captured;
-            include 'partials/aps-payment-capture.php';
         }
     }
 
-    public function get_captured_amount_history( $order_id, $authorization_command ) {
+    public static function get_captured_amount_history( $order_id, $authorization_command )
+    {
         global $wpdb;
+
         $history = $wpdb->get_results($wpdb->prepare("
 			SELECT DATE_FORMAT(posts.post_date, '%%M %%d, %%Y') as date, postmeta.meta_value as amount
 			FROM $wpdb->postmeta AS postmeta
@@ -321,17 +335,20 @@ class APS_Admin {
 			AND postmeta.post_id = posts.ID ORDER BY posts.ID DESC LIMIT 0, 99
 			", strtolower($authorization_command), $order_id), ARRAY_A
         );
+
         return $history;
     }
 
-    public function render_aps_payment_information() {
-        global $post;
-        $order_id       = $post->ID;
-        $order          = new WC_Order( $order_id );
-        $aps_data       = get_post_meta( $order_id, 'aps_payment_response', true );
-        $payment_method = $order->get_payment_method();
-        if ( ! empty( $aps_data ) ) {
-            include 'partials/aps-payment-information.php';
+    public static function render_aps_payment_information($order)
+    {
+        if ( $order instanceof WC_Order ) {
+            $order_id = $order->get_id();
+
+            $aps_data       = get_post_meta( $order_id, 'aps_payment_response', true );
+            $payment_method = $order->get_payment_method();
+            if ( ! empty( $aps_data ) ) {
+                include 'partials/aps-payment-information.php';
+            }
         }
     }
 }

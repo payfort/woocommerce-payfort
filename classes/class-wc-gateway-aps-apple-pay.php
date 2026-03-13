@@ -63,9 +63,11 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 	 * Process the payment and return the result
 	 *
 	 * @param int $order_id
+     *
 	 * @return array
 	 */
-	public function process_payment( $order_id ) {
+	public function process_payment( $order_id )
+    {
 		$status      = 'success';
 		$apple_order = array(
 			'sub_total'      => 0.00,
@@ -81,27 +83,35 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 			if ( 'failed' === $order->get_status() ) {
 				$order->update_status( 'payment-pending', '' );
 			}
-			$apple_order['sub_total']      = $order->get_subtotal();
-			$apple_order['tax_total']      = $order->get_total_tax();
-			$apple_order['shipping_total'] = $order->get_shipping_total();
-			$apple_order['discount_total'] = $order->get_discount_total();
-			$apple_order['grand_total']    = $order->get_total();
-			foreach ( $order->get_items() as $item_id => $item ) {
-				$apple_order['order_items'][] = array(
-					'product_name'     => $item->get_name(),
-					'product_subtotal' => $item->get_subtotal(),
+
+            // Handle currency gateway option (base / front) in case of multi-currency stores
+            $fort_currency              = $this->aps_helper->get_fort_currency();
+            $order_currency             = $order->get_currency();
+            $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
+
+            $apple_order['sub_total']      = $this->aps_helper->convert_to_base_currency($order->get_subtotal(), $currency_conversion_rate);
+            $apple_order['tax_total']      = $this->aps_helper->convert_to_base_currency($order->get_total_tax(), $currency_conversion_rate);
+            $apple_order['shipping_total'] = $this->aps_helper->convert_to_base_currency($order->get_shipping_total(), $currency_conversion_rate);
+            $apple_order['discount_total'] = $this->aps_helper->convert_to_base_currency($order->get_discount_total(), $currency_conversion_rate);
+            $apple_order['grand_total']    = $this->aps_helper->convert_to_base_currency($order->get_total(), $currency_conversion_rate);
+            foreach ( $order->get_items() as $item ) {
+                $apple_order['order_items'][] = array(
+                    'product_name'     => $item->get_name(),
+                    'product_subtotal' => $this->aps_helper->convert_to_base_currency($item->get_subtotal(), $currency_conversion_rate),
 				);
 			}
 		} catch ( \Exception $e ) {
 			$status = 'failure';
 		}
-		$result = array(
+
+		return [
 			'result'      => $status,
 			'reload'      => false,
 			'apple_order' => $apple_order,
-		);
-		wp_send_json( $result );
-		wp_die();
+		];
+
+//		wp_send_json( $result );
+//		wp_die();
 	}
 
 	/**
@@ -116,6 +126,29 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 		if ( class_exists( 'APS_Public' ) ) {
 			APS_Public::load_apple_pay_wizard( $this->aps_config->get_apple_pay_button_type() );
 		}
+	}
+
+	/**
+	 * Return the Apple Pay button HTML (used in blocks implementation)
+	 *
+	 * @return false|string
+	 */
+	public function get_apple_pay_button_html()
+	{
+		ob_start();
+		$integration_type_cls = 'integration_type_' . $this->id;
+		echo '<input type="hidden" class="' . wp_kses_data( $integration_type_cls ) . '" value="' . wp_kses_data( $this->get_integration_type() ) . '" />';
+		if ( class_exists( 'APS_Public' ) ) {
+			APS_Public::load_apple_pay_wizard( $this->aps_config->get_apple_pay_button_type()  );
+		}
+
+		$returnHtml = ob_get_clean();
+
+		if (false === $returnHtml) {
+			return '';
+		}
+
+		return $returnHtml;
 	}
 
 	/**

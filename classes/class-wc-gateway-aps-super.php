@@ -37,6 +37,8 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		$this->aps_order        = new APS_Order();
 		$this->supports         = array( 'products', 'refunds' );
 		$this->redirection_text = __( 'You will be redirected to the Amazon Payment Services website when you place an order', 'amazon-payment-services' );
+		$this->redirection_button = __( 'Redirecting...', 'amazon-payment-services' );
+        $this->icons = [];
 
 		$this->validation_messages = array(
 			'required'   => __( '{field_name} : cannot be empty', 'amazon-payment-services' ),
@@ -108,9 +110,11 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	 * Process the payment and return the result
 	 *
 	 * @param int $order_id
+     *
 	 * @return array
 	 */
-	public function process_payment( $order_id ) {
+	public function process_payment( $order_id )
+    {
 		global $woocommerce;
 		$order                         = new WC_Order( $order_id );
 		$payment_method                = $this->id;
@@ -123,10 +127,43 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		$installment_confirmation_ar   = filter_input( INPUT_POST, 'aps_installment_confirmation_ar' );
 		$aps_installment_interest      = filter_input( INPUT_POST, 'aps_installment_interest' );
 		$aps_installment_amount        = filter_input( INPUT_POST, 'aps_installment_amount' );
+	    $aps_payment_token_installment = filter_input( INPUT_POST, 'aps_payment_token_installment' );
 		$aps_payment_token_cc          = filter_input( INPUT_POST, 'aps_payment_token_cc' );
 		$aps_card_bin                  = filter_input( INPUT_POST, 'aps_card_bin' );
-		$aps_payment_token_installment = filter_input( INPUT_POST, 'aps_payment_token_installment' );
 		$aps_payment_cvv               = filter_input( INPUT_POST, 'aps_payment_cvv' );
+
+        if (($_POST['aps_token'] ?? false) === '1') {
+	        if ( ! $installment_plan_code && isset( $_POST['aps_installment_plan_code'] ) ) {
+		        $installment_plan_code = htmlspecialchars( strip_tags( $_POST['aps_installment_plan_code'] ) );
+	        }
+	        if ( ! $installment_issuer_code && isset( $_POST['aps_installment_issuer_code'] ) ) {
+		        $installment_issuer_code = htmlspecialchars( strip_tags( $_POST['aps_installment_issuer_code'] ) );
+	        }
+	        if ( ! $installment_confirmation_en && isset( $_POST['aps_installment_confirmation_en'] ) ) {
+		        $installment_confirmation_en = htmlspecialchars( strip_tags( $_POST['aps_installment_confirmation_en'] ) );
+	        }
+	        if ( ! $aps_installment_interest && isset( $_POST['aps_installment_interest'] ) ) {
+		        $aps_installment_interest = htmlspecialchars( strip_tags( $_POST['aps_installment_interest'] ) );
+	        }
+	        if ( ! $installment_confirmation_ar && isset( $_POST['aps_installment_confirmation_ar'] ) ) {
+		        $installment_confirmation_ar = htmlspecialchars( strip_tags( $_POST['aps_installment_confirmation_ar'] ) );
+	        }
+	        if ( ! $aps_installment_amount && isset( $_POST['aps_installment_amount'] ) ) {
+		        $aps_installment_amount = htmlspecialchars( strip_tags( $_POST['aps_installment_amount'] ) );
+	        }
+	        if ( ! $aps_payment_token_installment && isset( $_POST['aps_payment_token_installment'] ) ) {
+		        $aps_payment_token_installment = htmlspecialchars( strip_tags( $_POST['aps_payment_token_installment'] ) );
+	        }
+	        if ( ! $aps_payment_token_cc && isset( $_POST['aps_payment_token_cc'] ) ) {
+		        $aps_payment_token_cc = htmlspecialchars( strip_tags( $_POST['aps_payment_token_cc'] ) );
+	        }
+	        if ( ! $aps_card_bin && isset( $_POST['aps_card_bin'] ) ) {
+		        $aps_card_bin = htmlspecialchars( strip_tags( $_POST['aps_card_bin'] ) );
+	        }
+	        if ( ! $aps_payment_cvv && isset( $_POST['aps_payment_cvv'] ) ) {
+		        $aps_payment_cvv = htmlspecialchars( strip_tags( $_POST['aps_payment_cvv'] ) );
+	        }
+        }
 
 		$aps_cc_plan_code       = filter_input( INPUT_POST, 'aps_cc_plan_code' );
 		$aps_cc_issuer_code     = filter_input( INPUT_POST, 'aps_cc_issuer_code' );
@@ -210,14 +247,21 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 			'is_hosted_tokenization' => $payment_data['is_hosted_tokenization'],
 			'redirect_url'           => $payment_data['redirect_url'],
 		);
+        if ($payment_data['error_message'] ?? null) {
+            $result['status'] = 'failure';
+            $result['error_message'] = $payment_data['error_message'];
+        }
+
 		// save integration type
 		update_post_meta( $order_id, 'APS_INTEGRATION_TYPE', $integration_type );
 		update_post_meta( $order_id, 'aps_redirected', 1 );
 		if ( isset( $payment_data['form'] ) ) {
 			$result['form'] = $payment_data['form'];
 		}
-		wp_send_json( $result );
-		wp_die();
+
+        return $result;
+//		wp_send_json( $result );
+//		wp_die();
 	}
 
 	/**
@@ -558,7 +602,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		$payment_data = get_post_meta( $order->get_id(), 'aps_payment_response', true );
 		if ( 'cancelled' === $order_status ) {
 			return false;
-		} elseif ( APS_Constants::APS_COMMAND_AUTHORIZATION === $payment_data['command'] ) {
+		} elseif ( !is_array($payment_data) || APS_Constants::APS_COMMAND_AUTHORIZATION === $payment_data['command'] ) {
 			$authorization_command = get_post_meta( $order->get_id(), 'aps_authorization_command', true );
 			if ( APS_Constants::APS_COMMAND_VOID === $authorization_command ) {
 				return false;
@@ -651,4 +695,9 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 
 		return ob_get_clean();
 	}
+
+    public function get_extra_form() {
+        // do nothing, return empty
+        return null;
+    }
 }

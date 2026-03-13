@@ -113,7 +113,8 @@
 							type: 'POST',
 							data: {
 								action: 'validate_apple_url',
-								apple_url
+								apple_url,
+								nonce: apple_vars.apple_pay_nonce
 							},
 							success:function(data) {
 								if ( ! data) {
@@ -207,30 +208,97 @@
 		function(evt) {
 			var checkoutUrl             = aps_info.checkout_url;
 			var checkoutForm            = $( 'form.checkout' );
-			var checkoutData            = $( checkoutForm ).serialize();
-			var selected_payment_method = $( 'input[name="payment_method"]:checked' ).val().replace( /(<([^>]+)>)/ig,"" );
-			$( '#payment_method_aps_apple_pay' ).attr( 'checked',true );
-			$.ajax({
-				type:		'POST',
-				url:		checkoutUrl+'&aps=true',
-				data:		checkoutData,
-				dataType:   'json',
-				async:      false,
-				success: function (response){
-				},
-				complete:	function( response ) {
-				},
-				error:	function( jqXHR, textStatus, errorThrown ) {
+			var checkoutData            = null;
+
+			if (!checkoutForm.length && $('button.wc-block-components-checkout-place-order-button').length > 0) {
+				// blocks implementation
+
+				let shipping_address = {
+					first_name: $('#shipping-first_name').val(),
+					last_name: $('#shipping-last_name').val(),
+					company: $('#shipping-company').val(),
+					address_1: $('#shipping-address_1').val(),
+					address_2: $('#shipping-address_2').val(),
+					city: $('#shipping-city').val(),
+					state: $('#shipping-state').val(),
+					postcode: $('#shipping-postcode').val(),
+					country: $('#shipping-country').val(),
+					phone: $('#shipping-phone').val(),
 				}
-			}).done(function(response){
-				if ( response.result === 'success' ) {
-					$( '.woocommerce-notices-wrapper:first-child' ).html( '' );
-					initApplePayment( response.apple_order, evt );
+				let billing_address = shipping_address;
+				if (!$('.wc-block-checkout__use-address-for-billing input[type=checkbox]').prop('checked')) {
+					billing_address = {
+						first_name: $('#billing-first_name').val(),
+						last_name: $('#billing-last_name').val(),
+						company: $('#billing-company').val(),
+						address_1: $('#billing-address_1').val(),
+						address_2: $('#billing-address_2').val(),
+						city: $('#billing-city').val(),
+						state: $('#billing-state').val(),
+						postcode: $('#billing-postcode').val(),
+						country: $('#billing-country').val(),
+						phone: $('#billing-phone').val(),
+					}
+				}
+				billing_address.email = $('#email').val();
+
+				checkoutData = {
+					_wpnonce: aps_info.nonce.checkout,
+					billing_first_name: billing_address.first_name,
+					billing_last_name: billing_address.last_name,
+					billing_company: billing_address.company,
+					billing_country: billing_address.country,
+					billing_address_1: billing_address.address_1,
+					billing_address_2: billing_address.address_2,
+					billing_city: billing_address.city,
+					billing_state: billing_address.state,
+					billing_postcode: billing_address.postcode,
+					billing_phone: billing_address.phone,
+					billing_email: billing_address.email,
+					shipping_first_name: shipping_address.first_name,
+					shipping_last_name: shipping_address.last_name,
+					shipping_company: shipping_address.company,
+					shipping_country: shipping_address.country,
+					shipping_address_1: shipping_address.address_1,
+					shipping_address_2: shipping_address.address_2,
+					shipping_city: shipping_address.city,
+					shipping_state: shipping_address.state,
+					shipping_postcode: shipping_address.postcode,
+					shipping_phone: shipping_address.phone,
+
+					order_comments: "",
+					shipping_method: [
+						'free_shipping:1',
+					],
+					payment_method: 'aps_apple_pay',
+				}
+
+			} else {
+				checkoutData = $(checkoutForm).serialize();
+			}
+			$('#payment_method_aps_apple_pay').attr('checked', true);
+
+			$.ajax({
+				type: 'POST',
+				url: checkoutUrl + '&aps=true',
+				data: checkoutData,
+				dataType: 'json',
+				async: false,
+				success: function (response) {
+				},
+				complete: function (response) {
+				},
+				error: function (jqXHR, textStatus, errorThrown) {
+				}
+			}).done(function (response) {
+				if (response.result === 'success') {
+					$('.woocommerce-notices-wrapper:first-child').html('');
+					initApplePayment(response.apple_order, evt);
 				} else {
-					$( '.woocommerce-notices-wrapper:first-child' ).html( response.messages );
-					$( 'html, body' ).animate(
+					$('.woocommerce-notices-wrapper:first-child').html(response.messages);
+					$('html, body').animate(
 						{
-							scrollTop: $( '.woocommerce-notices-wrapper' ).offset().top
+							scrollTop: $('.woocommerce-notices-wrapper').offset().top
 						},
 						1000
 					);

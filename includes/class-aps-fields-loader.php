@@ -725,6 +725,12 @@ class APS_Fields_Loader {
                 'placeholder' => '',
                 'class'       => 'wc-enhanced-select',
             ),
+			'tabby_maximum_order_limit' => array(
+				'title'      => __( 'Tabby Order Purchase maximum limit', 'amazon-payment-services' ),
+				'type'       => 'number',
+				'default'    => 1000,
+				'max_length' => 5,
+			),
 		);
 	}
 }

@@ -36,14 +36,17 @@ Amazon payment services makes it really easy to start accepting online payments 
    * OmanNet
 
 == Changelog ==
-`v2.4.0`
+`2.4.1`
+* Fix - ApplePay signature and Url validation fix.
+
+`2.4.0`
 * Fix - Signature calculation valu fix.
 
-`v2.3.9`
+`2.3.9`
 * Fix - Signature calculation flag fix.
 
-`v2.3.8`
-* Fix - Use password input type to hide sensitive information
+`2.3.8`
+* Fix - Use password input type to hide sensitive information.
 
 `v2.3.7`
 * New - Benefit and OmanNet are added as a new payment option

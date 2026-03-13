@@ -24,7 +24,7 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 		parent::__construct();
 		$this->id                 = APS_Constants::APS_PAYMENT_TYPE_CC; // payment gateway plugin ID
 		$this->mada_title         = __( 'mada debit card / Credit Cards', 'amazon-payment-services' );
-		$this->regular_title      = __( 'Credit / Debit card', 'amazon-payment-services' );
+		$this->regular_title      = __( 'Credit / Debit card / Apple Pay', 'amazon-payment-services' );
 		$this->description        = __( 'Accept credit / Debit card payment', 'amazon-payment-services' );
 		$this->method_title       = __( 'Amazon Payment Service', 'amazon-payment-services' );
 		$this->method_description = __( 'Amazon Payment Service - All payment methods', 'amazon-payment-services' );
@@ -50,6 +50,17 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 		if ( 'yes' === $this->aps_config->get_enabled_tokenization() ) {
 			$this->supports[] = 'tokenization';
 		}
+
+		$this->icons = [
+			'mada'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mada-logo.png',
+			'visa'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/visa-logo.png',
+			'mastercard'=> plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mastercard-logo.png',
+			'amex'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/amex-logo.png',
+		];
+		if ( 'yes' === $this->aps_config->get_show_meeza_branding() ) {
+			$this->icons['meeza'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/meeza-logo.jpg';
+		}
+
 
 		// We need custom JavaScript to obtain a token
 		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
@@ -185,6 +196,17 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 	public function tokenization_form() {
 		include plugin_dir_path( dirname( __FILE__ ) ) . 'public/partials/tokenization-credit-card-form.php';
 	}
+
+    public function get_extra_form() {
+        ob_start();
+        $this->redirection_info();
+        $integration_type_cls = 'integration_type_' . $this->id;
+        echo '<input type="hidden" class="' . wp_kses_data( $integration_type_cls ) . '" value="' . wp_kses_data( $this->get_integration_type() ) . '" />';
+        if ( class_exists( 'APS_Public' ) ) {
+            APS_Public::load_credit_card_wizard( $this->get_integration_type(), $this->get_icons_array(), $this->aps_config->get_enabled_tokenization(), $this->aps_config->have_subscription(), $this->aps_config->is_authorization(), $this->aps_config->get_enabled_credit_card_installments() );
+        }
+        return ob_get_clean();
+    }
 
 	/**
 	 * Display installment data

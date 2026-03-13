@@ -131,7 +131,8 @@
 							type: 'POST',
 							data: {
 								action: 'validate_apple_url',
-								apple_url
+								apple_url,
+								nonce: apple_vars.apple_pay_nonce
 							},
 							success:function(data) {
 								data = JSON.parse( data );

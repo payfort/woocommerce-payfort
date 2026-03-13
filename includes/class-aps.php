@@ -1,4 +1,7 @@
 <?php
+
+use blocks\WC_Gateway_APS_Blocks_Support;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -249,7 +252,32 @@ class APS {
 		$this->loader->add_filter( 'woocommerce_payment_gateways', $gate_loader, 'init_gateways' );
 		$this->loader->add_action( 'plugins_loaded', $gate_loader, 'load_gateway_classes' );
 		$this->loader->add_filter( 'woocommerce_available_payment_gateways', $gate_loader, 'aps_available_payment_gateways' );
+
+        // Registers WooCommerce Blocks integration.
+        add_action( 'woocommerce_blocks_loaded', array( $this, 'woocommerce_gateway_aps_block_support' ) );
 	}
+
+    public function woocommerce_gateway_aps_block_support()
+    {
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'classes/blocks/WC_Gateway_APS_Blocks_Support.php';
+
+        add_action(
+            'woocommerce_blocks_payment_method_type_registration',
+            function( Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry $payment_method_registry ) {
+                $payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_CC) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_KNET) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_NAPS) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_OMANNET) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_BENEFIT) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_STC_PAY) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_TABBY) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY) );
+				$payment_method_registry->register( new WC_Gateway_APS_Blocks_Support(APS_Constants::APS_PAYMENT_TYPE_VALU) );
+            }
+        );
+
+    }
 
 	public function load_ajax_routes() {
 		//Ajax hooks
@@ -273,7 +301,7 @@ class APS {
 		$this->loader->add_action( 'wp_ajax_nopriv_valu_set_tenure', $aps_ajax, 'valu_set_tenure' );
 
 		$this->loader->add_action( 'wp_ajax_validate_apple_url', $aps_ajax, 'validate_apple_url' );
-		$this->loader->add_action( 'wp_ajax_nopriv_validate_apple_url', $aps_ajax, 'validate_apple_url' );
+
 
 		$this->loader->add_action( 'wp_ajax_validate_apple_pay_shipping_address', $aps_ajax, 'validate_apple_pay_shipping_address' );
 		$this->loader->add_action( 'wp_ajax_nopriv_validate_apple_pay_shipping_address', $aps_ajax, 'validate_apple_pay_shipping_address' );

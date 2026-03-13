@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Plugin Name:       Amazon payment services
  * Plugin URI:        https://paymentservices.amazon.com/
  * Description:       Amazon payment services makes it really easy to start accepting online payments (credit &amp; debit cards) in the Middle East. Sign up is instant, at https://paymentservices.amazon.com/
- * Version:           2.4.1
+ * Version:           2.3.7
  * Author:            Amazon Payment Services
  * Author URI:        https://paymentservices.amazon.com/
  * Text Domain:       amazon-payment-services
@@ -33,7 +33,7 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Currently plugin version.
  */
-define( 'APS_VERSION', '2.4.1' );
+define( 'APS_VERSION', '2.3.7' );
 define( 'APS_NAME', 'amazon-payment-services' );
 
 /**
@@ -117,3 +117,38 @@ function create_wc_api_url( $request, $vars = array() ) {
 	}
 	return $api_url;
 }
+
+/**
+ * Remove APS tokens from the payment methods list
+ * (we use our custom implementation with CVV fields)
+ *
+ * @param $list
+ *
+ * @return mixed
+ */
+function wc_aps_get_account_saved_payment_methods_list($list)
+{
+    foreach ($list as $payment_method_code => $payment_method_data) {
+        $removed = false;
+        foreach ($payment_method_data as $payment_method_data_index => $payment_method_data_list_item) {
+            if (($payment_method_data_list_item['method']['gateway'] ?? null) === 'aps_cc') {
+                // it's an APS token, remove it from the list
+                unset($list[$payment_method_code][$payment_method_data_index]);
+                $removed = true;
+            }
+        }
+
+        if ($removed) {
+            if (count($list[$payment_method_code]) === 0) {
+                // if the payment method doesn't have any other token, remove the entry
+                unset($list[$payment_method_code]);
+            } else {
+                // rearrange the array keys
+                $list[$payment_method_code] = array_values($list[$payment_method_code]);
+            }
+        }
+    }
+
+    return $list;
+}
+add_filter( 'woocommerce_saved_payment_methods_list', 'wc_aps_get_account_saved_payment_methods_list', 11, 2 );

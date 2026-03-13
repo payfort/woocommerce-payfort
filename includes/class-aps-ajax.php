@@ -213,10 +213,16 @@ class APS_Ajax {
 	}
 
 	/**
-	 * Validate apply url
+	 * Validate apple url
+	 *
+	 * SECURITY: This endpoint validates the Apple Pay merchant session URL.
+	 * It uses nonce verification and a strict hostname allowlist to prevent SSRF attacks.
 	 */
 	public function validate_apple_url() {
 		try {
+			// Verify nonce to prevent CSRF and unauthorized access
+			check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
 			$apple_url = filter_input( INPUT_POST, 'apple_url' );
 			if ( empty( $apple_url ) ) {
 				throw new \Exception( 'Apple pay url is missing' );
@@ -224,12 +230,44 @@ class APS_Ajax {
 			if ( ! filter_var( $apple_url, FILTER_VALIDATE_URL ) ) {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
-			$parse_apple = wp_parse_url( $apple_url );
-			$matched_apple = preg_match('/^(?:[^.]+\.)*apple\.com[^.]+$/', $apple_url);
-			if ( ! isset( $parse_apple['scheme'] ) || ! in_array( $parse_apple['scheme'], array( 'https' ), true ) || ! $matched_apple ) {
+			$parsed = wp_parse_url( $apple_url );
+
+			// Must be HTTPS
+			if ( ! isset( $parsed['scheme'] ) || 'https' !== $parsed['scheme'] ) {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
-			echo wp_kses_data($this->aps_helper->init_apple_pay_api( $apple_url ) );
+
+			// SECURITY FIX: Validate the parsed hostname against a strict allowlist
+			// of Apple's known payment session validation domains.
+			// Previously, a regex was applied against the full URL string, which allowed
+			// trivial bypass (e.g., https://attacker.com/.apple.com/path).
+			$host = isset( $parsed['host'] ) ? strtolower( $parsed['host'] ) : '';
+			$allowed_domains = array(
+				'apple-pay-gateway.apple.com',
+				'cn-apple-pay-gateway.apple.com',
+				'apple-pay-gateway-nc-pod1.apple.com',
+				'apple-pay-gateway-nc-pod2.apple.com',
+				'apple-pay-gateway-nc-pod3.apple.com',
+				'apple-pay-gateway-nc-pod4.apple.com',
+				'apple-pay-gateway-nc-pod5.apple.com',
+				'apple-pay-gateway-pr-pod1.apple.com',
+				'apple-pay-gateway-pr-pod2.apple.com',
+				'apple-pay-gateway-pr-pod3.apple.com',
+				'apple-pay-gateway-pr-pod4.apple.com',
+				'apple-pay-gateway-pr-pod5.apple.com',
+				'cn-apple-pay-gateway-sh-pod1.apple.com',
+				'cn-apple-pay-gateway-sh-pod2.apple.com',
+				'cn-apple-pay-gateway-sh-pod3.apple.com',
+				'cn-apple-pay-gateway-tj-pod1.apple.com',
+				'cn-apple-pay-gateway-tj-pod2.apple.com',
+				'cn-apple-pay-gateway-tj-pod3.apple.com',
+			);
+			$is_allowed = in_array( $host, $allowed_domains, true );
+			if ( ! $is_allowed ) {
+				throw new \Exception( 'Apple pay url is invalid' );
+			}
+
+			echo wp_kses_data( $this->aps_helper->init_apple_pay_api( $apple_url ) );
 		} catch ( \Exception $e ) {
 			echo wp_json_encode( array( 'error' => $e->getMessage() ) );
 		}
@@ -322,16 +360,22 @@ class APS_Ajax {
 				$cart_item_data    = isset( $product_cart_data['cart_item_data'] ) ? $product_cart_data['cart_item_data'] : array();
 				WC()->cart->add_to_cart( $product_id, $quantity, $variation_id, $variation, $cart_item_data );
 			}
-			$cart                          = WC()->cart;
-			$apple_order['sub_total']      = $cart->get_subtotal();
-			$apple_order['tax_total']      = $cart->get_total_tax();
-			$apple_order['shipping_total'] = $cart->get_shipping_total();
-			$apple_order['discount_total'] = $cart->get_discount_total();
-			$apple_order['grand_total']    = $cart->total;
-			foreach ( $cart->get_cart() as $cart_item ) {
-				$apple_order['order_items'][] = array(
-					'product_name'     => $cart_item['data']->get_title(),
-					'product_subtotal' => $cart_item['line_total'],
+
+            // Handle currency gateway option (base / front) in case of multi-currency stores
+            $fort_currency              = $this->aps_helper->get_fort_currency();
+            $order_currency             = $this->aps_helper->get_front_currency();
+            $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
+
+            $cart                          = WC()->cart;
+            $apple_order['sub_total']      = $this->aps_helper->convert_to_base_currency($cart->get_subtotal(), $currency_conversion_rate);
+            $apple_order['tax_total']      = $this->aps_helper->convert_to_base_currency($cart->get_total_tax(), $currency_conversion_rate);
+            $apple_order['shipping_total'] = $this->aps_helper->convert_to_base_currency($cart->get_shipping_total(), $currency_conversion_rate);
+            $apple_order['discount_total'] = $this->aps_helper->convert_to_base_currency($cart->get_discount_total(), $currency_conversion_rate);
+            $apple_order['grand_total']    = $this->aps_helper->convert_to_base_currency($cart->total, $currency_conversion_rate);
+            foreach ( $cart->get_cart() as $cart_item ) {
+                $apple_order['order_items'][] = array(
+                    'product_name'     => $cart_item['data']->get_title(),
+                    'product_subtotal' => $this->aps_helper->convert_to_base_currency($cart_item['line_total'], $currency_conversion_rate),
 				);
 			}
 		} catch ( \Exception $e ) {

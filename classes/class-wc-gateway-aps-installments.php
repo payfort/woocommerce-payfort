@@ -36,12 +36,18 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		if ( 'yes' === $this->aps_config->get_enabled_tokenization() ) {
 			$this->supports[] = 'tokenization';
 		}
+
+		$this->icons = [
+			'visa'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/visa-logo.png',
+			'mastercard'=> plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mastercard-logo.png',
+		];
+
 		// We need custom JavaScript to obtain a token
 		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
 
 		// You can also register a webhook here
 		// add_action( 'woocommerce_api_{webhook name}', array( $this, 'webhook' ) );
-		add_action( 'woocommerce_after_checkout_validaion', array( $this, 'validate_checkout_hander' ), 10, 2 );
+		add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_checkout_handler' ), 10, 2 );
 		add_action( 'woocommerce_thankyou_' . $this->id, array( $this, 'display_installment_data' ), 10, 1 );
 	}
 
@@ -93,7 +99,7 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 	 *
 	 * @return void
 	 */
-	public function validate_checkout_hander( $fields, $errors ) {
+	public function validate_checkout_handler( $fields, $errors ) {
 		$payment_method = filter_input( INPUT_POST, 'payment_method' );
 		if ( APS_Constants::APS_INTEGRATION_TYPE_HOSTED_CHECKOUT === $this->get_integration_type() && $this->id === $payment_method ) {
 			$installment_plan_code   = filter_input( INPUT_POST, 'aps_installment_plan_code' );
@@ -119,6 +125,29 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$icon_html .= '<img src="' . $mastercard_logo . '" alt="mastercard" class="payment-icons"/>';
 		$icon_html .= '</span>';
 		return $icon_html;
+	}
+
+
+	/**
+	 * Get card icons
+	 *
+	 * @return array
+	 */
+	public function get_icons_array() {
+		$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/';
+		$mada_logo       = $image_directory . 'mada-logo.png';
+		$visa_logo       = $image_directory . 'visa-logo.png';
+		$mastercard_logo = $image_directory . 'mastercard-logo.png';
+		$amex_logo       = $image_directory . 'amex-logo.png';
+		$meeza_logo      = $image_directory . 'meeza-logo.jpg';
+		$card_icons      = array(
+			'mada'       => $mada_logo,
+			'visa'       => $visa_logo,
+			'mastercard' => $mastercard_logo,
+			'amex'       => $amex_logo,
+			'meeza'      => $meeza_logo,
+		);
+		return $card_icons;
 	}
 
 	/**
@@ -149,6 +178,17 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 			$is_enabled = 'no';
 		}
 		return $is_enabled;
+	}
+
+	public function get_extra_form() {
+		ob_start();
+		$this->redirection_info();
+		$integration_type_cls = 'integration_type_' . $this->id;
+		echo '<input type="hidden" class="' . wp_kses_data( $integration_type_cls ) . '" value="' . wp_kses_data( $this->get_integration_type() ) . '" />';
+		if ( class_exists( 'APS_Public' ) ) {
+			APS_Public::load_installment_wizard( $this->get_integration_type(), $this->aps_config->get_enabled_tokenization(), $this->aps_config->have_subscription(), $this->aps_config->is_authorization() );
+		}
+		return ob_get_clean();
 	}
 
 	/**

@@ -75,6 +75,7 @@ class APS_Config extends APS_Super {
     private $enable_tabby;
     private $tabby_integration_type;
     private $tabby_enabled_tokenization;
+	private $tabby_maximum_limit;
 	private $valu_minimum_order_limit;
 	private $apple_pay_production_key;
 	private $apple_pay_domain_name;
@@ -151,6 +152,7 @@ class APS_Config extends APS_Super {
         $this->enable_tabby                         = $this->get_aps_config( 'enable_tabby' );
         $this->tabby_integration_type               = APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION;
         $this->tabby_enabled_tokenization           = 'no';
+		$this->tabby_maximum_limit				   = $this->get_aps_config('tabby_maximum_order_limit');
 	}
 
 	/**
@@ -878,5 +880,14 @@ class APS_Config extends APS_Super {
 			return 'yes';
 		}
 		return 'no';
+	}
+
+	/**
+	 * Return tabby maximum order limit
+	 *
+	 * @return int
+	 */
+	public function get_tabby_maximum_order_limit() {
+		return ! empty( $this->tabby_maximum_limit ) ? $this->tabby_maximum_limit : 0;
 	}
 }
