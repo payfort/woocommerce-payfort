@@ -538,6 +538,7 @@
 			}
 			var is_error = false;
 			$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
+			$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 			$( '#place_order' ).attr( 'disabled', true );
 			$.ajax({
 				type:		'POST',
@@ -556,6 +557,7 @@
 							apsPayment.redirectCheckout( response.url, response.params, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.standard_type ) {
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+							$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 							apsPayment.standardCheckout( response.url, response.params, response.redirect_url, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
 							if ( [aps_info.payment_method_valu,aps_info.payment_method_stc_pay,aps_info.payment_method_tabby ].includes(selected_payment_method) ) {
@@ -584,6 +586,7 @@
 						}
 					} else {
 						$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+						$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 						$( '#place_order' ).removeAttr( 'disabled' );
 						if ( response.messages ) {
 							$( '.woocommerce-notices-wrapper:first-child' ).html( response.messages );
@@ -690,6 +693,7 @@
 			}
 			var is_error = false;
 			$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
+			$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 			$( '#place_order' ).attr( 'disabled', true );
 			$.ajax({
 				type:		'POST',
@@ -707,6 +711,7 @@
 							apsPayment.redirectCheckout( response.url, response.params,  selected_payment_method);
 						} else if ( payment_integration_type === aps_info.standard_type ) {
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+							$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 							apsPayment.standardCheckout( response.url, response.params, selected_payment_method );
 						} else if ( payment_integration_type === aps_info.hosted_type ) {
 							if ( aps_info.payment_method_valu === selected_payment_method ) {
@@ -730,6 +735,7 @@
 					} else {
 						is_error = false;
 						$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+						$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 						$( '#place_order' ).removeAttr( 'disabled' );
 						if ( response.messages ) {
 							$( '.woocommerce-notices-wrapper:first-child' ).html( response.messages );
@@ -819,6 +825,7 @@
 			$( '#aps_installment_confirmation_ar' ).val( '' );
 			if ( cardnumber.length >= 15 ) {
 				$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
+				$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 				card_bin = cardnumber.substring( 0,6 );
 				$.ajax(
 					{
@@ -830,6 +837,7 @@
 						type:'POST',
 						success:function( response ) {
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+							$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 							response = JSON.parse( response );
 							if ( 'success' === response.status ) {
 								$( '#aps_instalment_form .aps_card_error.installment_error' ).removeClass( 'installment_error' );
@@ -879,6 +887,7 @@
 			if ( card_bin.length >= 6 && cvv.length >= 3 ) {
 				ele.parents( 'li.token_list' ).find( '.aps_install_token_error' ).html( "" );
 				$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
+				$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 				$.ajax(
 					{
 						url:ajaxurl,
@@ -889,6 +898,7 @@
 						type:'POST',
 						success:function( response ) {
 							$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+							$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 							response = JSON.parse( response );
 							if ( 'success' === response.status ) {
 								ele.parents( 'li.token_list' ).find( '.aps_install_token_error' ).html( "" );
@@ -1012,6 +1022,7 @@
 				if ( cardnumber.length >= 15 ) {
 					card_bin = cardnumber.substring( 0,6 );
 					$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
+					$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 					$.ajax(
 						{
 							url:ajaxurl,
@@ -1049,6 +1060,7 @@
 									$( '#cc_plans' ).removeClass( 'active' );
 								}
 								$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+								$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 							}
 						}
 					);
@@ -1079,6 +1091,7 @@
 				$( '.aps_plan_error' ).html( '' );
 				if ( $( this ).hasClass( 'cc_plan_cvv' ) && card_bin.length >= 6 && cvv.length >= 3 ) {
 					$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
+					$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 					$.ajax(
 						{
 							url:ajaxurl,
@@ -1116,6 +1129,7 @@
 									$( '#cc_plans' ).removeClass( 'active' );
 								}
 								$( '.aps_payment_window' ).removeClass( 'aps_payment_loader' );
+								$( '#payment-method' ).removeClass( 'wc-block-components-checkout-step--disabled' );
 							}
 						}
 					);

@@ -29,13 +29,13 @@ class APS_Constants {
 	const APS_PAYMENT_TYPE_VALU          = 'aps_valu';
 	const APS_PAYMENT_TYPE_INSTALLMENT   = 'aps_installment';
 	const APS_PAYMENT_TYPE_NAPS          = 'aps_naps';
-	const APS_PAYMENT_TYPE_BENEFIT          = 'aps_benefit';
+	const APS_PAYMENT_TYPE_BENEFIT       = 'aps_benefit';
 	const APS_PAYMENT_TYPE_KNET          = 'aps_knet';
     const APS_PAYMENT_TYPE_OMANNET       = 'aps_omannet';
 	const APS_PAYMENT_TYPE_VISA_CHECKOUT = 'aps_visa_checkout';
 	const APS_PAYMENT_TYPE_APPLE_PAY     = 'aps_apple_pay';
 	const APS_PAYMENT_TYPE_STC_PAY       = 'aps_stc_pay';
-    const APS_PAYMENT_TYPE_TABBY       = 'aps_tabby';
+    const APS_PAYMENT_TYPE_TABBY         = 'aps_tabby';
 	const APS_RETRY_PAYMENT_METHODS      = array(
 		'aps_cc',
 		'aps_installment',
@@ -137,6 +137,7 @@ class APS_Constants {
 	const APS_COMMAND_VOID                  = 'VOID_AUTHORIZATION';
 	const APS_COMMAND_ECOMMERCE             = 'ECOMMERCE';
 	const APS_COMMAND_CHECK_STATUS          = 'CHECK_STATUS';
+
 	// Generic Constants
 	const APS_VALU_EG_COUNTRY_CODE         = '+20';
 

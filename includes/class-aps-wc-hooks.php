@@ -131,6 +131,7 @@ class APS_WC_Hooks {
 	 * @return void
 	 */
 	public function aps_checkout_validation( $fields, $errors ) {
+		if(WC()->cart->needs_payment()){
 		$payment_method = filter_input( INPUT_POST, 'payment_method' );
 		if ( empty( $payment_method ) ) {
 			$errors->add( 'payment_method_not_selected', 'Please select payment method' );
@@ -165,7 +166,7 @@ class APS_WC_Hooks {
 				}
 			}
 		}
-	}
+	}}
 
 	/**
 	 * APS Pending Payment Cron Handler

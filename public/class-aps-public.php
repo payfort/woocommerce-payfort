@@ -163,6 +163,9 @@ class APS_Public {
 			),
 			'ajax_url'                     => admin_url( 'admin-ajax.php' ),
 			'checkout_url'                 => site_url( '?wc-ajax=checkout' ),
+			'nonce'                         => [
+				'checkout'                  => wp_create_nonce( 'woocommerce-process_checkout' ),
+			],
 			'lang'                         => $this->aps_config->get_language(),
 			'mada_bins'                    => $this->aps_config->get_mada_bins(),
 			'meeza_bins'                   => $this->aps_config->get_meeza_bins(),
@@ -196,6 +199,7 @@ class APS_Public {
 			'payment_method_installment' => APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
 			'ajax_url'                   => admin_url( 'admin-ajax.php' ),
 			'supported_networks'         => $supported_networks,
+			'apple_pay_nonce'            => wp_create_nonce( 'aps_apple_pay_nonce' ),
 		);
 		if ( is_checkout() ) {
 			// Register apple pay script

@@ -52,6 +52,9 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
         if ( 'yes' === $this->get_enabled_tokenization() ) {
             $this->supports[] = 'tokenization';
         }
+
+		$this->icons['stcpay'] = plugin_dir_url(dirname(__FILE__)) . 'public/images/stcpay-logo.png';
+
         // We need custom JavaScript to obtain a token
         add_action('wp_enqueue_scripts', array($this, 'payment_scripts'));
 
@@ -107,7 +110,10 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
      * Process the payment and return the result
      *
      * @param int $order_id
+     *
      * @return array
+     *
+     * @throws Exception
      */
     public function process_payment($order_id)
     {
@@ -142,7 +148,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
                 }
                 update_post_meta($order_id, 'APS_INTEGRATION_TYPE', $integration_type);
                 update_post_meta($order_id, 'aps_redirected', 1);
-                wp_send_json($result);
+//                wp_send_json($result);
         }
         else{
             // handle hosted integration
@@ -172,7 +178,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
                     'result' => 'success',
                     'redirect_link' => $redirect_link,
                 );
-                wp_send_json($result);
+//                wp_send_json($result);
             }
             // generate OTP number
             $mobile_number = filter_input(INPUT_POST, 'stc_pay_mobile_number');
@@ -181,11 +187,14 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
                 throw new \Exception('Mobile number is missing');
             }
             if (!empty($mobile_number)) {
-                $generate_otp_response = $this->aps_payment->stc_pay_generate_otp($mobile_number, $order_id);
-                wp_send_json($generate_otp_response);
+                return $this->aps_payment->stc_pay_generate_otp($mobile_number, $order_id);
+
+//                wp_send_json($generate_otp_response);
             }
         }
-        wp_die();
+
+        return $result;
+//        wp_die();
     }
 
     /**

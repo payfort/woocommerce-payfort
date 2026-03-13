@@ -167,6 +167,15 @@ class APS_Order extends APS_Super {
     }
 
 	/**
+     * Get customer ip address
+     *
+     * @return ip string
+     */
+	public function get_customer_ip() {
+		return $this->order->get_customer_ip_address();
+	}
+
+	/**
 	 * Get order status
 	 *
 	 * @return order_status string
@@ -289,24 +298,26 @@ class APS_Order extends APS_Super {
 			if ( $this->get_order_id() ) {
 				$fort_id_saved = get_post_meta( $this->get_order_id(), 'fort_id_saved', true );
 				if ( 'offline' === $response_mode ) {
+                    if ( isset( $response_params['token_name'] ) && ! empty( $response_params['token_name'] ) ) {
+                        $this->save_aps_tokens( $response_params, $response_mode );
+                    }
+
 					$status = 'processing';
 					if ( $status !== $this->get_status() ) {
 						$this->order->payment_complete();
-					}
-					if ( isset( $response_params['token_name'] ) && ! empty( $response_params['token_name'] ) ) {
-						$this->save_aps_tokens( $response_params, $response_mode );
 					}
 					if ( isset( $response_params['fort_id'] ) && empty( $fort_id_saved ) ) {
 						$this->order->add_order_note( 'APS payment successful<br/>Fort id: ' . $response_params['fort_id'] );
 						update_post_meta( $this->get_order_id(), 'fort_id_saved', 'yes' );
 					}
 				} elseif ( 'online' === $response_mode ) {
+                    if ( isset( $response_params['token_name'] ) && ! empty( $response_params['token_name'] ) ) {
+                        $this->save_aps_tokens( $response_params, $response_mode );
+                    }
+
 					$status = 'processing';
 					if ( $status !== $this->get_status() ) {
 						$this->order->payment_complete();
-					}
-					if ( isset( $response_params['token_name'] ) && ! empty( $response_params['token_name'] ) ) {
-						$this->save_aps_tokens( $response_params, $response_mode );
 					}
 				}
 			}
@@ -431,7 +442,7 @@ class APS_Order extends APS_Super {
 
 			$aps_helper      = new APS_Helper();
 			$is_stc_pay = isset($response_params['digital_wallet']) && $response_params['digital_wallet'] === APS_Constants::APS_PAYMENT_METHOD_STC_PAY;
-			$existing_tokens = $aps_helper->find_token_row( $response_params['token_name'], $this->order->get_customer_id(), ($is_stc_pay ? APS_Constants::APS_PAYMENT_TYPE_STC_PAY:'' ));
+            $existing_tokens = $aps_helper->find_token_row( $response_params['token_name'], $this->order->get_customer_id(), ($is_stc_pay ? APS_Constants::APS_PAYMENT_TYPE_STC_PAY : APS_Constants::APS_PAYMENT_TYPE_CC ));
 			if ( ! empty( $existing_tokens ) ) {
 				$old_token_row = WC_Payment_Tokens::get( $existing_tokens['token_id'] );
 				if ( isset( $response_params['payment_option'] ) ) {

@@ -32,6 +32,8 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		$this->supported_currencies = array( 'EGP' );
 		$this->enabled              = $this->check_availability();
 
+		$this->icons['valu'] = plugin_dir_url(dirname(__FILE__)) . 'public/images/valu-logo.png';
+
 		// We need custom JavaScript to obtain a token
 		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
 
@@ -79,9 +81,11 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	 * Process the payment and return the result
 	 *
 	 * @param int $order_id
+     *
 	 * @return array
 	 */
-	public function process_payment( $order_id ) {
+	public function process_payment( $order_id )
+    {
 		$active_tenure = filter_input( INPUT_POST, 'active_tenure' );
 		if ( ! empty( $active_tenure ) ) {
 			$tenure_amount     = filter_input( INPUT_POST, 'tenure_amount' );
@@ -111,11 +115,12 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 				$_SESSION['aps_error'] = wp_kses_data($purchase_response['message']);
 				session_write_close();
 			}
-			$result = array(
+
+			$result = [
 				'result'        => 'success',
 				'redirect_link' => $redirect_link,
-			);
-			wp_send_json( $result );
+			];
+//			wp_send_json( $result );
 		} else {
 			session_start();
 			$reference_id          = wp_kses_data($_SESSION['valu_payment']['reference_id']);
@@ -124,14 +129,16 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
             $tou          = wp_kses_data($_SESSION['valu_payment']['tou']);
             $cash_back          = wp_kses_data($_SESSION['valu_payment']['cash_back']);
 			session_write_close();
-			$generate_otp_response = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id , $down_payment, $tou, $cash_back);
+			$result = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id , $down_payment, $tou, $cash_back);
 			update_post_meta( $order_id, 'valu_reference_id', $reference_id );
             update_post_meta( $order_id, 'valu_down_payment', $down_payment/100 );
             update_post_meta( $order_id, 'valu_tou', $tou );
             update_post_meta( $order_id, 'valu_cash_back', $cash_back );
-			wp_send_json( $generate_otp_response );
+
+//			wp_send_json( $generate_otp_response );
 		}
-		wp_die();
+//		wp_die();
+        return $result;
 	}
 
 	/**

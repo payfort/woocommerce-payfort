@@ -122,10 +122,13 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 	 * Process the payment and return the result
 	 *
 	 * @param int $order_id
+     *
 	 * @return array
 	 */
-	public function process_payment( $order_id ) {
+	public function process_payment( $order_id )
+    {
 		global $woocommerce;
+
 		$order = new WC_Order( $order_id );
 		update_post_meta( $order_id, 'payment_gateway', APS_Constants::APS_GATEWAY_ID );
 		$status = 'failed';
@@ -138,44 +141,45 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 		}
 		$payment_method        = $this->id;
 		$integration_type      = $this->get_integration_type();
-		$extras                = array();
-		$result                = array();
+		$extras                = [];
 		$visa_checkout_call_id = filter_input( INPUT_POST, 'aps_visa_checkout_callid' );
 		if ( ! empty( $visa_checkout_call_id ) ) {
 			$extras['visa_checkout_call_id'] = $visa_checkout_call_id;
 		}
 		if ( APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION === $integration_type ) {
 			$payment_data = $this->aps_payment->get_payment_request_form( $payment_method, $integration_type, $payment_option, $extras );
-			$result       = array(
+			$result       = [
 				'result' => 'success',
 				'url'    => $payment_data['url'],
 				'params' => $payment_data['params'],
-			);
+			];
 			if ( isset( $payment_data['form'] ) ) {
 				$result['form'] = $payment_data['form'];
 			}
 		} else {
 			$payment_data = $this->aps_payment->aps_notify( $extras, $order_id, $integration_type, $payment_method, true );
 			if ( isset( $payment_data['3ds_url'] ) ) {
-				$result = array(
+				$result = [
 					'result'        => 'success',
 					'redirect_link' => $payment_data['3ds_url'],
-				);
+				];
 			} else {
 				session_start();
 				$_SESSION['aps_error'] = wp_kses_data($payment_data['response_message']);
 				session_write_close();
-				$result                = array(
+				$result                = [
 					'result'        => 'failure',
 					'redirect_link' => wc_get_checkout_url(),
-				);
+				];
 			}
 		}
 		//save integration type
 		update_post_meta( $order_id, 'APS_INTEGRATION_TYPE', $integration_type );
 		update_post_meta( $order_id, 'aps_redirected', 1 );
-		wp_send_json( $result );
-		wp_die();
+
+        return $result;
+//		wp_send_json( $result );
+//		wp_die();
 	}
 
 	/**

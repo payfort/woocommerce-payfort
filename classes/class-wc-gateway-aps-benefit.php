@@ -34,6 +34,8 @@ class WC_Gateway_APS_Benefit extends WC_Gateway_APS_Super {
         $this->enabled              = $this->check_availability();
         $this->supports             = array( 'products' );
 
+		$this->icons['benefit'] = $this->icon;
+
         // We need custom JavaScript to obtain a token
         add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
 

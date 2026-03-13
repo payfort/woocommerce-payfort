@@ -98,16 +98,16 @@ class Gateway_Loader {
 	 */
 	public function aps_available_payment_gateways( $available_gateways ) {
         if ( ! is_checkout() ) {
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VALU ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_NAPS ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_BENEFIT ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_KNET ] );
-            unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_OMANNET ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY ] );
-			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_STC_PAY ] );
-            unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_TABBY ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VALU ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_NAPS ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_BENEFIT ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_KNET ] );
+//          unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_OMANNET ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY ] );
+//			unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_STC_PAY ] );
+//          unset( $available_gateways[ APS_Constants::APS_PAYMENT_TYPE_TABBY ] );
 		}
 		return $available_gateways;
 	}

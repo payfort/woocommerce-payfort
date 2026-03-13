@@ -50,7 +50,10 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
             'gateway_scheduled_payments',
         );
 
-        // We need custom JavaScript to obtain a token
+
+	    $this->icons['tabby'] = plugin_dir_url(dirname(__FILE__)) . 'public/images/tabby-logo.png';
+
+	    // We need custom JavaScript to obtain a token
         add_action('wp_enqueue_scripts', array($this, 'payment_scripts'));
 
     }
@@ -63,6 +66,10 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
     public function check_availability()
     {
         $available = 'yes' === $this->aps_config->get_enable_tabby() && in_array(strtoupper($this->aps_helper->get_front_currency()), $this->supported_currencies, true) ? 'yes' : 'no';
+
+        if ( WC()->cart && floatval( WC()->cart->total ) > $this->aps_config->get_tabby_maximum_order_limit() ) {
+            $available = 'no';
+        }
 
         return $available;
     }
@@ -97,11 +104,11 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
      * Process the payment and return the result
      *
      * @param int $order_id
+     *
      * @return array
      */
     public function process_payment($order_id)
     {
-        $tabby_token = filter_input(INPUT_POST, 'aps_payment_token_tabby');
         $order = new WC_Order($order_id);
         $tabby_mobile = filter_input(INPUT_POST, 'token_mobile_number');
         session_start();
@@ -130,9 +137,10 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
         }
         update_post_meta($order_id, 'APS_INTEGRATION_TYPE', $integration_type);
         update_post_meta($order_id, 'aps_redirected', 1);
-        wp_send_json($result);
 
-        wp_die();
+        return $result;
+//        wp_send_json($result);
+//        wp_die();
     }
 
     /**
@@ -201,13 +209,13 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
      * @return icon_html string
      */
 
-     public function get_icon()
-     {
-        $icon_html = '<span class="aps-cards-container">';
-        $image_directory = plugin_dir_url(dirname(__FILE__)) . 'public/images/';
+    public function get_icon() {
+        $icon_html       = '<span class="aps-cards-container">';
+        $image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/';
         $tabby_logo = $image_directory . 'tabby-logo.png';
         //Wrap icons
-        $icon_html .= '<img src="' . $tabby_logo . '" alt="tabby" class="payment-icons" />';
+        $icon_html .= '<span style="display: inline-block; float: right; margin-top: -15px;">';
+        $icon_html .= '<img src="' . $tabby_logo . '" alt="tabby" class="payment-icons" style="width: 75px; height: auto; vertical-align: middle;" />';
         $icon_html .= '</span>';
         return $icon_html;
     }
