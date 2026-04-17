@@ -36,6 +36,9 @@ Amazon payment services makes it really easy to start accepting online payments 
    * OmanNet
 
 == Changelog ==
+`2.4.2`
+* Fix - Token endpoint signature validation fix.
+
 `2.4.1`
 * Fix - ApplePay signature and Url validation fix.
 

@@ -470,23 +470,71 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 
 	/**
 	 * APS Token Response
+	 *
+	 * This endpoint now requires the user to be logged in and verifies
+	 * the APS response signature before processing token creation. Previously, the
+	 * user_id was taken from an attacker-controlled query parameter ('auth') with no
+	 * authentication or signature checks, allowing unauthenticated stored XSS attacks.
 	 */
 	public function aps_token_response() {
-		$user_id = '';
-		if ( isset($_GET['auth']) ) {
-			$user_id       = sanitize_text_field($_GET['auth']);
+		// SECURITY: Require user to be logged in
+		if ( ! is_user_logged_in() ) {
+			$this->aps_helper->log( 'SECURITY: Unauthenticated request to aps_token_response rejected.' );
+			wp_safe_redirect( wc_get_account_endpoint_url( 'payment-methods' ) );
+			exit;
 		}
+
+		// SECURITY: Use the authenticated user ID, not the attacker-controlled query param
+		$user_id = get_current_user_id();
+
 		$response_data = filter_input_array( INPUT_POST );
+
+		// SECURITY: Verify APS response signature to ensure the data came from the gateway
+		if ( ! empty( $response_data ) && is_array( $response_data ) ) {
+			$excluded_params = array( 'signature', 'wc-api', 'auth' );
+			$signature       = isset( $response_data['signature'] ) ? $response_data['signature'] : '';
+			$verify_params   = array();
+			foreach ( $response_data as $k => $v ) {
+				if ( ! in_array( $k, $excluded_params, true ) ) {
+					$verify_params[ $k ] = $v;
+				}
+			}
+			$calculated_signature = $this->aps_helper->generate_signature( $verify_params, 'response' );
+			if ( empty( $signature ) || strtolower( $calculated_signature ) !== strtolower( $signature ) ) {
+				$this->aps_helper->log( 'SECURITY: Invalid signature in aps_token_response. Rejecting request.' );
+				session_start();
+				$_SESSION['aps_token_error'] = __( 'Invalid signature. Token creation rejected.', 'amazon-payment-services' );
+				session_write_close();
+				wp_safe_redirect( wc_get_account_endpoint_url( 'payment-methods' ) );
+				exit;
+			}
+		} else {
+			$this->aps_helper->log( 'SECURITY: Empty response data in aps_token_response. Rejecting request.' );
+			wp_safe_redirect( wc_get_account_endpoint_url( 'payment-methods' ) );
+			exit;
+		}
+
 		$this->aps_create_token( $response_data, $user_id );
 	}
 
 	/**
 	 * Create Tokens
+	 *
+	 * SECURITY FIX: All input parameters are now sanitized with sanitize_text_field()
+	 * before being stored in the database. This prevents stored XSS even if an attacker
+	 * manages to bypass authentication and signature verification.
 	 */
 	public function aps_create_token( $response_params, $user_id ) {
 		session_start();
 		try {
 			if ( APS_Constants::APS_TOKEN_SUCCESS_RESPONSE_CODE === $response_params['response_code'] || APS_Constants::APS_TOKEN_SUCCESS_STATUS_CODE === $response_params['status'] ) {
+				// SECURITY: Sanitize all input fields before storage
+				$response_params['token_name']       = isset( $response_params['token_name'] ) ? sanitize_text_field( $response_params['token_name'] ) : '';
+				$response_params['card_number']      = isset( $response_params['card_number'] ) ? sanitize_text_field( $response_params['card_number'] ) : '';
+				$response_params['expiry_date']      = isset( $response_params['expiry_date'] ) ? sanitize_text_field( $response_params['expiry_date'] ) : '';
+				$response_params['payment_option']   = isset( $response_params['payment_option'] ) ? sanitize_text_field( $response_params['payment_option'] ) : '';
+				$response_params['card_holder_name'] = isset( $response_params['card_holder_name'] ) ? sanitize_text_field( $response_params['card_holder_name'] ) : '';
+
 				$existing_tokens = WC_Payment_Tokens::get_customer_tokens( $user_id, APS_Constants::APS_PAYMENT_TYPE_CC );
 				$token           = $response_params['token_name'];
 				$card_number     = $response_params['card_number'];

@@ -23,7 +23,7 @@ if ('yes' === $is_enabled_tokenization) {
         echo '<li>';
             echo '<div class="aps-row ' . wp_kses_data($checked) . '">';
                 echo '<div class="aps-col-sm-9">';
-                    echo '<input type="radio" class="aps_token_stc_pay stc_pay_aps_token_radio" name="aps_payment_token_stc_pay" data-token-name="' . wp_kses_data($token_row->get_mobile_number()) . '" value="' . wp_kses_data($token_row->get_token()) . '" ' . wp_kses_data($checked) . '/>';
+                    echo '<input type="radio" class="aps_token_stc_pay stc_pay_aps_token_radio" name="aps_payment_token_stc_pay" data-token-name="' . esc_attr($token_row->get_mobile_number()) . '" value="' . esc_attr($token_row->get_token()) . '" ' . esc_attr($checked) . '/>';
                     echo '<strong>' . esc_attr($token_row->get_display_name()) . '</strong> ';
                 echo '</div>';
             echo '</div>';
