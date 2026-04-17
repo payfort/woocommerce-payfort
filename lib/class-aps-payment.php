@@ -63,7 +63,10 @@ class APS_Payment extends APS_Super {
 			'is_hosted_tokenization' => $payment_request_params['is_hosted_tokenization'],
 			'redirect_url'           => $payment_request_params['redirect_url'],
 		);
-		if ( APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION === $integration_type ) {
+		if (
+            APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION === $integration_type
+            || APS_Constants::APS_INTEGRATION_TYPE_HOSTED_CHECKOUT === $integration_type
+        ) {
 			$aps_request_form = '<form name="aps_payment_form" id="' . APS_Constants::APS_SELECTOR_PAYMENT_REQFORM_ID . '" method="POST" action="' . $payment_request_params['url'] . '">';
 			foreach ( $payment_request_params['params'] as $k => $v ) {
 				$aps_request_form .= '<input type="hidden" name="' . $k . '" value="' . $v . '">';
@@ -71,6 +74,11 @@ class APS_Payment extends APS_Super {
 			$aps_request_form .= '<input type="submit">';
 			$aps_data['form']  = $aps_request_form;
 		}
+
+		if (isset($payment_request_params['error_message'])) {
+			$aps_data['error_message'] = $payment_request_params['error_message'];
+		}
+
 		return $aps_data;
 	}
 
@@ -88,6 +96,7 @@ class APS_Payment extends APS_Super {
 		$this->aps_order->load_order( $order_id );
 		$is_hosted_tokenization = false;
 		$redirect_url           = null;
+		$error_message          = null;
 
 		$gateway_params = array(
 			'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
@@ -118,7 +127,7 @@ class APS_Payment extends APS_Super {
                 $gateway_params['digital_wallet'] =  APS_Constants::APS_PAYMENT_METHOD_STC_PAY;
                 $gateway_params['merchant_reference'] = $this->aps_helper->generate_random_key();
                 update_post_meta( $order_id , 'stc_pay_reference_id' , $gateway_params['merchant_reference'] );
-                $gateway_params['customer_ip'] = $this->aps_helper->get_customer_ip();
+                $gateway_params['customer_ip'] = $this->aps_order->get_customer_ip();
                 $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
                 $gateway_params['merchant_extra'] =  $order_id;
             }
@@ -126,7 +135,7 @@ class APS_Payment extends APS_Super {
                 $gateway_params['payment_option'] =  APS_Constants::APS_PAYMENT_METHOD_TABBY;
                 $gateway_params['merchant_reference'] = $order_id;
                 update_post_meta( $order_id , 'tabby_reference_id' , $gateway_params['merchant_reference'] );
-                $gateway_params['customer_ip'] = $this->aps_helper->get_customer_ip();
+                $gateway_params['customer_ip'] = $this->aps_order->get_customer_ip();
                 $gateway_params['customer_name'] =  $this->aps_order->get_customer_name();
                 $gateway_params['phone_number'] =  $this->aps_order->get_phone_number();
             }
@@ -177,6 +186,7 @@ class APS_Payment extends APS_Super {
 					$_SESSION['aps_error'] = wp_kses_data($notify_response_message);
 					session_write_close();
 					$redirect_url          = wc_get_checkout_url();
+					$error_message = $notify_response_message;
 				}
 			}
 		}
@@ -194,6 +204,9 @@ class APS_Payment extends APS_Super {
 			'is_hosted_tokenization' => $is_hosted_tokenization,
 			'redirect_url'           => $redirect_url,
 		);
+		if (!empty($error_message)) {
+			$builder['error_message'] = $error_message;
+		}
 		$this->aps_helper->log( 'APS build_payment_gateway_params payment method ($payment_method) \n\n' . wp_json_encode( $builder, true ) );
 		return $builder;
 	}
@@ -254,7 +267,6 @@ class APS_Payment extends APS_Super {
 					unset( $response_gateway_params[ $k ] );
 				}
 			}
-
 			//update order id if webhook call for valu refund
 			if ( '' != $order_id_by_reference && ( ! ( $order && $order->get_id() ) ) ) {
 				$order_id = $order_id_by_reference;
@@ -265,6 +277,10 @@ class APS_Payment extends APS_Super {
 
 			$payment_method = $this->aps_order->get_payment_method();
 
+			// SECURITY FIX: Determine signature type from the order's stored payment method
+			// (trusted server-side data) instead of attacker-controlled digital_wallet parameter.
+			// This prevents key confusion attacks where an attacker forces Apple Pay key selection
+			// by setting digital_wallet=APPLE_PAY in the webhook request.
 			$signature_type = ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $payment_method ) ? 'apple_pay' : 'regular';
 
 			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );
@@ -433,7 +449,7 @@ class APS_Payment extends APS_Super {
 			'merchant_reference'  => $order_id,
 			'language'            => $this->aps_config->get_language(),
 			'command'             => $command,
-			'customer_ip'         => $this->aps_helper->get_customer_ip(),
+			'customer_ip'         => $this->aps_order->get_customer_ip(),
 			'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
 			'currency'            => strtoupper( $currency ),
 			'customer_email'      => $this->aps_order->get_email(),
@@ -676,7 +692,10 @@ class APS_Payment extends APS_Super {
 		try {
 			$order_id = $this->aps_order->get_session_order_id();
 			$this->aps_order->load_order( $order_id );
-			$currency       = $this->aps_helper->get_fort_currency();
+            $fort_currency              = $this->aps_helper->get_fort_currency();
+            $order_currency             = $this->aps_helper->get_front_currency();
+            $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
+
 			$gateway_params = array(
 				'digital_wallet'      => 'APPLE_PAY',
 				'command'             => $this->aps_config->get_command( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY ),
@@ -684,12 +703,12 @@ class APS_Payment extends APS_Super {
 				'access_code'         => $this->aps_config->get_apple_pay_access_code(),
 				'merchant_reference'  => $order_id,
 				'language'            => $this->aps_config->get_language(),
-				'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
-				'currency'            => strtoupper( $currency ),
+				'amount'              => $this->aps_helper->convert_to_base_currency( $this->aps_order->get_total(), $currency_conversion_rate ),
+				'currency'            => strtoupper( $fort_currency ),
 				'customer_email'      => $this->aps_order->get_email(),
 				'apple_data'          => $response_params->data->paymentData->data,
 				'apple_signature'     => $response_params->data->paymentData->signature,
-				'customer_ip'         => $this->aps_helper->get_customer_ip(),
+				'customer_ip'         => $this->aps_order->get_customer_ip(),
 			);
 			foreach ( $response_params->data->paymentData->header as $key => $value ) {
 				$gateway_params['apple_header'][ 'apple_' . $key ] = $value;
@@ -1161,7 +1180,7 @@ class APS_Payment extends APS_Super {
                 'merchant_order_id'    => $order_id,
                 'currency'             => strtoupper( $currency ),
                 'customer_name'        => $customer_name,
-                'customer_ip'          => $this->aps_helper->get_customer_ip(),
+                'customer_ip'          => $this->aps_order->get_customer_ip(),
                 'customer_email'       => $customer_email,
                 'order_description'    =>  'Order' . $order_id,
                 'settlement_reference' => $order_id

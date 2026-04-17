@@ -267,6 +267,10 @@ class APS_Helper extends APS_Super {
 			}
 		}
 
+		// SECURITY FIX: Reject empty passphrases for response signature verification.
+		// An empty passphrase means the signature has no secret component, allowing
+		// anyone to forge valid signatures. This prevents key confusion attacks where
+		// unconfigured payment method credentials (e.g., Apple Pay) are exploited.
 		if ( 'response' === $sign_type && empty( $sha_passphrase ) ) {
 			$this->log( 'SECURITY: Attempted signature verification with empty SHA passphrase (type=' . $type . '). Returning unmatchable signature.' );
 			return '___INVALID_EMPTY_PASSPHRASE___';
@@ -623,5 +627,47 @@ class APS_Helper extends APS_Super {
 		$this->log( 'APS aps_status_checker response \n\n' . wp_json_encode( $response, true ) );
 		return $response;
 	}
+
+    /**
+     * Get conversion rate based on currency gateway option
+     * Used by Apple Pay with multi-currency stores
+     *
+     * @param string $base_currency
+     * @param string $order_currency
+     *
+     * @return float
+     */
+    function get_conversion_rate_to_fort_currency(string $base_currency, string $order_currency): float
+    {
+        if ($base_currency === $order_currency) {
+            // same currency, no conversion
+            return 1.0;
+        }
+
+        $multi_currency_options            = get_option( 'woo_multi_currency_params', [] );
+        if (!(int)$multi_currency_options['enable'] || !(int)$multi_currency_options['enable_multi_payment']) {
+            // multi-currency not enabled, no conversion
+            return 1.0;
+        }
+
+        // get order currency place in the multi-currency list
+        $order_currency_index = array_search($order_currency, $multi_currency_options['currency'] ?? []);
+
+        // conversion rate
+        return 1 / ($multi_currency_options['currency_rate'][$order_currency_index ?? 0] ?? 1);
+    }
+
+    /**
+     * Convert an amount based on a conversion rate
+     *
+     * @param float $amount
+     * @param float $conversion_rate
+     *
+     * @return float
+     */
+    function convert_to_base_currency(float $amount, float $conversion_rate): float
+    {
+        return $amount * $conversion_rate;
+    }
 }
 

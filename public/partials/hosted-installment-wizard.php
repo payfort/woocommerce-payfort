@@ -41,8 +41,8 @@ $card_icons = array(
 		echo '<li class="token_list">';
 			echo '<div class="aps-row ' . wp_kses_data( $checked ) . '">';
 				echo '<div class="aps-col-sm-9">';
-					echo '<input type="radio" class="aps_installment_token aps_token_radio" name="aps_payment_token_installment" data-masking-card="' . wp_kses_data( substr( $masking_card, 0, 6 ) ) . '" data-token-id="' . wp_kses_data( $token_row->get_id() ) . '" value=" ' . wp_kses_data( $token_row->get_token() ) . ' " ' . wp_kses_data( $checked ) . '/>';
-					echo '<img class="card-icon" src="' . wp_kses_data( $card_icons[ $token_row->get_card_type() ] ) . '"/>';
+					echo '<input type="radio" class="aps_installment_token aps_token_radio" name="aps_payment_token_installment" data-masking-card="' . esc_attr( substr( $masking_card, 0, 6 ) ) . '" data-token-id="' . esc_attr( $token_row->get_id() ) . '" value=" ' . esc_attr( $token_row->get_token() ) . ' " ' . esc_attr( $checked ) . '/>';
+					echo '<img class="card-icon" src="' . esc_attr( $card_icons[ $token_row->get_card_type() ] ) . '"/>';
 					echo '<strong>' . esc_attr($card_type) . ' ' . esc_attr($token_row->get_last4()) . '</strong> ';
 					echo wp_kses_data( __( 'exp', 'amazon-payment-services' ) . ' ' . esc_attr($token_row->get_expiry_month()) . '/' . esc_attr($token_row->get_expiry_year()) );
 				echo '</div>';

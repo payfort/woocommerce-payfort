@@ -27,8 +27,8 @@ foreach ( $tokens as $token_row ) {
 	}
 	echo '<li>';
 	echo '<span class="aps-pull-left">';
-	echo '<input type="radio" class="aps-radio" name="aps_payment_token_cc" value=" ' . wp_kses_data( $token_row->get_token() ) . ' " ' . wp_kses_data( $checked ) . ' />';
-	echo '<img class="card-icon" src="' . wp_kses_data($card_icons[ $token_row->get_card_type() ]) . '"/>';
+	echo '<input type="radio" class="aps-radio" name="aps_payment_token_cc" value=" ' . esc_attr( $token_row->get_token() ) . ' " ' . esc_attr( $checked ) . ' />';
+	echo '<img class="card-icon" src="' . esc_attr($card_icons[ $token_row->get_card_type() ]) . '"/>';
 	echo '<strong>' . esc_attr($card_type) . ' ' . esc_attr($token_row->get_last4()) . '</strong>';
 	echo '</span>';
 
