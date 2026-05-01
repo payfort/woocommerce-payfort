@@ -283,6 +283,10 @@ class APS_Order extends APS_Super {
 	 */
 	public function on_hold_order( $note ) {
 		if ( $this->get_order_id() ) {
+			// Don't change order status if already payment success
+			if ( in_array( $this->get_status(), array( 'processing', 'completed', 'refunded' ) ) ) {
+				return;
+			}
 			$this->order->update_status( 'on-hold', $note );
 		}
 	}
