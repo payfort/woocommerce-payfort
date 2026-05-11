@@ -132,8 +132,8 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 			$result = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id , $down_payment, $tou, $cash_back);
 			update_post_meta( $order_id, 'valu_reference_id', $reference_id );
             update_post_meta( $order_id, 'valu_down_payment', $down_payment/100 );
-            update_post_meta( $order_id, 'valu_tou', $tou );
-            update_post_meta( $order_id, 'valu_cash_back', $cash_back );
+            update_post_meta( $order_id, 'valu_tou', $tou/100 );
+            update_post_meta( $order_id, 'valu_cash_back', $cash_back/100 );
 
 //			wp_send_json( $generate_otp_response );
 		}
