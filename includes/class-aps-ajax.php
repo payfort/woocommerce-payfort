@@ -471,6 +471,17 @@ class APS_Ajax {
 			} else {
 				throw new \Exception( 'Incorrect down payment amount' );
 			}
+			// Convert tou and cash_back from EGP to piastres (same unit as down_payment)
+			if (intval($tou) >= 0) {
+				$tou = intval($tou) * 100;
+			} else {
+				throw new \Exception( 'Incorrect ToU amount' );
+			}
+			if (intval($cash_back) >= 0) {
+				$cash_back = intval($cash_back) * 100;
+			} else {
+				throw new \Exception( 'Incorrect cashback amount' );
+			}
 			if ( empty( $mobile_number ) ) {
 				throw new \Exception( 'Mobile number is missing' );
 			}
@@ -563,6 +574,15 @@ class APS_Ajax {
 	 * Aps payment authorization capture & void
 	 */
 	public function aps_payment_authorization() {
+		// Verify the user has permission to manage WooCommerce orders
+		if ( ! current_user_can( 'edit_shop_orders' ) ) {
+			echo wp_json_encode( array( 'status' => 'error', 'message' => __( 'Unauthorized access.', 'amazon-payment-services' ) ) );
+			wp_die();
+		}
+
+		// Verify nonce to prevent CSRF
+		check_ajax_referer( 'order-item', 'security' );
+
 		$response_arr = array(
 			'status'  => 'success',
 			'message' => '',

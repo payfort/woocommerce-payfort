@@ -314,7 +314,7 @@ class APS {
 
 		$this->loader->add_action( 'wp_ajax_create_aps_token_builder', $aps_ajax, 'create_aps_token_builder' );
 		$this->loader->add_action( 'wp_ajax_aps_payment_authorization', $aps_ajax, 'aps_payment_authorization' );
-		$this->loader->add_action( 'wp_ajax_nopriv_aps_payment_authorization', $aps_ajax, 'aps_payment_authorization' );
+
 	}
 
 	public function load_wc_hooks() {

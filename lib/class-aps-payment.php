@@ -882,8 +882,8 @@ class APS_Payment extends APS_Super {
 				'currency'            => $currency,
 				'products'            => $products,
 				'total_downpayment'	  => $down_payment,
-                'wallet_amount'       => intval($tou)*100,
-                'cashback_wallet_amount' => intval($cash_back)*100,
+                'wallet_amount'       => intval($tou),
+                'cashback_wallet_amount' => intval($cash_back),
 				'include_installments' => 'YES'
 			);
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
@@ -1031,8 +1031,8 @@ class APS_Payment extends APS_Super {
 				'otp'                  => $otp,
 				'tenure'               => $active_tenure,
 				'total_down_payment'   => $total_down_payment,
-                'wallet_amount'       => intval($tou)*100,
-                'cashback_wallet_amount' => intval($cash_back)*100,
+                'wallet_amount'       => intval($tou),
+                'cashback_wallet_amount' => intval($cash_back),
 				'customer_code'        => $customer_code,
 				'customer_email'       => $customer_email,
 				'purchase_description' => 'Order' . $order_id,

@@ -1,4 +1,8 @@
 ## Changelog
+`2.4.4`
+* Fix - Value tou and cashback decimal calculation fix
+* Fix - Nonce verification at payment authorization
+
 `2.4.3`
 * Fix - Onhold txn notification checks order status.
 
