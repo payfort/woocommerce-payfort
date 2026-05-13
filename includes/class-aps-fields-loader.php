@@ -302,6 +302,14 @@ class APS_Fields_Loader {
 				'validation_rules' => array( 'no_space' ),
 				'description'      => $mada_meeza_msg,
 			),
+			'jaywan_bins'                         => array(
+				'title'            => __( 'Jaywan Bins', 'amazon-payment-services' ),
+				'type'             => 'textarea',
+				'label'            => __( 'Jaywan Bins', 'amazon-payment-services' ),
+				'default'          => APS_Constants::JAYWAN_BINS,
+				'validation_rules' => array( 'no_space' ),
+				'description'      => $mada_meeza_msg,
+			),
 			'applepay_group'                      => array(
 				'title' => __( 'Apple Pay', 'amazon-payment-services' ),
 				'type'  => 'title',

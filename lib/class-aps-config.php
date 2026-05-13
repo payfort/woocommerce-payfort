@@ -829,6 +829,15 @@ class APS_Config extends APS_Super {
 		}
 	}
 
+	public function get_jaywan_bins() {
+		$jaywan_bins = get_option( 'woocommerce_aps_fort_jaywan_bins' );
+		if ( ! empty( $jaywan_bins ) ) {
+			return $jaywan_bins;
+		} else {
+			return APS_Constants::JAYWAN_BINS;
+		}
+	}
+
 	/**
 	 * Get Plugin params
 	 *

@@ -508,10 +508,13 @@ class APS_Helper extends APS_Super {
 		$visa_regex       = '/^4[0-9]{0,15}$/m';
 		$mastercard_regex = '/^5$|^5[0-5][0-9]{0,16}$/m';
 		$amex_regex       = '/^3$|^3[47][0-9]{0,13}$/m';
+		$jaywan_regex     = '/^(' . $this->aps_config->get_jaywan_bins() . ')/';
 		$mada_regex       = '/^' . $this->aps_config->get_mada_bins() . '/';
 		$meeza_regex      = '/^' . $this->aps_config->get_meeza_bins() . '/';
 		$card_type        = null;
-		if ( preg_match( $mada_regex, $card_bin ) ) {
+		if ( ! empty( $this->aps_config->get_jaywan_bins() ) && preg_match( $jaywan_regex, $card_bin ) ) {
+			$card_type = 'jaywan';
+		} elseif ( preg_match( $mada_regex, $card_bin ) ) {
 			$card_type = 'mada';
 		} elseif ( preg_match( $meeza_regex, $card_bin ) ) {
 			$card_type = 'meeza';

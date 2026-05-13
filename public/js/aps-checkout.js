@@ -27,12 +27,18 @@
 				// American Express
 				var amex_regex = new RegExp( '^3$|^3[47][0-9]{0,13}$' );
 
+				//jaywan
+				var jaywan_regex = new RegExp( '^(' + aps_info.jaywan_bins + ')' );
+
 				//mada
 				var mada_regex = new RegExp( '/^' + aps_info.mada_bins + '/', 'm' );
 
 				//meeza
 				var meeza_regex = new RegExp( aps_info.meeza_bins, 'gm' );
-				if ( card_number.match( mada_regex ) ) {
+				if ( card_number.match( jaywan_regex ) ) {
+					card_type   = 'jaywan';
+					card_length = 16;
+				} else if ( card_number.match( mada_regex ) ) {
 					if ( aps_info.have_recurring_items ) {
 						card_validity = false;
 						message       = aps_info.error_msg.invalid_card;
