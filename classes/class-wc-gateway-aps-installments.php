@@ -40,6 +40,7 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$this->icons = [
 			'visa'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/visa-logo.png',
 			'mastercard'=> plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mastercard-logo.png',
+			'jaywan'    => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png',
 		];
 
 		// We need custom JavaScript to obtain a token
@@ -120,9 +121,11 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/';
 		$visa_logo       = $image_directory . 'visa-logo.png';
 		$mastercard_logo = $image_directory . 'mastercard-logo.png';
+		$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 		//Wrap icons
 		$icon_html .= '<img src="' . $visa_logo . '" alt="visa" class="payment-icons" />';
 		$icon_html .= '<img src="' . $mastercard_logo . '" alt="mastercard" class="payment-icons"/>';
+		$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
 		$icon_html .= '</span>';
 		return $icon_html;
 	}
@@ -140,12 +143,14 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$mastercard_logo = $image_directory . 'mastercard-logo.png';
 		$amex_logo       = $image_directory . 'amex-logo.png';
 		$meeza_logo      = $image_directory . 'meeza-logo.jpg';
+		$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 		$card_icons      = array(
 			'mada'       => $mada_logo,
 			'visa'       => $visa_logo,
 			'mastercard' => $mastercard_logo,
 			'amex'       => $amex_logo,
 			'meeza'      => $meeza_logo,
+			'jaywan'     => $jaywan_logo,
 		);
 		return $card_icons;
 	}
