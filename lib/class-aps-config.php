@@ -46,6 +46,7 @@ class APS_Config extends APS_Super {
 	private $credit_card_integration_type;
 	private $show_mada_branding;
 	private $show_meeza_branding;
+	private $show_jaywan_branding;
 	private $enable_apple_pay;
 	private $enable_apple_pay_product_page;
 	private $enable_apple_pay_cart_page;
@@ -84,6 +85,7 @@ class APS_Config extends APS_Super {
 	private $apple_pay_button_type;
 	private $mada_bins;
 	private $meeza_bins;
+	private $jaywan_bins;
 	private $status_cron_duration;
 
 	/**
@@ -112,6 +114,7 @@ class APS_Config extends APS_Super {
 		$this->credit_card_integration_type        = $this->get_aps_config( 'credit_card_integration_type' );
 		$this->show_mada_branding                  = $this->get_aps_config( 'show_mada_branding' );
 		$this->show_meeza_branding                 = $this->get_aps_config( 'show_meeza_branding' );
+		$this->show_jaywan_branding                = $this->get_aps_config( 'show_jaywan_branding' );
 		$this->enable_apple_pay                    = $this->get_aps_config( 'enable_apple_pay' );
 		$this->enable_apple_pay_product_page       = $this->get_aps_config( 'enable_apple_pay_product_page' );
 		$this->enable_apple_pay_cart_page          = $this->get_aps_config( 'enable_apple_pay_cart_page' );
@@ -145,6 +148,7 @@ class APS_Config extends APS_Super {
 		$this->apple_pay_supported_networks        = $this->get_aps_config( 'apple_pay_supported_networks' );
 		$this->mada_bins                           = $this->get_aps_config( 'mada_bins' );
 		$this->meeza_bins                          = $this->get_aps_config( 'meeza_bins' );
+		$this->jaywan_bins                         = $this->get_aps_config( 'jaywan_bins' );
 		$this->status_cron_duration                = $this->get_aps_config( 'status_cron_duration' );
         $this->enable_stc_pay                      = $this->get_aps_config( 'enable_stc_pay' );
         $this->stc_pay_integration_type            = $this->get_aps_config('stc_pay_integration_type');
@@ -419,6 +423,15 @@ class APS_Config extends APS_Super {
 	 */
 	public function get_show_meeza_branding() {
 		return $this->show_meeza_branding;
+	}
+
+	/**
+	 * Return Show jaywan branding
+	 *
+	 * @return string
+	 */
+	public function get_show_jaywan_branding() {
+		return $this->show_jaywan_branding;
 	}
 
 	/**
@@ -829,10 +842,14 @@ class APS_Config extends APS_Super {
 		}
 	}
 
+	/**
+	 * Return jaywan bins
+	 *
+	 * @return jaywan_bins
+	 */
 	public function get_jaywan_bins() {
-		$jaywan_bins = get_option( 'woocommerce_aps_fort_jaywan_bins' );
-		if ( ! empty( $jaywan_bins ) ) {
-			return $jaywan_bins;
+		if ( ! empty( $this->jaywan_bins ) ) {
+			return $this->jaywan_bins;
 		} else {
 			return APS_Constants::JAYWAN_BINS;
 		}

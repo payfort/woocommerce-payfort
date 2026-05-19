@@ -286,6 +286,12 @@ class APS_Fields_Loader {
 				'label'   => __( 'Show Meeza Branding during checkout', 'amazon-payment-services' ),
 				'default' => 'no',
 			),
+			'show_jaywan_branding'                => array(
+				'title'   => __( 'Show Jaywan Branding', 'amazon-payment-services' ),
+				'type'    => 'checkbox',
+				'label'   => __( 'Show Jaywan Branding during checkout', 'amazon-payment-services' ),
+				'default' => 'no',
+			),
 			'mada_bins'                           => array(
 				'title'            => __( 'mada Bins', 'amazon-payment-services' ),
 				'type'             => 'textarea',

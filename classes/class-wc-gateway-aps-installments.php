@@ -40,8 +40,10 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$this->icons = [
 			'visa'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/visa-logo.png',
 			'mastercard'=> plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mastercard-logo.png',
-			'jaywan'    => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png',
 		];
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$this->icons['jaywan'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png';
+		}
 
 		// We need custom JavaScript to obtain a token
 		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
@@ -125,7 +127,9 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		//Wrap icons
 		$icon_html .= '<img src="' . $visa_logo . '" alt="visa" class="payment-icons" />';
 		$icon_html .= '<img src="' . $mastercard_logo . '" alt="mastercard" class="payment-icons"/>';
-		$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
+		}
 		$icon_html .= '</span>';
 		return $icon_html;
 	}
@@ -150,8 +154,10 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 			'mastercard' => $mastercard_logo,
 			'amex'       => $amex_logo,
 			'meeza'      => $meeza_logo,
-			'jaywan'     => $jaywan_logo,
 		);
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$card_icons['jaywan'] = $jaywan_logo;
+		}
 		return $card_icons;
 	}
 

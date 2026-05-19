@@ -56,10 +56,12 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 			'visa'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/visa-logo.png',
 			'mastercard'=> plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mastercard-logo.png',
 			'amex'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/amex-logo.png',
-			'jaywan'    => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png',
 		];
 		if ( 'yes' === $this->aps_config->get_show_meeza_branding() ) {
 			$this->icons['meeza'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/meeza-logo.jpg';
+		}
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$this->icons['jaywan'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png';
 		}
 
 
@@ -149,7 +151,9 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 		if ( 'yes' === $this->aps_config->get_show_meeza_branding() ) {
 			$icon_html .= '<img src="' . $meeza_logo . '" alt="meeza" class="payment-icons"/>';
 		}
-		$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
+		}
 		$icon_html .= '</span>';
 		return $icon_html;
 	}
