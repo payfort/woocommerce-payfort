@@ -35,12 +35,14 @@ WooCommerce Plugin user guide is included in the repository [here](/Woocommerce%
    * Tabby
    * Benefit
    * OmanNet
+   * Jaywan
    
 
 ## Changelog
 
 | Plugin Version | Release Notes                                                                                                                                                                                                                                                                                                                                                                      |
 |:--------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     2.4.5      | * New - Jaywan card brand support added to checkout <br/> * New - Jaywan BIN detection in client-side credit card validation <br/> * New - Jaywan support for installments payment option <br/> * New - Jaywan toggle configuration in admin settings                                                                                                          |
 |     2.4.4      | * Fix - * Fix - Value tou and cashback decimal calculation fix and Nonce verification at payment authorization.                                                                                                                                                                                                                                                                    |
 |     2.4.3      | * Fix - Onhold txn notification checks order status.                                                                                                                                                                                                                                                                                                                               |
 |     2.4.2      | * Fix - Token endpoint signature validation fix.                                                                                                                                                                                                                                                                                                                                   |
