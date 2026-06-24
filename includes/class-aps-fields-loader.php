@@ -286,6 +286,12 @@ class APS_Fields_Loader {
 				'label'   => __( 'Show Meeza Branding during checkout', 'amazon-payment-services' ),
 				'default' => 'no',
 			),
+			'show_jaywan_branding'                => array(
+				'title'   => __( 'Show Jaywan Branding', 'amazon-payment-services' ),
+				'type'    => 'checkbox',
+				'label'   => __( 'Show Jaywan Branding during checkout', 'amazon-payment-services' ),
+				'default' => 'no',
+			),
 			'mada_bins'                           => array(
 				'title'            => __( 'mada Bins', 'amazon-payment-services' ),
 				'type'             => 'textarea',
@@ -299,6 +305,14 @@ class APS_Fields_Loader {
 				'type'             => 'textarea',
 				'label'            => __( 'Meeza Bins', 'amazon-payment-services' ),
 				'default'          => APS_Constants::MEEZA_BINS,
+				'validation_rules' => array( 'no_space' ),
+				'description'      => $mada_meeza_msg,
+			),
+			'jaywan_bins'                         => array(
+				'title'            => __( 'Jaywan Bins', 'amazon-payment-services' ),
+				'type'             => 'textarea',
+				'label'            => __( 'Jaywan Bins', 'amazon-payment-services' ),
+				'default'          => APS_Constants::JAYWAN_BINS,
 				'validation_rules' => array( 'no_space' ),
 				'description'      => $mada_meeza_msg,
 			),

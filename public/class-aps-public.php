@@ -169,6 +169,7 @@ class APS_Public {
 			'lang'                         => $this->aps_config->get_language(),
 			'mada_bins'                    => $this->aps_config->get_mada_bins(),
 			'meeza_bins'                   => $this->aps_config->get_meeza_bins(),
+			'jaywan_bins'                  => $this->aps_config->get_jaywan_bins(),
 			'installment_with_cc'          => $this->aps_config->get_enabled_credit_card_installments(),
 			'review_order_checkout_url'    => esc_attr( wp_unslash( $_SERVER['REQUEST_URI'] ) ) ,
 		);

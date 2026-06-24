@@ -41,6 +41,9 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 			'visa'      => plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/visa-logo.png',
 			'mastercard'=> plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/mastercard-logo.png',
 		];
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$this->icons['jaywan'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png';
+		}
 
 		// We need custom JavaScript to obtain a token
 		add_action( 'wp_enqueue_scripts', array( $this, 'payment_scripts' ) );
@@ -120,9 +123,13 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/';
 		$visa_logo       = $image_directory . 'visa-logo.png';
 		$mastercard_logo = $image_directory . 'mastercard-logo.png';
+		$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 		//Wrap icons
 		$icon_html .= '<img src="' . $visa_logo . '" alt="visa" class="payment-icons" />';
 		$icon_html .= '<img src="' . $mastercard_logo . '" alt="mastercard" class="payment-icons"/>';
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
+		}
 		$icon_html .= '</span>';
 		return $icon_html;
 	}
@@ -140,6 +147,7 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 		$mastercard_logo = $image_directory . 'mastercard-logo.png';
 		$amex_logo       = $image_directory . 'amex-logo.png';
 		$meeza_logo      = $image_directory . 'meeza-logo.jpg';
+		$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 		$card_icons      = array(
 			'mada'       => $mada_logo,
 			'visa'       => $visa_logo,
@@ -147,6 +155,9 @@ class WC_Gateway_APS_Installments extends WC_Gateway_APS_Super {
 			'amex'       => $amex_logo,
 			'meeza'      => $meeza_logo,
 		);
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$card_icons['jaywan'] = $jaywan_logo;
+		}
 		return $card_icons;
 	}
 
