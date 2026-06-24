@@ -832,7 +832,7 @@
 			if ( cardnumber.length >= 15 ) {
 				$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
 				$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
-				card_bin = cardnumber.substring( 0,6 );
+				card_bin = cardnumber.substring( 0,8 );
 				$.ajax(
 					{
 						url:ajaxurl,
@@ -1026,7 +1026,7 @@
 				$( '#aps_cc_amount' ).val( '' );
 				$( '.aps_plan_error' ).html( '' );
 				if ( cardnumber.length >= 15 ) {
-					card_bin = cardnumber.substring( 0,6 );
+					card_bin = cardnumber.substring( 0,8 );
 					$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
 					$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 					$.ajax(
