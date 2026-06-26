@@ -194,7 +194,7 @@ const validateCard = card_number => {
     let amex_regex = new RegExp('^3$|^3[47][0-9]{0,13}$');
 
     // Jaywan
-    let jaywan_regex = new RegExp('^(669010|669009|978450)');
+    let jaywan_regex = new RegExp('^(669010|669009|978450|47878000|622454|650053|650483)');
 
     //mada TODO
     // let mada_regex = new RegExp( '/^' + aps_info.mada_bins + '/', 'm' );
