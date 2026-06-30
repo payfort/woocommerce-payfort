@@ -6,16 +6,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'images/';
 	$visa_logo       = $image_directory . 'visa-logo.png';
 	$mastercard_logo = $image_directory . 'mastercard-logo.png';
+	$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 	//Wrap icons
 	$icon_html .= '<img src="' . esc_attr($visa_logo) . '" alt="visa" class="card-visa card-icon" />';
 	$icon_html .= '<img src="' . esc_attr($mastercard_logo) . '" alt="mastercard" class="card-mastercard card-icon" />';
+	$icon_html .= '<img src="' . esc_attr($jaywan_logo) . '" alt="jaywan" class="card-jaywan card-icon" />';
 	$tokens     = array();
 if ( 'yes' === $is_enabled_tokenization ) {
 	$tokens = WC_Payment_Tokens::get_customer_tokens( get_current_user_id(), APS_Constants::APS_PAYMENT_TYPE_CC );
 	$tokens = array_filter(
 		$tokens,
 		function( $token_row ) {
-			if ( in_array( $token_row->get_card_type(), array( 'visa', 'mastercard' ), true ) ) {
+			if ( in_array( $token_row->get_card_type(), array( 'visa', 'mastercard', 'jaywan' ), true ) ) {
 				return true;
 			} else {
 				return false;
@@ -26,6 +28,7 @@ if ( 'yes' === $is_enabled_tokenization ) {
 $card_icons = array(
 	'visa'       => $visa_logo,
 	'mastercard' => $mastercard_logo,
+	'jaywan'     => $jaywan_logo,
 );
 ?>
 <ul class="token-box installment_token">

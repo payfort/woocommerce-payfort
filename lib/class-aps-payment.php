@@ -313,6 +313,25 @@ class APS_Payment extends APS_Super {
 
 			$payment_method = $this->aps_order->get_payment_method();
 
+			$aps_payment_methods = array(
+				APS_Constants::APS_PAYMENT_TYPE_CC,
+				APS_Constants::APS_PAYMENT_TYPE_VALU,
+				APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
+				APS_Constants::APS_PAYMENT_TYPE_NAPS,
+				APS_Constants::APS_PAYMENT_TYPE_BENEFIT,
+				APS_Constants::APS_PAYMENT_TYPE_KNET,
+				APS_Constants::APS_PAYMENT_TYPE_OMANNET,
+				APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
+				APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
+				APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
+				APS_Constants::APS_PAYMENT_TYPE_TABBY,
+			);
+
+			if ( ! in_array( $payment_method, $aps_payment_methods, true ) ) {
+				$this->aps_helper->log( 'SECURITY: Callback rejected — order #' . $order_id . ' uses non-APS payment method: ' . $payment_method );
+				return false;
+			}
+
 			// SECURITY FIX: Determine signature type from the order's stored payment method
 			// (trusted server-side data) instead of attacker-controlled digital_wallet parameter.
 			// This prevents key confusion attacks where an attacker forces Apple Pay key selection

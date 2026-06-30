@@ -60,6 +60,9 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 		if ( 'yes' === $this->aps_config->get_show_meeza_branding() ) {
 			$this->icons['meeza'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/meeza-logo.jpg';
 		}
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$this->icons['jaywan'] = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/jaywan-logo.png';
+		}
 
 
 		// We need custom JavaScript to obtain a token
@@ -137,6 +140,7 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 		$mastercard_logo = $image_directory . 'mastercard-logo.png';
 		$amex_logo       = $image_directory . 'amex-logo.png';
 		$meeza_logo      = $image_directory . 'meeza-logo.jpg';
+		$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 		//Wrap icons
 		if ( 'yes' === $this->aps_config->get_show_mada_branding() ) {
 			$icon_html .= '<img src="' . $mada_logo . '" alt="mada" class="payment-icons" />';
@@ -146,6 +150,9 @@ class WC_Gateway_APS extends WC_Gateway_APS_Super {
 		$icon_html .= '<img src="' . $amex_logo . '" alt="amex" class="payment-icons"/>';
 		if ( 'yes' === $this->aps_config->get_show_meeza_branding() ) {
 			$icon_html .= '<img src="' . $meeza_logo . '" alt="meeza" class="payment-icons"/>';
+		}
+		if ( 'yes' === $this->aps_config->get_show_jaywan_branding() ) {
+			$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="payment-icons"/>';
 		}
 		$icon_html .= '</span>';
 		return $icon_html;
