@@ -218,10 +218,42 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 
 		if ( APS_Constants::APS_PAYMENT_TYPE_CC === $payment_method ) {
 			if ( isset( $aps_payment_token_cc ) && ! empty( $aps_payment_token_cc ) ) {
+				// SECURITY FIX: Validate that the submitted CC token belongs to the current user.
+				$current_user_id = get_current_user_id();
+				if ( 0 === $current_user_id ) {
+					throw new \Exception( __( 'You must be logged in to use a saved payment token.', 'amazon-payment-services' ) );
+				}
+				$user_tokens = WC_Payment_Tokens::get_customer_tokens( $current_user_id, APS_Constants::APS_PAYMENT_TYPE_CC );
+				$token_is_valid = false;
+				foreach ( $user_tokens as $user_token ) {
+					if ( $user_token->get_token() === trim( $aps_payment_token_cc, ' ' ) ) {
+						$token_is_valid = true;
+						break;
+					}
+				}
+				if ( ! $token_is_valid ) {
+					throw new \Exception( __( 'Invalid payment token. The token does not belong to your account.', 'amazon-payment-services' ) );
+				}
 				$extras['aps_payment_token'] = trim( $aps_payment_token_cc, ' ' );
 			}
 		} elseif ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
 			if ( isset( $aps_payment_token_installment ) && ! empty( $aps_payment_token_installment ) ) {
+				// SECURITY FIX: Validate that the submitted installment token belongs to the current user.
+				$current_user_id = get_current_user_id();
+				if ( 0 === $current_user_id ) {
+					throw new \Exception( __( 'You must be logged in to use a saved payment token.', 'amazon-payment-services' ) );
+				}
+				$user_tokens = WC_Payment_Tokens::get_customer_tokens( $current_user_id, APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT );
+				$token_is_valid = false;
+				foreach ( $user_tokens as $user_token ) {
+					if ( $user_token->get_token() === trim( $aps_payment_token_installment, ' ' ) ) {
+						$token_is_valid = true;
+						break;
+					}
+				}
+				if ( ! $token_is_valid ) {
+					throw new \Exception( __( 'Invalid payment token. The token does not belong to your account.', 'amazon-payment-services' ) );
+				}
 				$extras['aps_payment_token'] = trim( $aps_payment_token_installment, ' ' );
 			}
 		}
