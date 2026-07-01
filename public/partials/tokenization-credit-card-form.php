@@ -9,12 +9,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	$mastercard_logo = $image_directory . 'mastercard-logo.png';
 	$amex_logo       = $image_directory . 'amex-logo.png';
 	$meeza_logo      = $image_directory . 'meeza-logo.jpg';
+	$jaywan_logo     = $image_directory . 'jaywan-logo.png';
 	//Wrap icons
 	$icon_html .= '<img src="' . $mada_logo . '" alt="mada" class="card-mada card-icon" />';
 	$icon_html .= '<img src="' . $meeza_logo . '" alt="meeza" class="card-meeza card-icon" />';
 	$icon_html .= '<img src="' . $visa_logo . '" alt="visa" class="card-visa card-icon" />';
 	$icon_html .= '<img src="' . $mastercard_logo . '" alt="mastercard" class="card-mastercard card-icon" />';
 	$icon_html .= '<img src="' . $amex_logo . '" alt="amex" class="card-amex card-icon" />';
+	$icon_html .= '<img src="' . $jaywan_logo . '" alt="jaywan" class="card-jaywan card-icon" />';
 ?>
 <div id="aps_cc_form" class="aps_hosted_form">
 	<div class="payfort-fort-cc" >

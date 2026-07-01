@@ -234,6 +234,17 @@ class APS_Payment extends APS_Super {
 				$this->aps_helper->log( $aps_error_log );
 				throw new Exception( $response_message );
 			}
+
+			// SECURITY FIX: Validate merchant reference is a positive integer before loading order
+			$merchant_ref_value = ( isset( $response_params['payment_option'] ) && $response_params['payment_option'] === APS_Constants::APS_PAYMENT_METHOD_STC_PAY )
+				? ( isset( $response_params['merchant_extra'] ) ? $response_params['merchant_extra'] : '' )
+				: $response_params['merchant_reference'];
+
+			if ( empty( $merchant_ref_value ) || ! is_numeric( $merchant_ref_value ) || intval( $merchant_ref_value ) <= 0 ) {
+				$this->aps_helper->log( 'APS handler ERROR: Invalid merchant reference value: ' . wp_json_encode( $merchant_ref_value ) );
+				return false;
+			}
+
             if (isset($response_params['payment_option']) && $response_params['payment_option'] ===  APS_Constants::APS_PAYMENT_METHOD_STC_PAY){
                 $order_id = $response_params['merchant_extra'];
                 $this->aps_order->load_order( $order_id );
@@ -250,6 +261,31 @@ class APS_Payment extends APS_Super {
 					$this->aps_helper->log( 'Valu REFUND merchant_reference' . $response_params['merchant_reference']);
 					$order_id_by_reference = $this->aps_helper->find_order_by_reference( $response_params['merchant_reference'] , APS_Constants::APS_PAYMENT_METHOD_VALU);
 					$this->aps_helper->log( 'Valu REFUND order_id' . $response_params['merchant_reference']);
+				}
+			}
+
+			// SECURITY FIX: Verify the order was placed through an APS payment gateway.
+			// This prevents the callback from acting on orders placed via non-APS methods
+			// (e.g., bank transfer, cheque) which should never be modified by APS webhooks.
+			$order = $this->aps_order->get_loaded_order();
+			if ( $order && $order->get_id() ) {
+				$loaded_payment_method = $this->aps_order->get_payment_method();
+				$aps_payment_methods   = array(
+					APS_Constants::APS_PAYMENT_TYPE_CC,
+					APS_Constants::APS_PAYMENT_TYPE_VALU,
+					APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
+					APS_Constants::APS_PAYMENT_TYPE_NAPS,
+					APS_Constants::APS_PAYMENT_TYPE_BENEFIT,
+					APS_Constants::APS_PAYMENT_TYPE_KNET,
+					APS_Constants::APS_PAYMENT_TYPE_OMANNET,
+					APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
+					APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
+					APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
+					APS_Constants::APS_PAYMENT_TYPE_TABBY,
+				);
+				if ( ! in_array( $loaded_payment_method, $aps_payment_methods, true ) ) {
+					$this->aps_helper->log( 'APS handler ERROR: Order #' . $order->get_id() . ' payment method (' . $loaded_payment_method . ') is not an APS method. Ignoring callback.' );
+					return false;
 				}
 			}
 			$excluded_params = array( 'signature', 'wc-ajax', 'wc-api', 'APS_fort', 'integration_type', 'WordApp_launch', 'WordApp_mobile_site', 'WordApp_demo', 'WordApp_demo', 'lang' );
@@ -277,6 +313,25 @@ class APS_Payment extends APS_Super {
 
 			$payment_method = $this->aps_order->get_payment_method();
 
+			$aps_payment_methods = array(
+				APS_Constants::APS_PAYMENT_TYPE_CC,
+				APS_Constants::APS_PAYMENT_TYPE_VALU,
+				APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT,
+				APS_Constants::APS_PAYMENT_TYPE_NAPS,
+				APS_Constants::APS_PAYMENT_TYPE_BENEFIT,
+				APS_Constants::APS_PAYMENT_TYPE_KNET,
+				APS_Constants::APS_PAYMENT_TYPE_OMANNET,
+				APS_Constants::APS_PAYMENT_TYPE_VISA_CHECKOUT,
+				APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY,
+				APS_Constants::APS_PAYMENT_TYPE_STC_PAY,
+				APS_Constants::APS_PAYMENT_TYPE_TABBY,
+			);
+
+			if ( ! in_array( $payment_method, $aps_payment_methods, true ) ) {
+				$this->aps_helper->log( 'SECURITY: Callback rejected — order #' . $order_id . ' uses non-APS payment method: ' . $payment_method );
+				return false;
+			}
+
 			// SECURITY FIX: Determine signature type from the order's stored payment method
 			// (trusted server-side data) instead of attacker-controlled digital_wallet parameter.
 			// This prevents key confusion attacks where an attacker forces Apple Pay key selection
@@ -292,20 +347,11 @@ class APS_Payment extends APS_Super {
 
 			// check the signature
 			if ( strtolower( $response_signature ) !== strtolower( $signature ) ) {
-				$response_message = __( 'Invalid Singature', 'amazon-payment-services' );
-				// There is a problem in the response we got
-				$this->aps_order->on_hold_order( 'Invalid Signature.' );
+				// SECURITY FIX: A request whose signature does not verify is untrusted.
+				// Do NOT mutate order state — only log the mismatch and return false.
 				$aps_invalid_signature_log = "APS Response invalid signature ERROR\n\n Original array : " . wp_json_encode( $response_params, true ) . "\n\n\n Final array : " . wp_json_encode( $response_gateway_params, true );
 				$this->aps_helper->log( $aps_invalid_signature_log );
-
-                //if ($isTabbyPay) {
-                    $result = $this->aps_order->decline_order( $response_params, $response_status_message );
-                    $this->aps_helper->log( $aps_error_log );
-                    throw new Exception( $response_status_message);
-                //}
-
-                // this was like this, BUT it should be false
-                return true;
+				return false;
 			}
 			if ( APS_Constants::APS_PAYMENT_CANCEL_RESPONSE_CODE === $response_code ) {
 				$response_message = __( 'Transaction Cancelled', 'amazon-payment-services' );
@@ -1159,6 +1205,27 @@ class APS_Payment extends APS_Super {
         $status  = 'success';
         $message = '';
         try {
+            // SECURITY FIX: Defense-in-depth validation that the STC Pay token belongs to the current user.
+            // This is a secondary check in case the gateway class validation is bypassed.
+            if ( ! empty( $token_name ) ) {
+                $current_user_id = get_current_user_id();
+                if ( 0 === $current_user_id ) {
+                    throw new \Exception( __( 'You must be logged in to use a saved payment token.', 'amazon-payment-services' ) );
+                }
+                $user_tokens = WC_Payment_Tokens::get_customer_tokens( $current_user_id, APS_Constants::APS_PAYMENT_TYPE_STC_PAY );
+                $token_is_valid = false;
+                foreach ( $user_tokens as $user_token ) {
+                    if ( $user_token->get_token() === $token_name ) {
+                        $token_is_valid = true;
+                        break;
+                    }
+                }
+                if ( ! $token_is_valid ) {
+                    $this->aps_helper->log( 'SECURITY: STC Pay token ownership validation failed for user ' . $current_user_id . ' with token: ' . $token_name );
+                    throw new \Exception( __( 'Invalid payment token. The token does not belong to your account.', 'amazon-payment-services' ) );
+                }
+            }
+
             $order_id = $this->aps_order->get_session_order_id();
             $this->aps_order->load_order( $order_id );
             session_start();

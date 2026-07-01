@@ -27,12 +27,18 @@
 				// American Express
 				var amex_regex = new RegExp( '^3$|^3[47][0-9]{0,13}$' );
 
+				//jaywan
+				var jaywan_regex = new RegExp( '^(' + aps_info.jaywan_bins + ')' );
+
 				//mada
 				var mada_regex = new RegExp( '/^' + aps_info.mada_bins + '/', 'm' );
 
 				//meeza
 				var meeza_regex = new RegExp( aps_info.meeza_bins, 'gm' );
-				if ( card_number.match( mada_regex ) ) {
+				if ( card_number.match( jaywan_regex ) ) {
+					card_type   = 'jaywan';
+					card_length = 16;
+				} else if ( card_number.match( mada_regex ) ) {
 					if ( aps_info.have_recurring_items ) {
 						card_validity = false;
 						message       = aps_info.error_msg.invalid_card;
@@ -826,7 +832,7 @@
 			if ( cardnumber.length >= 15 ) {
 				$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
 				$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
-				card_bin = cardnumber.substring( 0,6 );
+				card_bin = cardnumber.substring( 0,8 );
 				$.ajax(
 					{
 						url:ajaxurl,
@@ -1020,7 +1026,7 @@
 				$( '#aps_cc_amount' ).val( '' );
 				$( '.aps_plan_error' ).html( '' );
 				if ( cardnumber.length >= 15 ) {
-					card_bin = cardnumber.substring( 0,6 );
+					card_bin = cardnumber.substring( 0,8 );
 					$( '.aps_payment_window' ).addClass( 'aps_payment_loader' );
 					$( '#payment-method' ).addClass( 'wc-block-components-checkout-step--disabled' );
 					$.ajax(

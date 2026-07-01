@@ -119,6 +119,27 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
     {
         $stc_pay_otp = filter_input(INPUT_POST, 'stc_pay_otp');
         $stc_token = filter_input(INPUT_POST, 'aps_payment_token_stc_pay');
+
+        // SECURITY FIX: Validate that the submitted STC Pay token belongs to the current user.
+        // This prevents an attacker from using another customer's saved payment token.
+        if ( ! empty( $stc_token ) ) {
+            $current_user_id = get_current_user_id();
+            if ( 0 === $current_user_id ) {
+                throw new \Exception( __( 'You must be logged in to use a saved payment token.', 'amazon-payment-services' ) );
+            }
+            $user_tokens = WC_Payment_Tokens::get_customer_tokens( $current_user_id, APS_Constants::APS_PAYMENT_TYPE_STC_PAY );
+            $token_is_valid = false;
+            foreach ( $user_tokens as $user_token ) {
+                if ( $user_token->get_token() === $stc_token ) {
+                    $token_is_valid = true;
+                    break;
+                }
+            }
+            if ( ! $token_is_valid ) {
+                throw new \Exception( __( 'Invalid payment token. The token does not belong to your account.', 'amazon-payment-services' ) );
+            }
+        }
+
         $order = new WC_Order($order_id);
         $stc_pay_mobile = filter_input(INPUT_POST, 'token_mobile_number');
         session_start();

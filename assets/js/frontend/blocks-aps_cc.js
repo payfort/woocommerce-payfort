@@ -193,6 +193,9 @@ const validateCard = card_number => {
     // American Express
     let amex_regex = new RegExp('^3$|^3[47][0-9]{0,13}$');
 
+    // Jaywan
+    let jaywan_regex = new RegExp('^(669010|669009|978450|47878000|622454|650053|650483)');
+
     //mada TODO
     // let mada_regex = new RegExp( '/^' + aps_info.mada_bins + '/', 'm' );
     //
@@ -215,7 +218,10 @@ const validateCard = card_number => {
     //         card_length = 19;
     //     }
     // } else
-    if (card_number.match(visa_regex)) {
+    if (card_number.match(jaywan_regex)) {
+      card_type = 'jaywan';
+      card_length = 16;
+    } else if (card_number.match(visa_regex)) {
       card_type = 'visa';
       card_length = 16;
     } else if (card_number.match(mastercard_regex)) {

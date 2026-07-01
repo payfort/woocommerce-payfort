@@ -19,7 +19,7 @@ if ( 'yes' === $is_enabled_tokenization ) {
 		$tokens = array_filter(
 			$tokens,
 			function( $token_row ) {
-				if ( in_array( $token_row->get_card_type(), array( 'visa', 'mastercard', 'amex' ), true ) ) {
+				if ( in_array( $token_row->get_card_type(), array( 'visa', 'mastercard', 'amex', 'jaywan' ), true ) ) {
 					return true;
 				} else {
 					return false;
