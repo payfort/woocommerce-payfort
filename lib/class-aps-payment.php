@@ -1173,6 +1173,11 @@ class APS_Payment extends APS_Super {
         $message              = 'OTP Generated';
         $mobile_number_string = null;
         try {
+            // Enforce the Saudi mobile format STC Pay expects before requesting an OTP.
+            if ( ! preg_match( '/^0?5[0-9]{8}$/', (string) $mobile_number ) ) {
+                throw new \Exception( __( 'Please enter a valid Saudi mobile number.', 'amazon-payment-services' ) );
+            }
+
             $reference_id = $this->aps_helper->generate_random_key();
             $this->aps_order->load_order( $order_id );
             $currency                    = $this->aps_helper->get_front_currency();
