@@ -152,14 +152,15 @@ class APS_Admin {
             $uploding_path = $upload_dir['basedir'] . '/aps-certificates/';
             if (!file_exists($uploding_path)) {
                 wp_mkdir_p($uploding_path);
-                if (!file_exists(trailingslashit($uploding_path) . '.htaccess')) {
-                    $file_handle = @fopen( trailingslashit($uploding_path) . '.htaccess', 'wb' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_read_fopen
-                    if ( $file_handle ) {
-                        fwrite( $file_handle, 'deny from all' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
-                        fclose( $file_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
-                    }
+            }
+            if (!file_exists(trailingslashit($uploding_path) . '.htaccess')) {
+                $file_handle = @fopen( trailingslashit($uploding_path) . '.htaccess', 'wb' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_read_fopen
+                if ( $file_handle ) {
+                    fwrite( $file_handle, "Require all denied\n<IfModule !mod_authz_core.c>\ndeny from all\n</IfModule>\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
+                    fclose( $file_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
                 }
             }
+            chmod( $uploding_path, 0700 );
             if (!file_exists(trailingslashit($uploding_path) . 'index.html')) {
                 $file_handle = @fopen( trailingslashit($uploding_path) . 'index.html', 'wb' );
                 if ( $file_handle ) {
