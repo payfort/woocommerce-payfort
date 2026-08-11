@@ -560,6 +560,11 @@ class APS_Ajax {
 	 * Create APS Token builder
 	 */
 	public function create_aps_token_builder() {
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( __( 'Unauthorized access.', 'amazon-payment-services' ), 403 );
+		}
+		check_ajax_referer( 'aps_token_builder_nonce', 'aps_token_builder_nonce' );
+
 		$gateway_params              = array(
 			'service_command'     => 'CREATE_TOKEN',
 			'merchant_identifier' => $this->aps_config->get_merchant_identifier(),

@@ -781,6 +781,7 @@
 				var pay_form     = document.getElementById( "add_payment_method" );
 				var payment_data = new FormData( pay_form );
 				payment_data.append( 'action', 'create_aps_token_builder' );
+				payment_data.append( 'aps_token_builder_nonce', aps_info.nonce.token_builder );
 				$.ajax(
 					{
 						url: aps_info.ajax_url,
