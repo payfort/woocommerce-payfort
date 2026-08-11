@@ -297,11 +297,25 @@ class APS_Order extends APS_Super {
 	 * @return bool
 	 */
 	public function success_order( $response_params, $response_mode ) {
+		global $wpdb;
+		$lock_name     = '';
+		$lock_acquired = false;
 		try {
 			$this->order_log( 'APS success order response (' . $response_mode . ')\n\n' . json_encode( $response_params, true ) );
 
 			if ( ! $this->verify_response_amount( $response_params ) ) {
 				return false;
+			}
+
+			if ( $this->get_order_id() ) {
+				$lock_name     = 'aps_order_' . $this->get_order_id();
+				$lock_acquired = ( '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 10)', $lock_name ) ) );
+				if ( ! $lock_acquired ) {
+					$this->order_log( 'APS success_order: could not acquire lock for order ' . $this->get_order_id() . ' — another process is handling it.' );
+					return false;
+				}
+				// Re-read the order inside the lock so the status check below is current.
+				$this->load_order( $this->get_order_id() );
 			}
 
 			if ( $this->get_order_id() ) {
@@ -337,6 +351,10 @@ class APS_Order extends APS_Super {
 		} catch ( Exception $e ) {
 			$this->order_log( 'APS success_order function failure : ' . $e->getMessage() );
 			throw new Exception( $e->getMessage() );
+		} finally {
+			if ( $lock_acquired ) {
+				$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+			}
 		}
 	}
 
