@@ -299,6 +299,11 @@ class APS_Order extends APS_Super {
 	public function success_order( $response_params, $response_mode ) {
 		try {
 			$this->order_log( 'APS success order response (' . $response_mode . ')\n\n' . json_encode( $response_params, true ) );
+
+			if ( ! $this->verify_response_amount( $response_params ) ) {
+				return false;
+			}
+
 			if ( $this->get_order_id() ) {
 				$fort_id_saved = get_post_meta( $this->get_order_id(), 'fort_id_saved', true );
 				if ( 'offline' === $response_mode ) {
@@ -333,6 +338,63 @@ class APS_Order extends APS_Super {
 			$this->order_log( 'APS success_order function failure : ' . $e->getMessage() );
 			throw new Exception( $e->getMessage() );
 		}
+	}
+
+	/**
+	 * Verify the paid amount in a gateway response matches the order total.
+	 *
+	 * Returns true when the amount matches or when there is nothing to compare.
+	 *
+	 * @param array $response_params
+	 * @return bool
+	 */
+	private function verify_response_amount( $response_params ) {
+		if ( ! $this->get_order_id() ) {
+			return true;
+		}
+		if ( ! isset( $response_params['amount'] ) || '' === $response_params['amount'] ) {
+			// Nothing to verify (e.g. a tokenization-only response).
+			return true;
+		}
+
+		// Apple Pay builds its amount via convert_to_base_currency() rather than
+		// convert_fort_amount(), so it is not reconstructible here.
+		if ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $this->get_payment_method() ) {
+			return true;
+		}
+
+		$aps_helper = APS_Helper::get_instance();
+		$currency   = isset( $response_params['currency'] ) && ! empty( $response_params['currency'] )
+			? strtoupper( $response_params['currency'] )
+			: strtoupper( $this->get_currency() );
+
+		$order_total = (float) $this->get_total();
+		$received    = (float) $response_params['amount'];
+
+		// Accept either the minor-unit encoding the plugin submits or a plain major-unit
+		// value, so a valid payment is never held over an encoding difference.
+		$expected_minor = (float) $aps_helper->convert_fort_amount( $order_total, $this->get_currency_value(), $currency );
+		$matches        = ( abs( $received - $expected_minor ) < 0.01 ) || ( abs( $received - $order_total ) < 0.01 );
+
+		if ( ! $matches ) {
+			$this->order_log(
+				'APS amount mismatch for order ' . $this->get_order_id()
+				. ' — order total ' . $order_total . ' ' . $currency
+				. ' (expected ' . $expected_minor . ' in minor units) but gateway reported '
+				. $received . '. Order not marked as paid.'
+			);
+			$this->on_hold_order(
+				sprintf(
+					/* translators: 1: expected amount, 2: amount reported by the gateway */
+					__( 'APS payment amount mismatch: expected %1$s but the gateway reported %2$s. Held for manual review.', 'amazon-payment-services' ),
+					$expected_minor,
+					$received
+				)
+			);
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
