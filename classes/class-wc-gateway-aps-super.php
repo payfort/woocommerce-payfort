@@ -121,16 +121,16 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		$integration_type              = $this->get_integration_type();
 		$payment_option                = isset( $this->api_payment_option ) ? $this->api_payment_option : null;
 		$extras                        = array();
-		$installment_plan_code         = filter_input( INPUT_POST, 'aps_installment_plan_code' );
-		$installment_issuer_code       = filter_input( INPUT_POST, 'aps_installment_issuer_code' );
-		$installment_confirmation_en   = filter_input( INPUT_POST, 'aps_installment_confirmation_en' );
-		$installment_confirmation_ar   = filter_input( INPUT_POST, 'aps_installment_confirmation_ar' );
-		$aps_installment_interest      = filter_input( INPUT_POST, 'aps_installment_interest' );
-		$aps_installment_amount        = filter_input( INPUT_POST, 'aps_installment_amount' );
-	    $aps_payment_token_installment = filter_input( INPUT_POST, 'aps_payment_token_installment' );
-		$aps_payment_token_cc          = filter_input( INPUT_POST, 'aps_payment_token_cc' );
-		$aps_card_bin                  = filter_input( INPUT_POST, 'aps_card_bin' );
-		$aps_payment_cvv               = filter_input( INPUT_POST, 'aps_payment_cvv' );
+		$installment_plan_code         = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_plan_code' ) );
+		$installment_issuer_code       = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_issuer_code' ) );
+		$installment_confirmation_en   = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_confirmation_en' ) );
+		$installment_confirmation_ar   = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_confirmation_ar' ) );
+		$aps_installment_interest      = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_interest' ) );
+		$aps_installment_amount        = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_amount' ) );
+	    $aps_payment_token_installment = sanitize_text_field( filter_input( INPUT_POST, 'aps_payment_token_installment' ) );
+		$aps_payment_token_cc          = sanitize_text_field( filter_input( INPUT_POST, 'aps_payment_token_cc' ) );
+		$aps_card_bin                  = sanitize_text_field( filter_input( INPUT_POST, 'aps_card_bin' ) );
+		$aps_payment_cvv               = sanitize_text_field( filter_input( INPUT_POST, 'aps_payment_cvv' ) );
 
         if (($_POST['aps_token'] ?? false) === '1') {
 	        if ( ! $installment_plan_code && isset( $_POST['aps_installment_plan_code'] ) ) {
@@ -165,12 +165,12 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	        }
         }
 
-		$aps_cc_plan_code       = filter_input( INPUT_POST, 'aps_cc_plan_code' );
-		$aps_cc_issuer_code     = filter_input( INPUT_POST, 'aps_cc_issuer_code' );
-		$aps_cc_confirmation_en = filter_input( INPUT_POST, 'aps_cc_confirmation_en' );
-		$aps_cc_confirmation_ar = filter_input( INPUT_POST, 'aps_cc_confirmation_ar' );
-		$aps_cc_interest        = filter_input( INPUT_POST, 'aps_cc_interest' );
-		$aps_cc_amount          = filter_input( INPUT_POST, 'aps_cc_amount' );
+		$aps_cc_plan_code       = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_plan_code' ) );
+		$aps_cc_issuer_code     = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_issuer_code' ) );
+		$aps_cc_confirmation_en = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_confirmation_en' ) );
+		$aps_cc_confirmation_ar = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_confirmation_ar' ) );
+		$aps_cc_interest        = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_interest' ) );
+		$aps_cc_amount          = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_amount' ) );
 
 		if ( ! empty( $installment_plan_code ) ) {
 			update_post_meta( $order_id, 'hosted_installment_plan_code', $installment_plan_code );

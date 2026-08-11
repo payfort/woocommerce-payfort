@@ -280,6 +280,8 @@ class APS_Ajax {
 	 * Validate apple pay address
 	 */
 	public function validate_apple_pay_shipping_address() {
+		check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
 		$status         = 'success';
 		$error_msg      = '';
 		$shipping_total = 0.00;
@@ -340,6 +342,8 @@ class APS_Ajax {
 	 * Get apple pay cart data
 	 */
 	public function get_apple_pay_cart_data() {
+		check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
 		$status      = 'success';
 		$apple_order = array(
 			'sub_total'      => 0.00,
@@ -396,6 +400,23 @@ class APS_Ajax {
 	 * Create cart order
 	 */
 	public function create_cart_order() {
+		check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
+		if ( is_null( WC()->cart ) || WC()->cart->is_empty() ) {
+			wp_send_json_error( __( 'Your cart is empty.', 'amazon-payment-services' ), 400 );
+		}
+
+		$client_ip = $this->aps_helper->get_customer_ip();
+		if ( ! empty( $client_ip ) ) {
+			$throttle_key = 'aps_cart_order_' . md5( $client_ip );
+			$attempts     = (int) get_transient( $throttle_key );
+			if ( $attempts >= 10 ) {
+				$this->aps_helper->log( 'create_cart_order rate limit hit for IP hash ' . md5( $client_ip ) );
+				wp_send_json_error( __( 'Too many attempts. Please try again in a moment.', 'amazon-payment-services' ), 429 );
+			}
+			set_transient( $throttle_key, $attempts + 1, MINUTE_IN_SECONDS );
+		}
+
 		$address = array();
 		$user_id = get_current_user_id();
 		WC()->cart->calculate_shipping();
@@ -458,6 +479,8 @@ class APS_Ajax {
 	 * Valu Verfiy customer
 	 */
 	public function valu_verify_customer() {
+		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
+
 		$response_arr = array(
 			'status'  => 'success',
 			'message' => '',
@@ -502,8 +525,10 @@ class APS_Ajax {
 	 * Valu OTP Verfiy
 	 */
 	public function valu_otp_verify() {
+		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
+
 		$response_arr = array(
-			'status'  => 'success',
+			'status'  => 'error',
 			'message' => '',
 		);
 		try {
@@ -511,10 +536,17 @@ class APS_Ajax {
 			if ( empty( $otp ) ) {
 				throw new \Exception( 'OTP is missing' );
 			}
-			$verify_response             = $this->aps_payment->valu_verfiy_otp( $otp );
-			$response_arr['status']      = $verify_response['status'];
-			$response_arr['message']     = $verify_response['message'];
-			$response_arr['tenure_html'] = $verify_response['tenure_html'];
+			$verify_response = $this->aps_payment->valu_verfiy_otp( $otp );
+			if ( isset( $verify_response['status'] ) && 'success' === $verify_response['status'] ) {
+				$response_arr['status']      = $verify_response['status'];
+				$response_arr['message']     = $verify_response['message'];
+				$response_arr['tenure_html'] = isset( $verify_response['tenure_html'] ) ? $verify_response['tenure_html'] : '';
+			} else {
+				$response_arr['status']  = 'error';
+				$response_arr['message'] = isset( $verify_response['message'] ) && ! empty( $verify_response['message'] )
+					? $verify_response['message']
+					: __( 'OTP verification failed. Please try again.', 'amazon-payment-services' );
+			}
 		} catch ( \Exception $e ) {
 			$response_arr['status']  = 'error';
 			$response_arr['message'] = $e->getMessage();
@@ -527,13 +559,15 @@ class APS_Ajax {
 	 * Valu OTP Verfiy
 	 */
 	public function valu_set_tenure() {
+		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
+
 		$response_arr = array(
 			'status'  => 'success',
 			'message' => '',
 		);
 		try {
 			$tenure = filter_input( INPUT_GET, 'tenure' );
-			if ( empty( $otp ) ) {
+			if ( empty( $tenure ) ) {
 				throw new \Exception( 'Tenure is missing' );
 			}
 			session_start();
@@ -553,6 +587,11 @@ class APS_Ajax {
 	 * Create APS Token builder
 	 */
 	public function create_aps_token_builder() {
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( __( 'Unauthorized access.', 'amazon-payment-services' ), 403 );
+		}
+		check_ajax_referer( 'aps_token_builder_nonce', 'aps_token_builder_nonce' );
+
 		$gateway_params              = array(
 			'service_command'     => 'CREATE_TOKEN',
 			'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
@@ -654,7 +693,11 @@ class APS_Ajax {
 			);
 
 			if ( APS_Constants::APS_COMMAND_CAPTURE === $authorization_command ) {
-				$gateway_params['currency'] = strtoupper( $payment_details['currency'] );
+				$currency = $payment_details['currency'];
+				if ( empty( $currency ) ) {
+					$currency = $this->aps_order->get_currency();
+				}
+				$gateway_params['currency'] = strtoupper( $currency );
 				$total_amount               = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
 				$gateway_params['amount']   = $total_amount;
 				$response_arr['message']    = __( 'Payment Capture successfully ', 'amazon-payment-services' );

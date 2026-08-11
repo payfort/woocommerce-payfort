@@ -259,4 +259,22 @@ class APS_WC_Hooks {
 		}
 		return $labels_type;
 	}
+
+	/**
+	 * Clear APS data from the PHP session on logout.
+	 */
+	public function aps_clear_session_data() {
+		if ( PHP_SESSION_ACTIVE !== session_status() ) {
+			if ( headers_sent() ) {
+				return;
+			}
+			session_start();
+		}
+		foreach ( array( 'valu_payment', 'stc_pay_payment', 'aps_error' ) as $session_key ) {
+			if ( isset( $_SESSION[ $session_key ] ) ) {
+				unset( $_SESSION[ $session_key ] );
+			}
+		}
+		session_write_close();
+	}
 }

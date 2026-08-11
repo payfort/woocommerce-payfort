@@ -86,11 +86,11 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	 */
 	public function process_payment( $order_id )
     {
-		$active_tenure = filter_input( INPUT_POST, 'active_tenure' );
+		$active_tenure = sanitize_text_field( filter_input( INPUT_POST, 'active_tenure' ) );
 		if ( ! empty( $active_tenure ) ) {
-			$tenure_amount     = filter_input( INPUT_POST, 'tenure_amount' );
-			$tenure_interest   = filter_input( INPUT_POST, 'tenure_interest' );
-			$otp   = filter_input( INPUT_POST, 'aps_otp' );
+			$tenure_amount     = sanitize_text_field( filter_input( INPUT_POST, 'tenure_amount' ) );
+			$tenure_interest   = sanitize_text_field( filter_input( INPUT_POST, 'tenure_interest' ) );
+			$otp   = sanitize_text_field( filter_input( INPUT_POST, 'aps_otp' ) );
 			update_post_meta( $order_id, 'aps_redirected', 1 );
 			$purchase_response = $this->aps_payment->valu_execute_purchase( $active_tenure, $otp );
 			$redirect_link     = '';

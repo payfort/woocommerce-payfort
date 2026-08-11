@@ -69,9 +69,33 @@ class APS_Helper extends APS_Super {
 	public function get_front_currency() {
 		$currency = get_woocommerce_currency();
 		if ( isset( $_COOKIE['wmc_current_currency'] ) && ! empty( $_COOKIE['wmc_current_currency'] ) ) {
-			$currency = sanitize_text_field($_COOKIE['wmc_current_currency']);
+			$cookie_currency = strtoupper( sanitize_text_field( $_COOKIE['wmc_current_currency'] ) );
+			// Only honour currencies the merchant has enabled in the multi-currency config.
+			if ( in_array( $cookie_currency, $this->get_allowed_front_currencies(), true ) ) {
+				$currency = $cookie_currency;
+			} else {
+				$this->log( 'Rejected unrecognised wmc_current_currency cookie value: ' . $cookie_currency );
+			}
 		}
 		return $currency;
+	}
+
+	/**
+	 * Currencies the merchant has configured as selectable on the storefront.
+	 *
+	 * @return array
+	 */
+	private function get_allowed_front_currencies() {
+		$allowed = array( strtoupper( get_woocommerce_currency() ), strtoupper( $this->get_base_currency() ) );
+
+		$multi_currency_options = get_option( 'woo_multi_currency_params', array() );
+		if ( is_array( $multi_currency_options ) && ! empty( $multi_currency_options['currency'] ) && is_array( $multi_currency_options['currency'] ) ) {
+			foreach ( $multi_currency_options['currency'] as $configured_currency ) {
+				$allowed[] = strtoupper( $configured_currency );
+			}
+		}
+
+		return array_unique( array_filter( $allowed ) );
 	}
 
 	/**
@@ -107,6 +131,30 @@ class APS_Helper extends APS_Super {
 			$this->log = new WC_Logger();
 		}
 		$this->log->add( APS_NAME, $messages );
+	}
+
+	/**
+	 * Remove sensitive authentication data from a params array before logging.
+	 *
+	 * @param array $params
+	 * @return array
+	 */
+	public function redact_sensitive_params( $params ) {
+		if ( ! is_array( $params ) ) {
+			return $params;
+		}
+		$sensitive_keys = array(
+			'card_security_code',
+			'aps_payment_cvv',
+			'card_number',
+			'expiry_date',
+		);
+		foreach ( $sensitive_keys as $sensitive_key ) {
+			if ( isset( $params[ $sensitive_key ] ) ) {
+				$params[ $sensitive_key ] = '***REDACTED***';
+			}
+		}
+		return $params;
 	}
 
 	/**
