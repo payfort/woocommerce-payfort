@@ -252,6 +252,7 @@
 							type: 'POST',
 							data: {
 								action: 'create_cart_order',
+								nonce: apple_vars.apple_pay_nonce,
 								address_obj
 							},
 							async: false,

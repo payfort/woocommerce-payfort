@@ -396,6 +396,23 @@ class APS_Ajax {
 	 * Create cart order
 	 */
 	public function create_cart_order() {
+		check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
+		if ( is_null( WC()->cart ) || WC()->cart->is_empty() ) {
+			wp_send_json_error( __( 'Your cart is empty.', 'amazon-payment-services' ), 400 );
+		}
+
+		$client_ip = $this->aps_helper->get_customer_ip();
+		if ( ! empty( $client_ip ) ) {
+			$throttle_key = 'aps_cart_order_' . md5( $client_ip );
+			$attempts     = (int) get_transient( $throttle_key );
+			if ( $attempts >= 10 ) {
+				$this->aps_helper->log( 'create_cart_order rate limit hit for IP hash ' . md5( $client_ip ) );
+				wp_send_json_error( __( 'Too many attempts. Please try again in a moment.', 'amazon-payment-services' ), 429 );
+			}
+			set_transient( $throttle_key, $attempts + 1, MINUTE_IN_SECONDS );
+		}
+
 		$address = array();
 		$user_id = get_current_user_id();
 		WC()->cart->calculate_shipping();
