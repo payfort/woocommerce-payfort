@@ -181,7 +181,7 @@ class APS_Admin {
                     $temp_name = sanitize_text_field($_FILES['certificate_path_file']['tmp_name']);
 
                     if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_path_filename ) ) {
-                        chmod( $uploding_path . $certificate_path_filename, 0755 );
+                        chmod( $uploding_path . $certificate_path_filename, 0600 );
                         $certificates['apple_certificate_path_file'] = $certificate_path_filename;
 
                         // if there is an older certificate, delete it
@@ -206,7 +206,7 @@ class APS_Admin {
                     }
                     $temp_name = sanitize_text_field($_FILES['certificate_key_file']['tmp_name']);
                     if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_key_filename ) ) {
-                        chmod( $uploding_path . $certificate_key_filename, 0755 );
+                        chmod( $uploding_path . $certificate_key_filename, 0600 );
                         $certificates['apple_certificate_key_file'] = $certificate_key_filename;
 
                         // if there is an older key, delete it
