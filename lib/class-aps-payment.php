@@ -207,7 +207,9 @@ class APS_Payment extends APS_Super {
 		if (!empty($error_message)) {
 			$builder['error_message'] = $error_message;
 		}
-		$this->aps_helper->log( 'APS build_payment_gateway_params payment method ($payment_method) \n\n' . wp_json_encode( $builder, true ) );
+		$log_builder           = $builder;
+		$log_builder['params'] = $this->aps_helper->redact_sensitive_params( $gateway_params );
+		$this->aps_helper->log( 'APS build_payment_gateway_params payment method ($payment_method) \n\n' . wp_json_encode( $log_builder, true ) );
 		return $builder;
 	}
 
@@ -542,7 +544,7 @@ class APS_Payment extends APS_Super {
 		$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 		$gateway_params['signature'] = $signature;
 		$gateway_url                 = $this->aps_config->get_gateway_url( 'api' );
-		$this->aps_helper->log( 'APS aps_notify request \n\n' . wp_json_encode( $gateway_params, true ) );
+		$this->aps_helper->log( 'APS aps_notify request \n\n' . wp_json_encode( $this->aps_helper->redact_sensitive_params( $gateway_params ), true ) );
 		$response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 		$this->aps_helper->log( 'APS aps_notify response \n\n' . wp_json_encode( $response, true ) );
 		return $response;

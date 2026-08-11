@@ -134,6 +134,30 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Remove sensitive authentication data from a params array before logging.
+	 *
+	 * @param array $params
+	 * @return array
+	 */
+	public function redact_sensitive_params( $params ) {
+		if ( ! is_array( $params ) ) {
+			return $params;
+		}
+		$sensitive_keys = array(
+			'card_security_code',
+			'aps_payment_cvv',
+			'card_number',
+			'expiry_date',
+		);
+		foreach ( $sensitive_keys as $sensitive_key ) {
+			if ( isset( $params[ $sensitive_key ] ) ) {
+				$params[ $sensitive_key ] = '***REDACTED***';
+			}
+		}
+		return $params;
+	}
+
+	/**
 	 * Convert Amount with decimal points
 	 *
 	 * @param decimal $amount
