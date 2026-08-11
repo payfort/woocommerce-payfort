@@ -1295,6 +1295,7 @@
 						type:'POST',
 						data: {
 							action:'valu_verify_customer',
+							aps_valu_nonce: aps_info.nonce.valu,
 							mobile_number,
 							down_payment,
 							tou,
@@ -1363,6 +1364,7 @@
 					type:'POST',
 					data: {
 						action:'valu_otp_verify',
+						aps_valu_nonce: aps_info.nonce.valu,
 						otp,
 					},
 					success: function(response) {

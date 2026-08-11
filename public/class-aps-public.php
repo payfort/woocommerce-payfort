@@ -166,6 +166,7 @@ class APS_Public {
 			'nonce'                         => [
 				'checkout'                  => wp_create_nonce( 'woocommerce-process_checkout' ),
 				'token_builder'             => wp_create_nonce( 'aps_token_builder_nonce' ),
+				'valu'                      => wp_create_nonce( 'aps_valu_nonce' ),
 			],
 			'lang'                         => $this->aps_config->get_language(),
 			'mada_bins'                    => $this->aps_config->get_mada_bins(),
