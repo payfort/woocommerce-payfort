@@ -661,7 +661,11 @@ class APS_Ajax {
 			);
 
 			if ( APS_Constants::APS_COMMAND_CAPTURE === $authorization_command ) {
-				$gateway_params['currency'] = strtoupper( $payment_details['currency'] );
+				$currency = $payment_details['currency'];
+				if ( empty( $currency ) ) {
+					$currency = $this->aps_order->get_currency();
+				}
+				$gateway_params['currency'] = strtoupper( $currency );
 				$total_amount               = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
 				$gateway_params['amount']   = $total_amount;
 				$response_arr['message']    = __( 'Payment Capture successfully ', 'amazon-payment-services' );
