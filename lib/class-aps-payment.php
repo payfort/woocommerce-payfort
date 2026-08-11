@@ -654,7 +654,7 @@ class APS_Payment extends APS_Super {
         $gateway_params         = array(
             'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
             'access_code'         => $this->aps_config->get_access_code(),
-            'digital_wallet'      => APS_Constants::APS_PAYMENT_METHOD_TABBY,
+            'payment_option'      => APS_Constants::APS_PAYMENT_METHOD_TABBY,
             'merchant_reference'  => $this->aps_helper->generate_random_key(),
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,
