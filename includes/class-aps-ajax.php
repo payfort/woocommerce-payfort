@@ -280,6 +280,8 @@ class APS_Ajax {
 	 * Validate apple pay address
 	 */
 	public function validate_apple_pay_shipping_address() {
+		check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
 		$status         = 'success';
 		$error_msg      = '';
 		$shipping_total = 0.00;
@@ -340,6 +342,8 @@ class APS_Ajax {
 	 * Get apple pay cart data
 	 */
 	public function get_apple_pay_cart_data() {
+		check_ajax_referer( 'aps_apple_pay_nonce', 'nonce' );
+
 		$status      = 'success';
 		$apple_order = array(
 			'sub_total'      => 0.00,
@@ -475,6 +479,8 @@ class APS_Ajax {
 	 * Valu Verfiy customer
 	 */
 	public function valu_verify_customer() {
+		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
+
 		$response_arr = array(
 			'status'  => 'success',
 			'message' => '',
@@ -519,6 +525,8 @@ class APS_Ajax {
 	 * Valu OTP Verfiy
 	 */
 	public function valu_otp_verify() {
+		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
+
 		$response_arr = array(
 			'status'  => 'error',
 			'message' => '',
@@ -551,13 +559,15 @@ class APS_Ajax {
 	 * Valu OTP Verfiy
 	 */
 	public function valu_set_tenure() {
+		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
+
 		$response_arr = array(
 			'status'  => 'success',
 			'message' => '',
 		);
 		try {
 			$tenure = filter_input( INPUT_GET, 'tenure' );
-			if ( empty( $otp ) ) {
+			if ( empty( $tenure ) ) {
 				throw new \Exception( 'Tenure is missing' );
 			}
 			session_start();
