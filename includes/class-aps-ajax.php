@@ -503,7 +503,7 @@ class APS_Ajax {
 	 */
 	public function valu_otp_verify() {
 		$response_arr = array(
-			'status'  => 'success',
+			'status'  => 'error',
 			'message' => '',
 		);
 		try {
@@ -511,10 +511,17 @@ class APS_Ajax {
 			if ( empty( $otp ) ) {
 				throw new \Exception( 'OTP is missing' );
 			}
-			$verify_response             = $this->aps_payment->valu_verfiy_otp( $otp );
-			$response_arr['status']      = $verify_response['status'];
-			$response_arr['message']     = $verify_response['message'];
-			$response_arr['tenure_html'] = $verify_response['tenure_html'];
+			$verify_response = $this->aps_payment->valu_verfiy_otp( $otp );
+			if ( isset( $verify_response['status'] ) && 'success' === $verify_response['status'] ) {
+				$response_arr['status']      = $verify_response['status'];
+				$response_arr['message']     = $verify_response['message'];
+				$response_arr['tenure_html'] = isset( $verify_response['tenure_html'] ) ? $verify_response['tenure_html'] : '';
+			} else {
+				$response_arr['status']  = 'error';
+				$response_arr['message'] = isset( $verify_response['message'] ) && ! empty( $verify_response['message'] )
+					? $verify_response['message']
+					: __( 'OTP verification failed. Please try again.', 'amazon-payment-services' );
+			}
 		} catch ( \Exception $e ) {
 			$response_arr['status']  = 'error';
 			$response_arr['message'] = $e->getMessage();
