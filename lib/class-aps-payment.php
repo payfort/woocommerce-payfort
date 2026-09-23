@@ -207,7 +207,9 @@ class APS_Payment extends APS_Super {
 		if (!empty($error_message)) {
 			$builder['error_message'] = $error_message;
 		}
-		$this->aps_helper->log( 'APS build_payment_gateway_params payment method ($payment_method) \n\n' . wp_json_encode( $builder, true ) );
+		$log_builder           = $builder;
+		$log_builder['params'] = $this->aps_helper->redact_sensitive_params( $gateway_params );
+		$this->aps_helper->log( 'APS build_payment_gateway_params payment method ($payment_method) \n\n' . wp_json_encode( $log_builder, true ) );
 		return $builder;
 	}
 
@@ -542,7 +544,7 @@ class APS_Payment extends APS_Super {
 		$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 		$gateway_params['signature'] = $signature;
 		$gateway_url                 = $this->aps_config->get_gateway_url( 'api' );
-		$this->aps_helper->log( 'APS aps_notify request \n\n' . wp_json_encode( $gateway_params, true ) );
+		$this->aps_helper->log( 'APS aps_notify request \n\n' . wp_json_encode( $this->aps_helper->redact_sensitive_params( $gateway_params ), true ) );
 		$response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 		$this->aps_helper->log( 'APS aps_notify response \n\n' . wp_json_encode( $response, true ) );
 		return $response;
@@ -654,7 +656,7 @@ class APS_Payment extends APS_Super {
         $gateway_params         = array(
             'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
             'access_code'         => $this->aps_config->get_access_code(),
-            'digital_wallet'      => APS_Constants::APS_PAYMENT_METHOD_TABBY,
+            'payment_option'      => APS_Constants::APS_PAYMENT_METHOD_TABBY,
             'merchant_reference'  => $this->aps_helper->generate_random_key(),
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,
@@ -1023,8 +1025,31 @@ class APS_Payment extends APS_Super {
 			$gateway_params['signature'] = $signature;
 			//execute post
 			$gateway_url          = $this->aps_config->get_gateway_url( 'api' );
-			
+			$result               = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
+			$this->aps_helper->log( 'Valu verify otp ' . json_encode( $result ) );
+
 			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
+			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+				$status  = 'success';
+				$message = __( 'OTP Verified successfully', 'amazon-payment-services' );
+				if ( isset( $result['installment_detail']['plan_details'] ) ) {
+					$tenure_html = "<div class='tenure_carousel'>";
+					foreach ( $result['installment_detail']['plan_details'] as $key => $ten ) {
+						$tenure_html .= '<div class="slide">
+								<div class="tenureBox" data-tenure="' . $ten['number_of_installments'] . '" data-tenure-amount="' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '" data-tenure-interest="' . ( number_format($ten['fees_amount']/100,2,'.','') ) . '" >
+									<p class="tenure">' . $ten['number_of_installments'] . ' {months_txt}</p>
+									<p class="emi"><strong>' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '</strong> EGP/{month_txt}</p>
+									<p class="int_rate"> {interest_txt}' . ( number_format($ten['fees_amount']/100,2,'.','') ) . '</p>
+								</div>
+							</div>';
+					}
+					$tenure_html .= '</div>';
+				}
+			} else {
+				$status  = 'error';
+				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
+				throw new \Exception( $message );
+			}
 		} catch ( \Exception $e ) {
 			$status  = 'error';
 			$message = $e->getMessage();
@@ -1032,6 +1057,7 @@ class APS_Payment extends APS_Super {
 		return array(
 			'status'      => $status,
 			'message'     => $message,
+			'tenure_html' => $tenure_html,
 		);
 	}
 
@@ -1147,6 +1173,11 @@ class APS_Payment extends APS_Super {
         $message              = 'OTP Generated';
         $mobile_number_string = null;
         try {
+            // Enforce the Saudi mobile format STC Pay expects before requesting an OTP.
+            if ( ! preg_match( '/^0?5[0-9]{8}$/', (string) $mobile_number ) ) {
+                throw new \Exception( __( 'Please enter a valid Saudi mobile number.', 'amazon-payment-services' ) );
+            }
+
             $reference_id = $this->aps_helper->generate_random_key();
             $this->aps_order->load_order( $order_id );
             $currency                    = $this->aps_helper->get_front_currency();

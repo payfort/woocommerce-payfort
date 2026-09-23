@@ -153,7 +153,11 @@ class APS_Refund extends APS_Super {
 				'merchant_reference'  => $payment_details['merchant_reference'],
 				'language'            => $this->aps_config->get_language(),
 			);
-			$gateway_params['currency']          = strtoupper( $payment_details['currency'] );
+			$currency = $payment_details['currency'];
+			if ( empty( $currency ) ) {
+				$currency = $this->aps_order->get_currency();
+			}
+			$gateway_params['currency']          = strtoupper( $currency );
 			$total_amount                        = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
 			$gateway_params['amount']            = $total_amount;
 			$gateway_params['command']           = APS_Constants::APS_COMMAND_REFUND;

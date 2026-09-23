@@ -191,6 +191,7 @@
 							type: 'POST',
 							data: {
 								action: 'validate_apple_pay_shipping_address',
+								nonce: apple_vars.apple_pay_nonce,
 								address_obj
 							},
 							async: false,
@@ -252,6 +253,7 @@
 							type: 'POST',
 							data: {
 								action: 'create_cart_order',
+								nonce: apple_vars.apple_pay_nonce,
 								address_obj
 							},
 							async: false,
@@ -331,6 +333,7 @@
 					url:		apple_vars.ajax_url,
 					data: {
 						action: 'get_apple_pay_cart_data',
+						nonce: apple_vars.apple_pay_nonce,
 						exec_from: 'product_page',
 						product_cart_data: productCartData
 					},
