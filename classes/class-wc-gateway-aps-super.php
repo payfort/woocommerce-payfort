@@ -218,7 +218,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 
 		if ( APS_Constants::APS_PAYMENT_TYPE_CC === $payment_method ) {
 			if ( isset( $aps_payment_token_cc ) && ! empty( $aps_payment_token_cc ) ) {
-				// SECURITY FIX: Validate that the submitted CC token belongs to the current user.
+				// Validate that the submitted CC token belongs to the current user.
 				$current_user_id = get_current_user_id();
 				if ( 0 === $current_user_id ) {
 					throw new \Exception( __( 'You must be logged in to use a saved payment token.', 'amazon-payment-services' ) );
@@ -238,7 +238,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 			}
 		} elseif ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
 			if ( isset( $aps_payment_token_installment ) && ! empty( $aps_payment_token_installment ) ) {
-				// SECURITY FIX: Validate that the submitted installment token belongs to the current user.
+				// Validate that the submitted installment token belongs to the current user.
 				$current_user_id = get_current_user_id();
 				if ( 0 === $current_user_id ) {
 					throw new \Exception( __( 'You must be logged in to use a saved payment token.', 'amazon-payment-services' ) );
@@ -509,19 +509,19 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	 * authentication or signature checks, allowing unauthenticated stored XSS attacks.
 	 */
 	public function aps_token_response() {
-		// SECURITY: Require user to be logged in
+		// Require user to be logged in
 		if ( ! is_user_logged_in() ) {
 			$this->aps_helper->log( 'SECURITY: Unauthenticated request to aps_token_response rejected.' );
 			wp_safe_redirect( wc_get_account_endpoint_url( 'payment-methods' ) );
 			exit;
 		}
 
-		// SECURITY: Use the authenticated user ID, not the attacker-controlled query param
+		// Use the authenticated user ID, not the attacker-controlled query param
 		$user_id = get_current_user_id();
 
 		$response_data = filter_input_array( INPUT_POST );
 
-		// SECURITY: Verify APS response signature to ensure the data came from the gateway
+		// Verify APS response signature to ensure the data came from the gateway
 		if ( ! empty( $response_data ) && is_array( $response_data ) ) {
 			$excluded_params = array( 'signature', 'wc-api', 'auth' );
 			$signature       = isset( $response_data['signature'] ) ? $response_data['signature'] : '';
@@ -552,7 +552,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	/**
 	 * Create Tokens
 	 *
-	 * SECURITY FIX: All input parameters are now sanitized with sanitize_text_field()
+	 * FIX: All input parameters are now sanitized with sanitize_text_field()
 	 * before being stored in the database. This prevents stored XSS even if an attacker
 	 * manages to bypass authentication and signature verification.
 	 */
@@ -560,7 +560,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		session_start();
 		try {
 			if ( APS_Constants::APS_TOKEN_SUCCESS_RESPONSE_CODE === $response_params['response_code'] || APS_Constants::APS_TOKEN_SUCCESS_STATUS_CODE === $response_params['status'] ) {
-				// SECURITY: Sanitize all input fields before storage
+				// Sanitize all input fields before storage
 				$response_params['token_name']       = isset( $response_params['token_name'] ) ? sanitize_text_field( $response_params['token_name'] ) : '';
 				$response_params['card_number']      = isset( $response_params['card_number'] ) ? sanitize_text_field( $response_params['card_number'] ) : '';
 				$response_params['expiry_date']      = isset( $response_params['expiry_date'] ) ? sanitize_text_field( $response_params['expiry_date'] ) : '';

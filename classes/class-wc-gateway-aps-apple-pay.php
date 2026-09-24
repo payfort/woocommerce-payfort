@@ -163,10 +163,30 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 	/**
 	 * APS applepay response
 	 *
+	 * validate the localized apple_pay_nonce
+	 * before treating the POST as a legitimate Apple Pay callback from
+	 * the shopper. Previously this public wc-api endpoint accepted any
+	 * cross-site POST and bound the attacker-controlled Apple Pay token
+	 * to the victim's WC()->session order (order_awaiting_payment),
+	 * causing the victim's order to transition (success / on-hold /
+	 * declined) on APS's response. Rejecting requests that lack a valid
+	 * nonce eliminates the cross-site payment-submission primitive.
+	 *
 	 * @return void
 	 */
 	public function aps_applepay_response() {
-		$redirect_url   = '';
+		$redirect_url = '';
+		// Validate the shopper-scoped apple_pay nonce that was localized
+		// to the checkout / cart / product page as `apple_vars.apple_pay_nonce`.
+		// A missing / invalid nonce means this POST did not originate
+		// from a same-origin Apple Pay session in the shopper's browser,
+		// so we must not act on it. Send them back to the checkout URL.
+		$submitted_nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+		if ( empty( $submitted_nonce ) || ! wp_verify_nonce( $submitted_nonce, 'aps_apple_pay_nonce' ) ) {
+			$this->aps_helper->log( 'aps_applepay_response rejected: missing/invalid nonce' );
+			wp_safe_redirect( wc_get_checkout_url() );
+			exit;
+		}
 		$apple_pay_data = filter_input_array( INPUT_POST, FILTER_SANITIZE_STRING );
 		session_start();
 		if ( isset( $apple_pay_data['data'] ) && ! empty( $apple_pay_data['data'] ) ) {

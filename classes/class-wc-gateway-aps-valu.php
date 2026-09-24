@@ -212,7 +212,7 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		$image_directory = plugin_dir_url( dirname( __FILE__ ) ) . 'public/images/';
 		$valu_logo       = $image_directory . 'valu-logo.png';
 		//Wrap icons
-		$icon_html .= '<img src="' . $valu_logo . '" alt="valu" class="payment-icons" />';
+		$icon_html .= '<img src="' . $valu_logo . '" alt="valu" class="payment-icons" style="width: 75px; height: auto; vertical-align: middle;" />';
 		$icon_html .= '</span>';
 		return $icon_html;
 	}

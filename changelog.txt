@@ -1,4 +1,11 @@
 ## Changelog
+`2.4.7`
+* Fix - Refund flow no longer misreports successful APS refunds as failures, which previously could lead to duplicate refunds when administrators retried. Fixes both the standard refund and Apple Pay refund flows.
+* Fix - Sanitized upstream installment metadata (plans_html, plan_info, issuer_info, error messages) to prevent DOM-based HTML injection on the checkout page.
+* Fix - Added the HTML5 sandbox attribute to the payment iframe on the checkout page.
+* Fix - Apple Pay response endpoint now verifies a nonce and rejects cross-site submissions.
+* Fix - Corrected inverted credit card subscription renewal logic so successful renewals activate the subscription and failed renewals are put on hold.
+
 `2.4.6`
 * Fix - Valu OTP verification now executes API call to APS for proper OTP validation
 * Fix - AJAX handler validates OTP verification response before allowing progression
