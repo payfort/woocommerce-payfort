@@ -145,14 +145,14 @@ class APS_Ajax {
 
 			if ( 1 === $currency_check && floatval( WC()->cart->total ) < $cart_min_limit ) {
 				$retarr['status']  = 'error';
-				$retarr['message'] = 'Currency limit should be great than ' . $cart_min_limit;
+				$retarr['message'] = esc_html( 'Currency limit should be great than ' . $cart_min_limit );
 				echo wp_json_encode( $retarr );
 				wp_die();
 			}
 
 			$pay_full_payment = '<div class="slide">
 						<div class="emi_box" data-interest ="" data-amount="" data-plan-code="" data-issuer-code="" data-full-payment="1">
-							<p class="with_full_payment">' . __( 'Proceed with full amount', 'amazon-payment-services' ) . '</p>
+							<p class="with_full_payment">' . esc_html__( 'Proceed with full amount', 'amazon-payment-services' ) . '</p>
 						</div>
 					</div>';
 		}
@@ -160,22 +160,31 @@ class APS_Ajax {
 		$card_bin = str_replace( array( ' ', '*' ), array( '', '' ), $card_bin );
 		$response = $this->get_installment_plan( $card_bin );
 		if ( 'success' === $response['status'] && ! empty( $response['installment_data'] ) ) {
+			// FIX (DOM-based HTML injection):
+			// The installment_data comes from upstream APS installment plans API.
+			// Fields inside are subsequently rendered on the checkout page via
+			// jQuery's .html() in public/js/aps-checkout.js. All upstream-controlled
+			// values MUST be escaped here (esc_html / esc_url / esc_attr) so that
+			// even if the upstream response is compromised or tampered with, no
+			// hostile HTML/JS can be injected into the customer-facing checkout DOM.
 			$all_plans      = $response['installment_data']['plan_details'];
 			$banking_system = $response['installment_data']['banking_system'];
 			$interest_text  = 'Non Islamic' === $banking_system ? __( 'Interest', 'amazon-payment-services' ) : __( 'Profit Rate', 'amazon-payment-services' );
 			$months_text    = __( 'Months', 'amazon-payment-services' );
 			$month_text     = __( 'month', 'amazon-payment-services' );
+			$issuer_code    = isset( $response['installment_data']['issuer_code'] ) ? $response['installment_data']['issuer_code'] : '';
 			$plans_html     = "<div class='emi_carousel'>";
 			if ( ! empty( $all_plans ) ) {
 				$plans_html .= $pay_full_payment;
 				foreach ( $all_plans as $key => $plan ) {
 					$interest      = $this->aps_helper->convert_dec_amount( $plan['fee_display_value'], $this->aps_helper->get_fort_currency() );
-					$interest_info = $interest . ( 'Percentage' === $plan['fees_type'] ? '%' : '' ) . ' ' . $interest_text;
+					$fees_type     = isset( $plan['fees_type'] ) ? $plan['fees_type'] : '';
+					$interest_info = $interest . ( 'Percentage' === $fees_type ? '%' : '' ) . ' ' . $interest_text;
 					$plans_html   .= "<div class='slide'>
-						<div class='emi_box' data-interest ='" . $interest_info . "' data-amount='" . $plan['amountPerMonth'] . "' data-plan-code='" . $plan['plan_code'] . "' data-issuer-code='" . $response['installment_data']['issuer_code'] . "' >
-							<p class='installment'>" . $plan['number_of_installment'] . ' ' . $months_text . "</p>
-							<p class='emi'><strong>" . ( $plan['amountPerMonth'] ) . '</strong> ' . $plan['currency_code'] . '/' . $month_text . "</p>
-							<p class='int_rate'>" . $interest . ( 'Percentage' === $plan['fees_type'] ? '%' : '' ) . ' ' . $interest_text . '</p>
+						<div class='emi_box' data-interest ='" . esc_attr( $interest_info ) . "' data-amount='" . esc_attr( $plan['amountPerMonth'] ) . "' data-plan-code='" . esc_attr( $plan['plan_code'] ) . "' data-issuer-code='" . esc_attr( $issuer_code ) . "' >
+							<p class='installment'>" . esc_html( $plan['number_of_installment'] ) . ' ' . esc_html( $months_text ) . "</p>
+							<p class='emi'><strong>" . esc_html( $plan['amountPerMonth'] ) . '</strong> ' . esc_html( $plan['currency_code'] ) . '/' . esc_html( $month_text ) . "</p>
+							<p class='int_rate'>" . esc_html( $interest ) . esc_html( 'Percentage' === $fees_type ? '%' : '' ) . ' ' . esc_html( $interest_text ) . '</p>
 						</div>
 					</div>';
 				}
@@ -188,17 +197,17 @@ class APS_Ajax {
 			$issuer_logo        = $response['installment_data'][ 'issuer_logo_' . $this->aps_config->get_language() ];
 			$terms_text         = '';
 			if ( 'yes' === $this->aps_config->show_issuer_logo() ) {
-				$terms_text .= "<img src='" . $issuer_logo . "' class='issuer-logo' />";
+				$terms_text .= "<img src='" . esc_url( $issuer_logo ) . "' class='issuer-logo' />";
 			}
 			$terms_text .= __( 'I agree with the installment {terms_link} to proceed with the transaction', 'amazon-payment-services' );
-			$terms_text  = str_replace( '{terms_link}', '<a target="_blank" href="' . $terms_url . '">' . __( 'terms and condition', 'amazon-payment-services' ) . '</a>', $terms_text );
+			$terms_text  = str_replace( '{terms_link}', '<a target="_blank" href="' . esc_url( $terms_url ) . '">' . esc_html__( 'terms and condition', 'amazon-payment-services' ) . '</a>', $terms_text );
 			$plan_info   = '<input type="checkbox" name="installment_term" id="installment_term" required/>' . $terms_text;
 			$plan_info  .= '<label class="aps_installment_terms_error aps_error"></label>';
-			$plan_info  .= '<p> ' . $processing_content . '</p>';
+			$plan_info  .= '<p> ' . esc_html( $processing_content ) . '</p>';
 
 			$issuer_info = '';
 			if ( 'yes' === $this->aps_config->show_issuer_name() ) {
-				$issuer_info .= "<div class='issuer_info'> <p> " . __( 'Issuer name', 'amazon-payment-services' ) . ' : ' . $issuer_text . '</p> </div>';
+				$issuer_info .= "<div class='issuer_info'> <p> " . esc_html__( 'Issuer name', 'amazon-payment-services' ) . ' : ' . esc_html( $issuer_text ) . '</p> </div>';
 			}
 
 			$retarr['plans_html']      = $plans_html;
@@ -208,7 +217,12 @@ class APS_Ajax {
 			$retarr['confirmation_ar'] = $response['installment_data']['confirmation_message_ar'];
 		} else {
 			$retarr['status']  = 'error';
-			$retarr['message'] = $response['message'];
+			// FIX (DOM-based HTML injection):
+			// $response['message'] originates from the upstream response_message
+			// and was rendered client-side via .html(). Escape it here as a
+			// defense-in-depth measure; the client is also updated to use
+			// .text() when rendering this field.
+			$retarr['message'] = esc_html( $response['message'] );
 		}
 		echo wp_json_encode( $retarr );
 		wp_die();
@@ -217,7 +231,7 @@ class APS_Ajax {
 	/**
 	 * Validate apple url
 	 *
-	 * SECURITY: This endpoint validates the Apple Pay merchant session URL.
+	 * This endpoint validates the Apple Pay merchant session URL.
 	 * It uses nonce verification and a strict hostname allowlist to prevent SSRF attacks.
 	 */
 	public function validate_apple_url() {
@@ -239,7 +253,7 @@ class APS_Ajax {
 				throw new \Exception( 'Apple pay url is invalid' );
 			}
 
-			// SECURITY FIX: Validate the parsed hostname against a strict allowlist
+			// FIX: Validate the parsed hostname against a strict allowlist
 			// of Apple's known payment session validation domains.
 			// Previously, a regex was applied against the full URL string, which allowed
 			// trivial bypass (e.g., https://attacker.com/.apple.com/path).

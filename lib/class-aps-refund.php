@@ -121,10 +121,29 @@ class APS_Refund extends APS_Super {
 			$response                            = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'APS refund response \n\n' . wp_json_encode( $response, true ) );
 			if ( APS_Constants::APS_REFUND_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-				throw new Exception( __( 'Refund submitted successfully', 'amazon-payment-services' ) );
-			} else {
-				throw new Exception( $response['response_message'] );
+				// PAYMENT INTEGRITY FIX:
+				// A successful APS refund MUST be reported to WooCommerce as success.
+				// Previously, the success branch threw an exception which was caught
+				// below and converted into a WP_Error, causing WooCommerce to display
+				// the refund as failed even though it was already submitted to APS.
+				// Admins retrying the operation could trigger duplicate refunds.
+				if ( isset( $order ) && is_object( $order ) ) {
+					$order->add_order_note(
+						sprintf(
+							/* translators: %s: refund amount */
+							__( 'APS refund submitted successfully. Amount: %s', 'amazon-payment-services' ),
+							$amount
+						)
+					);
+				}
+				return true;
 			}
+			$error_message = isset( $response['response_message'] ) && ! empty( $response['response_message'] )
+				? $response['response_message']
+				: __( 'Refund failed', 'amazon-payment-services' );
+			$error = new WP_Error();
+			$error->add( 'aps_refund_error', $error_message );
+			return $error;
 		} catch ( Exception $e ) {
 			$error = new WP_Error();
 			$error->add( 'aps_refund_error', $e->getMessage() );
@@ -169,10 +188,29 @@ class APS_Refund extends APS_Super {
 			$response                            = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'APS apple pay refund response \n\n' . wp_json_encode( $response, true ) );
 			if ( APS_Constants::APS_REFUND_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-				throw new Exception( __( 'Refund submitted successfully', 'amazon-payment-services' ) );
-			} else {
-				throw new Exception( $response['response_message'] );
+				// PAYMENT INTEGRITY FIX:
+				// A successful APS Apple Pay refund MUST be reported to WooCommerce
+				// as success. Previously, the success branch threw an exception which
+				// was caught below and converted into a WP_Error, causing WooCommerce
+				// to display the refund as failed even though it was already submitted
+				// to APS. Admins retrying the operation could trigger duplicate refunds.
+				if ( isset( $order ) && is_object( $order ) ) {
+					$order->add_order_note(
+						sprintf(
+							/* translators: %s: refund amount */
+							__( 'APS Apple Pay refund submitted successfully. Amount: %s', 'amazon-payment-services' ),
+							$amount
+						)
+					);
+				}
+				return true;
 			}
+			$error_message = isset( $response['response_message'] ) && ! empty( $response['response_message'] )
+				? $response['response_message']
+				: __( 'Refund failed', 'amazon-payment-services' );
+			$error = new WP_Error();
+			$error->add( 'aps_refund_error', $error_message );
+			return $error;
 		} catch ( Exception $e ) {
 			$error = new WP_Error();
 			$error->add( 'aps_refund_error', $e->getMessage() );

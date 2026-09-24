@@ -31,15 +31,23 @@ class APS_WC_Hooks {
 	}
 
 	/**
-	 * APS Subscription Payment
+	 * APS Subscription Payment (credit card).
+	 *
+	 * BUSINESS-LOGIC FIX: the previous implementation had the
+	 * two success/failure branches inverted, so a successful renewal put
+	 * the subscription on hold while a failed renewal activated it. The
+	 * STC Pay and Tabby handlers in this same file already had the
+	 * correct mapping; the credit card handler now matches them:
+	 *   process_subscription_payment() returns true on success  -> activate
+	 *   process_subscription_payment() returns false on failure -> on hold
 	 */
 	public function aps_subscription_payment( $amount_to_charge, $order ) {
 		if ( class_exists( 'WC_Subscriptions_Manager' ) ) {
 			$result = $this->aps_payment->process_subscription_payment( $order, $amount_to_charge );
 			if ( $result ) {
-				WC_Subscriptions_Manager::put_subscription_on_hold_for_order( $order );
-			} else {
 				WC_Subscriptions_Manager::activate_subscriptions_for_order( $order );
+			} else {
+				WC_Subscriptions_Manager::put_subscription_on_hold_for_order( $order );
 			}
 		}
 	}

@@ -120,7 +120,7 @@ class WC_Gateway_APS_STC_Pay extends WC_Gateway_APS_Super
         $stc_pay_otp = filter_input(INPUT_POST, 'stc_pay_otp');
         $stc_token = filter_input(INPUT_POST, 'aps_payment_token_stc_pay');
 
-        // SECURITY FIX: Validate that the submitted STC Pay token belongs to the current user.
+        // FIX: Validate that the submitted STC Pay token belongs to the current user.
         // This prevents an attacker from using another customer's saved payment token.
         if ( ! empty( $stc_token ) ) {
             $current_user_id = get_current_user_id();

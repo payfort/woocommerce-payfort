@@ -286,6 +286,11 @@
 			$( '<form id="' + formId + '" action="#" method="POST"></form>' ).appendTo( 'body' );
 			var response  = {};
 			response.data = JSON.stringify( { "data" : data} );
+			// attach the localized apple_pay nonce
+			// so the server-side aps_applepay_response handler can validate
+			// that this callback originated from the shopper's own browser
+			// session (defeats cross-origin submission CSRF).
+			response.nonce = apple_vars.apple_pay_nonce;
 			$.each(
 				response,
 				function (k, v) {
