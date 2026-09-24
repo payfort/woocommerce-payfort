@@ -315,7 +315,7 @@ class APS_Helper extends APS_Super {
 			}
 		}
 
-		// SECURITY FIX: Reject empty passphrases for response signature verification.
+		// FIX: Reject empty passphrases for response signature verification.
 		// An empty passphrase means the signature has no secret component, allowing
 		// anyone to forge valid signatures. This prevents key confusion attacks where
 		// unconfigured payment method credentials (e.g., Apple Pay) are exploited.

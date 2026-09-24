@@ -212,7 +212,7 @@
 				if (payment_box.find( "#" + frame_selector ).size()) {
 					payment_box.find( "#" + frame_selector ).remove();
 				}
-				$( '<iframe name="' + frame_selector + '" id="' + frame_selector + '" height="650px" class="aps_standard" frameborder="0" scrolling="no" style="display:none" onload="iframeLoaded(this)"></iframe>' ).appendTo( payment_box.find( '#' + iFrameContent ) );
+				$( '<iframe name="' + frame_selector + '" id="' + frame_selector + '" height="650px" class="aps_standard" frameborder="0" scrolling="no" style="display:none" sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-popups" onload="iframeLoaded(this)"></iframe>' ).appendTo( payment_box.find( '#' + iFrameContent ) );
 				payment_box.find( "#" + iFrame ).show();
 				payment_box.find( '.pf-iframe-spin' ).show();
 				payment_box.find( '.pf-iframe-close' ).hide();
@@ -869,7 +869,10 @@
 								$( '#aps_installment_confirmation_ar' ).val( response.confirmation_ar );
 							} else {
 								$( '#aps_instalment_form .aps_card_error' ).addClass( 'installment_error' );
-								$( '#aps_instalment_form .aps_card_error' ).html( response.message );
+								// FIX (DOM-based HTML injection):
+								// response.message originates from upstream APS data;
+								// render as plain text to avoid HTML parsing.
+								$( '#aps_instalment_form .aps_card_error' ).text( response.message );
 							}
 						}
 					}
@@ -929,7 +932,9 @@
 								$( '#aps_installment_confirmation_en' ).val( response.confirmation_en );
 								$( '#aps_installment_confirmation_ar' ).val( response.confirmation_ar );
 							} else {
-								ele.parents( 'li.token_list' ).find( '.aps_install_token_error' ).html( response.message );
+								// FIX (DOM-based HTML injection):
+								// Render upstream-controlled message as plain text.
+								ele.parents( 'li.token_list' ).find( '.aps_install_token_error' ).text( response.message );
 							}
 						}
 					}
@@ -1244,10 +1249,12 @@
 						}
 						$( ".stc_pay_loader" ).removeClass( 'active' );
 						if ( 'genotp_error' === otp_response.status ) {
-							$( '.stc_pay_process_error' ).show().html( otp_response.message );
+							// FIX (DOM-based HTML injection): render as text.
+							$( '.stc_pay_process_error' ).show().text( otp_response.message );
 							//$( "#stc_pay_request_otp_sec" ).hide();
 						} else if ( 'error' === otp_response.status ) {
-							$( '.stc_pay_process_error' ).show().html( otp_response.message );
+							// FIX (DOM-based HTML injection): render as text.
+							$( '.stc_pay_process_error' ).show().text( otp_response.message );
 						} else if ( 'success' === otp_response.status ) {
 							apsPayment.stcPayOtpVerifyBox( otp_response );
 							$( '.stc_pay_process_error' ).hide();
@@ -1255,7 +1262,8 @@
 					},
 					error:	function( jqXHR, textStatus, errorThrown ) {
 						$( ".stc_pay_loader" ).removeClass( 'active' );
-						$( '.stc_pay_process_error' ).show().html( response.message );
+						// FIX (DOM-based HTML injection): render as text.
+						$( '.stc_pay_process_error' ).show().text( response.message );
 					}
 				});
 			} else {
@@ -1325,10 +1333,12 @@
 										}
 										$( ".valu_loader" ).removeClass( 'active' );
 										if ( 'genotp_error' === otp_response.status ) {
-											$( '.valu_process_error' ).html( otp_response.message );
+											// FIX (DOM-based HTML injection): render as text.
+											$( '.valu_process_error' ).text( otp_response.message );
 											$( "#request_otp_sec" ).hide();
 										} else if ( 'error' === otp_response.status ) {
-											$( '.aps_valu_otp_verfiy_error' ).html( otp_response.message );
+											// FIX (DOM-based HTML injection): render as text.
+											$( '.aps_valu_otp_verfiy_error' ).text( otp_response.message );
 										} else if ( 'success' === otp_response.status ) {
 											apsPayment.valuOtpVerifyBox( otp_response );
 											apsPayment.valuTenureBox( otp_response );
@@ -1339,7 +1349,8 @@
 								});
 							} else {
 								$( ".valu_loader" ).removeClass( 'active' );
-								$( '.valu_process_error' ).html( response.message );
+								// FIX (DOM-based HTML injection): render as text.
+								$( '.valu_process_error' ).text( response.message );
 							}
 						}
 					}
@@ -1373,7 +1384,8 @@
 						if ( 'success' === response.status ) {
 							$( '.valu_process_error' ).html( "" );
 						} else {
-							$( '.valu_process_error' ).html( response.message );
+							// FIX (DOM-based HTML injection): render as text.
+							$( '.valu_process_error' ).text( response.message );
 						}
 					}
 				}

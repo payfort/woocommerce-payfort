@@ -237,7 +237,7 @@ class APS_Payment extends APS_Super {
 				throw new Exception( $response_message );
 			}
 
-			// SECURITY FIX: Validate merchant reference is a positive integer before loading order
+			// FIX: Validate merchant reference is a positive integer before loading order
 			$merchant_ref_value = ( isset( $response_params['payment_option'] ) && $response_params['payment_option'] === APS_Constants::APS_PAYMENT_METHOD_STC_PAY )
 				? ( isset( $response_params['merchant_extra'] ) ? $response_params['merchant_extra'] : '' )
 				: $response_params['merchant_reference'];
@@ -266,7 +266,7 @@ class APS_Payment extends APS_Super {
 				}
 			}
 
-			// SECURITY FIX: Verify the order was placed through an APS payment gateway.
+			// FIX: Verify the order was placed through an APS payment gateway.
 			// This prevents the callback from acting on orders placed via non-APS methods
 			// (e.g., bank transfer, cheque) which should never be modified by APS webhooks.
 			$order = $this->aps_order->get_loaded_order();
@@ -334,7 +334,7 @@ class APS_Payment extends APS_Super {
 				return false;
 			}
 
-			// SECURITY FIX: Determine signature type from the order's stored payment method
+			// FIX: Determine signature type from the order's stored payment method
 			// (trusted server-side data) instead of attacker-controlled digital_wallet parameter.
 			// This prevents key confusion attacks where an attacker forces Apple Pay key selection
 			// by setting digital_wallet=APPLE_PAY in the webhook request.
@@ -349,7 +349,7 @@ class APS_Payment extends APS_Super {
 
 			// check the signature
 			if ( strtolower( $response_signature ) !== strtolower( $signature ) ) {
-				// SECURITY FIX: A request whose signature does not verify is untrusted.
+				// FIX: A request whose signature does not verify is untrusted.
 				// Do NOT mutate order state — only log the mismatch and return false.
 				$aps_invalid_signature_log = "APS Response invalid signature ERROR\n\n Original array : " . wp_json_encode( $response_params, true ) . "\n\n\n Final array : " . wp_json_encode( $response_gateway_params, true );
 				$this->aps_helper->log( $aps_invalid_signature_log );
@@ -1236,7 +1236,7 @@ class APS_Payment extends APS_Super {
         $status  = 'success';
         $message = '';
         try {
-            // SECURITY FIX: Defense-in-depth validation that the STC Pay token belongs to the current user.
+            // FIX: Defense-in-depth validation that the STC Pay token belongs to the current user.
             // This is a secondary check in case the gateway class validation is bypassed.
             if ( ! empty( $token_name ) ) {
                 $current_user_id = get_current_user_id();
