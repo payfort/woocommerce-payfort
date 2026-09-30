@@ -3,7 +3,7 @@ Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa
 Requires at least: 5.3
 Tested up to: 6.4.2
 Requires PHP: 7.0
-Stable tag: 2.4.7
+Stable tag: 2.4.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,6 +36,9 @@ Amazon payment services makes it really easy to start accepting online payments 
    * OmanNet
 
 == Changelog ==
+`2.4.8`
+* Fix - Record submitted payment amounts and currencies in order metadata and compare payment responses against the recorded values, with reconstruction for older orders.
+
 `2.4.7`
 * Fix - Refund flow no longer misreports successful APS refunds as failures, which previously could lead to duplicate refunds when administrators retried. Fixes both the standard refund and Apple Pay refund flows.
 * Fix - Sanitized upstream installment metadata (plans_html, plan_info, issuer_info, error messages) to prevent DOM-based HTML injection on the checkout page.
