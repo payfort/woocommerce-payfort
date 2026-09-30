@@ -303,6 +303,10 @@ class APS_Order extends APS_Super {
 		try {
 			$this->order_log( 'APS success order response (' . $response_mode . ')\n\n' . json_encode( $response_params, true ) );
 
+			if ( ! $this->verify_response_state( $response_params ) ) {
+				return false;
+			}
+
 			if ( ! $this->verify_response_amount( $response_params ) ) {
 				return false;
 			}
@@ -359,60 +363,293 @@ class APS_Order extends APS_Super {
 	}
 
 	/**
-	 * Verify the paid amount in a gateway response matches the order total.
+	 * Whether a real order object is currently loaded.
 	 *
-	 * Returns true when the amount matches or when there is nothing to compare.
+	 * @return bool
+	 */
+	private function has_loaded_order() {
+		return is_object( $this->order ) && method_exists( $this->order, 'get_id' ) && $this->order->get_id();
+	}
+
+	/**
+	 * Record the amount and currency actually submitted to APS for this order.
+	 *
+	 * The gateway response is later validated against this exact figure, so the
+	 * check never depends on mutable state (session, cookies, config) that may
+	 * have changed between the request and the response.
+	 *
+	 * @param mixed  $amount   Amount as placed in the gateway request.
+	 * @param mixed  $currency Currency as placed in the gateway request.
+	 * @return void
+	 */
+	public function record_expected_payment( $amount, $currency ) {
+		if ( ! $this->has_loaded_order() ) {
+			return;
+		}
+		$order_id = $this->get_order_id();
+		$amount   = is_scalar( $amount ) ? trim( (string) $amount ) : '';
+		$currency = is_scalar( $currency ) ? strtoupper( trim( (string) $currency ) ) : '';
+		if ( '' === $amount || ! is_numeric( $amount ) || '' === $currency ) {
+			// Nothing payable to compare later (e.g. a tokenization-only request).
+			return;
+		}
+		update_post_meta(
+			$order_id,
+			'aps_expected_payment',
+			array(
+				'amount'   => $amount,
+				'currency' => $currency,
+			)
+		);
+	}
+
+	/**
+	 * Verify the gateway response reports a successful state.
+	 *
+	 * Fails closed: an unknown or non-success response code never marks an
+	 * order as paid, even if a caller routed it here by mistake.
+	 *
+	 * @param array $response_params
+	 * @return bool
+	 */
+	private function verify_response_state( $response_params ) {
+		if ( ! isset( $response_params['response_code'] ) || '' === $response_params['response_code'] ) {
+			return true;
+		}
+
+		$response_code = (string) $response_params['response_code'];
+		$success_codes = array(
+			APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE,
+			APS_Constants::APS_PAYMENT_AUTHORIZATION_SUCCESS_RESPONSE_CODE,
+			APS_Constants::APS_MERCHANT_SUCCESS_RESPONSE_CODE,
+			APS_Constants::APS_CAPTURE_SUCCESS_RESPONSE_CODE,
+			APS_Constants::APS_TOKENIZATION_SUCCESS_RESPONSE_CODE,
+			APS_Constants::APS_UPDATE_TOKENIZATION_SUCCESS_RESPONSE_CODE,
+			APS_Constants::APS_SAFE_TOKENIZATION_SUCCESS_RESPONSE_CODE,
+		);
+
+		if ( in_array( $response_code, $success_codes, true ) ) {
+			return true;
+		}
+
+		$this->order_log(
+			'APS success_order refused for order ' . ( $this->has_loaded_order() ? $this->get_order_id() : 'unknown' )
+			. ': response_code ' . $response_code . ' is not a success code. Order not marked as paid.',
+			true
+		);
+		return false;
+	}
+
+	/**
+	 * Verify the paid amount in a gateway response matches what was requested.
+	 *
+	 * Fails closed: a missing, unparsable or differing amount or currency is
+	 * rejected and the order is held for manual review. The amount is compared
+	 * against the figure the plugin actually submitted, in the same encoding,
+	 * so no unit-guessing tolerance is needed.
 	 *
 	 * @param array $response_params
 	 * @return bool
 	 */
 	private function verify_response_amount( $response_params ) {
-		if ( ! $this->get_order_id() ) {
-			return true;
-		}
-		if ( ! isset( $response_params['amount'] ) || '' === $response_params['amount'] ) {
-			// Nothing to verify (e.g. a tokenization-only response).
+		if ( ! $this->has_loaded_order() ) {
+			// No order context at all; the caller handles the failed order lookup.
 			return true;
 		}
 
-		// Apple Pay builds its amount via convert_to_base_currency() rather than
-		// convert_fort_amount(), so it is not reconstructible here.
-		if ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $this->get_payment_method() ) {
-			return true;
+		$received = isset( $response_params['amount'] ) && is_scalar( $response_params['amount'] )
+			? trim( (string) $response_params['amount'] )
+			: '';
+		if ( '' === $received || ! is_numeric( $received ) ) {
+			return $this->reject_response_amount( 'the response carried no usable amount', '"' . $received . '"', '-' );
 		}
 
-		$aps_helper = APS_Helper::get_instance();
-		$currency   = isset( $response_params['currency'] ) && ! empty( $response_params['currency'] )
-			? strtoupper( $response_params['currency'] )
-			: strtoupper( $this->get_currency() );
+		$response_currency = isset( $response_params['currency'] ) && is_scalar( $response_params['currency'] )
+			? strtoupper( trim( (string) $response_params['currency'] ) )
+			: '';
+		if ( '' === $response_currency ) {
+			return $this->reject_response_amount( 'the response carried no currency', $received, '-' );
+		}
 
-		$order_total = (float) $this->get_total();
-		$received    = (float) $response_params['amount'];
+		$expected = $this->get_expected_payment( $response_currency );
 
-		// Accept either the minor-unit encoding the plugin submits or a plain major-unit
-		// value, so a valid payment is never held over an encoding difference.
-		$expected_minor = (float) $aps_helper->convert_fort_amount( $order_total, $this->get_currency_value(), $currency );
-		$matches        = ( abs( $received - $expected_minor ) < 0.01 ) || ( abs( $received - $order_total ) < 0.01 );
-
-		if ( ! $matches ) {
-			$this->order_log(
-				'APS amount mismatch for order ' . $this->get_order_id()
-				. ' — order total ' . $order_total . ' ' . $currency
-				. ' (expected ' . $expected_minor . ' in minor units) but gateway reported '
-				. $received . '. Order not marked as paid.'
+		if ( $expected['currency'] !== $response_currency ) {
+			return $this->reject_response_amount(
+				'currency mismatch',
+				$received . ' ' . $response_currency,
+				$expected['amount'] . ' ' . $expected['currency']
 			);
-			$this->on_hold_order(
-				sprintf(
-					/* translators: 1: expected amount, 2: amount reported by the gateway */
-					__( 'APS payment amount mismatch: expected %1$s but the gateway reported %2$s. Held for manual review.', 'amazon-payment-services' ),
-					$expected_minor,
-					$received
-				)
-			);
-			return false;
 		}
+
+		if ( ! $this->amounts_equal( $received, $expected['amount'] ) ) {
+			return $this->reject_response_amount(
+				'amount mismatch (' . $expected['source'] . ' expectation)' . $this->encoding_hint( $received, $expected['amount'], $response_currency ),
+				$received . ' ' . $response_currency,
+				$expected['amount'] . ' ' . $expected['currency']
+			);
+		}
+
+		$this->log_amount_encoding_notice( $expected, $response_currency );
 
 		return true;
+	}
+
+	/**
+	 * The amount and currency this order should have been charged.
+	 *
+	 * Prefers the figure recorded when the request was built; falls back to
+	 * rebuilding it the same way the request builders do, for orders created
+	 * before the request was recorded.
+	 *
+	 * @param string $response_currency Currency reported by the gateway.
+	 * @return array{amount:string,currency:string,source:string}
+	 */
+	private function get_expected_payment( $response_currency ) {
+		$aps_helper = APS_Helper::get_instance();
+		$recorded   = get_post_meta( $this->get_order_id(), 'aps_expected_payment', true );
+
+		if ( is_array( $recorded ) && isset( $recorded['amount'], $recorded['currency'] )
+			&& is_numeric( $recorded['amount'] ) && '' !== $recorded['currency'] ) {
+			return array(
+				'amount'   => (string) $recorded['amount'],
+				'currency' => strtoupper( (string) $recorded['currency'] ),
+				'source'   => 'recorded-request',
+			);
+		}
+
+		$currency = $this->pick_expected_currency( $response_currency );
+
+		if ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $this->get_payment_method() ) {
+			// Apple Pay submits its amount through convert_to_base_currency().
+			$rate   = $aps_helper->get_conversion_rate_to_fort_currency( $currency, $aps_helper->get_front_currency() );
+			$amount = $aps_helper->convert_to_base_currency( (float) $this->get_total(), (float) $rate );
+		} else {
+			$amount = $aps_helper->convert_fort_amount( $this->get_total(), $this->get_currency_value(), $currency );
+		}
+
+		return array(
+			'amount'   => (string) $amount,
+			'currency' => $currency,
+			'source'   => 'rebuilt',
+		);
+	}
+
+	/**
+	 * Currency a request builder could legitimately have submitted.
+	 *
+	 * @param string $response_currency
+	 * @return string
+	 */
+	private function pick_expected_currency( $response_currency ) {
+		$aps_helper = APS_Helper::get_instance();
+		$allowed    = array_values(
+			array_filter(
+				array_unique(
+					array(
+						strtoupper( (string) $aps_helper->get_fort_currency() ),
+						strtoupper( (string) $aps_helper->get_base_currency() ),
+						strtoupper( (string) $this->get_currency() ),
+					)
+				)
+			)
+		);
+
+		if ( in_array( $response_currency, $allowed, true ) ) {
+			return $response_currency;
+		}
+
+		return empty( $allowed ) ? strtoupper( (string) $this->get_currency() ) : $allowed[0];
+	}
+
+	/**
+	 * Numeric equality that tolerates formatting only, never a different figure.
+	 *
+	 * @param mixed $left
+	 * @param mixed $right
+	 * @return bool
+	 */
+	private function amounts_equal( $left, $right ) {
+		if ( ! is_numeric( $left ) || ! is_numeric( $right ) ) {
+			return false;
+		}
+		// Scale to thousandths so "100", "100.0" and "100.000" match while any
+		// genuinely different amount does not.
+		return (int) round( (float) $left * 1000 ) === (int) round( (float) $right * 1000 );
+	}
+
+	/**
+	 * Flag (without blocking) a confirmed amount that does not encode the order
+	 * total in minor units, so an encoding problem in a request builder is
+	 * visible in the log instead of silently mispricing orders.
+	 *
+	 * @param array  $expected
+	 * @param string $response_currency
+	 * @return void
+	 */
+	private function log_amount_encoding_notice( $expected, $response_currency ) {
+		$aps_helper  = APS_Helper::get_instance();
+		$minor_units = $aps_helper->convert_fort_amount( $this->get_total(), $this->get_currency_value(), $response_currency );
+
+		if ( $this->amounts_equal( $expected['amount'], $minor_units ) ) {
+			return;
+		}
+
+		$this->order_log(
+			'APS amount notice for order ' . $this->get_order_id() . ': gateway confirmed '
+			. $expected['amount'] . ' ' . $response_currency . ' (' . $expected['source'] . ') while the order total '
+			. $this->get_total() . ' ' . $this->get_currency() . ' encodes as ' . $minor_units
+			. ' in minor units. Check the request amount encoding for payment method ' . $this->get_payment_method() . '.',
+			true
+		);
+	}
+
+	/**
+	 * Explain a mismatch that is a minor/major unit encoding difference rather
+	 * than a different sum of money, so the request builder can be corrected.
+	 *
+	 * @param string $received
+	 * @param string $expected
+	 * @param string $currency
+	 * @return string Empty string when the mismatch is not an encoding difference.
+	 */
+	private function encoding_hint( $received, $expected, $currency ) {
+		$decimals = (int) APS_Helper::get_instance()->get_currency_decimal_points( $currency );
+		if ( $decimals <= 0 || ! is_numeric( $received ) || ! is_numeric( $expected ) ) {
+			return '';
+		}
+		$factor = pow( 10, $decimals );
+		if ( $this->amounts_equal( $received, (float) $expected * $factor ) ) {
+			return ' — the response is the requested amount in minor units, so the request was built in major units';
+		}
+		if ( $this->amounts_equal( (float) $received * $factor, $expected ) ) {
+			return ' — the response is the requested amount in major units, so the request was built in minor units';
+		}
+		return '';
+	}
+
+	/**
+	 * Hold the order and log why the response was not accepted.
+	 *
+	 * @param string $reason
+	 * @param string $received
+	 * @param string $expected
+	 * @return bool Always false.
+	 */
+	private function reject_response_amount( $reason, $received, $expected ) {
+		$this->order_log(
+			'APS response rejected for order ' . $this->get_order_id() . ': ' . $reason
+			. '. Expected ' . $expected . ', received ' . $received . '. Order not marked as paid.',
+			true
+		);
+		$this->on_hold_order(
+			sprintf(
+				/* translators: 1: expected amount, 2: amount reported by the gateway */
+				__( 'APS payment verification failed: expected %1$s but the gateway reported %2$s. Held for manual review.', 'amazon-payment-services' ),
+				$expected,
+				$received
+			)
+		);
+		return false;
 	}
 
 	/**

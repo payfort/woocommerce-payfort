@@ -168,7 +168,9 @@ class APS_Payment extends APS_Super {
 					$is_hosted_tokenization = true;
 				}
 				if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $notify_code ) {
-					$this->aps_order->success_order( $aps_notify_params, 'online' );
+					if ( ! $this->aps_order->success_order( $aps_notify_params, 'online' ) ) {
+						$this->aps_helper->log( 'APS response failed verification for order ' . $order_id . '; order held for review instead of being marked paid.' );
+					}
 					$redirect_url = $this->aps_order->get_checkout_success_url();
 				} elseif ( APS_Constants::APS_MERCHANT_SUCCESS_RESPONSE_CODE === $notify_code && isset( $aps_notify_params['3ds_url'] ) ) {
 					$this->aps_helper->log( 'build 3ds_url=' . $aps_notify_params['3ds_url'] );
@@ -190,6 +192,11 @@ class APS_Payment extends APS_Super {
 				}
 			}
 		}
+		// Remember exactly what was asked for, so the response can be checked against it.
+		$this->aps_order->record_expected_payment(
+			isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+			isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+		);
 		$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 		$gateway_params['signature'] = $signature;
 		//In case of subscription on we explictly set remember_me to yes
@@ -364,7 +371,9 @@ class APS_Payment extends APS_Super {
 				}
 			}
 			if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response_code || APS_Constants::APS_PAYMENT_AUTHORIZATION_SUCCESS_RESPONSE_CODE === $response_code ) {
-				$this->aps_order->success_order( $response_params, $response_mode );
+				if ( ! $this->aps_order->success_order( $response_params, $response_mode ) ) {
+					$this->aps_helper->log( 'APS response failed verification for order ' . $order_id . '; order held for review instead of being marked paid.' );
+				}
 			} elseif ( in_array( $response_code, APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 				$this->aps_order->on_hold_order( $response_status_message );
 				$this->aps_helper->log( $aps_error_log );
@@ -398,7 +407,9 @@ class APS_Payment extends APS_Super {
 							exit;
 						}
 					} else {
-						$this->aps_order->success_order( $aps_notify_params, $response_mode );
+						if ( ! $this->aps_order->success_order( $aps_notify_params, $response_mode ) ) {
+							$this->aps_helper->log( 'APS response failed verification for order ' . $order_id . '; order held for review instead of being marked paid.' );
+						}
 					}
 				} elseif ( in_array( $notify_code, APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 					$this->aps_order->on_hold_order( $notify_response_message );
@@ -428,7 +439,9 @@ class APS_Payment extends APS_Super {
 						}
 						exit;
 					} else {
-						$this->aps_order->success_order( $aps_notify_params, $response_mode );
+						if ( ! $this->aps_order->success_order( $aps_notify_params, $response_mode ) ) {
+							$this->aps_helper->log( 'APS response failed verification for order ' . $order_id . '; order held for review instead of being marked paid.' );
+						}
 					}
 				} elseif ( in_array( $notify_code, APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 					$this->aps_order->on_hold_order( $notify_response_message );
@@ -541,6 +554,11 @@ class APS_Payment extends APS_Super {
 		$plugin_params  = $this->aps_config->plugin_params();
 		$gateway_params = array_merge( $gateway_params, $plugin_params );
 		//generate request signature
+		// Remember exactly what was asked for, so the response can be checked against it.
+		$this->aps_order->record_expected_payment(
+			isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+			isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+		);
 		$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 		$gateway_params['signature'] = $signature;
 		$gateway_url                 = $this->aps_config->get_gateway_url( 'api' );
@@ -581,6 +599,11 @@ class APS_Payment extends APS_Super {
 		if ( ! empty( $customer_name ) ) {
 			$gateway_params['customer_name'] = $customer_name;
 		}
+		// Remember exactly what was asked for, so the response can be checked against it.
+		$this->aps_order->record_expected_payment(
+			isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+			isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+		);
 		$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 		$gateway_params['signature'] = $signature;
 
@@ -588,8 +611,11 @@ class APS_Payment extends APS_Super {
 		$this->aps_helper->log( 'APS recurring request \n\n' . wp_json_encode( $gateway_params, true ) );
 		$response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 		if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-			$this->aps_order->success_order( $response, 'online' );
-			$payment_status = true;
+			// Only treat the renewal as paid when the response passed verification.
+			$payment_status = (bool) $this->aps_order->success_order( $response, 'online' );
+			if ( ! $payment_status ) {
+				$this->aps_helper->log( 'APS recurring payment rejected during verification for order ' . $this->aps_order->get_order_id() );
+			}
 		} else {
 			$result         = $this->aps_order->decline_order( $response, $response['response_message'] );
 			$payment_status = false;
@@ -627,6 +653,11 @@ class APS_Payment extends APS_Super {
         if ( ! empty( $customer_name ) ) {
             $gateway_params['customer_name'] = $customer_name;
         }
+        // Remember exactly what was asked for, so the response can be checked against it.
+        $this->aps_order->record_expected_payment(
+            isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+            isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+        );
         $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
         $gateway_params['signature'] = $signature;
 
@@ -634,8 +665,11 @@ class APS_Payment extends APS_Super {
         $this->aps_helper->log( 'APS recurring request \n\n' . wp_json_encode( $gateway_params, true ) );
         $response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
         if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-            $this->aps_order->success_order( $response, 'online' );
-            $payment_status = true;
+            // Only treat the renewal as paid when the response passed verification.
+            $payment_status = (bool) $this->aps_order->success_order( $response, 'online' );
+            if ( ! $payment_status ) {
+                $this->aps_helper->log( 'APS recurring payment rejected during verification for order ' . $this->aps_order->get_order_id() );
+            }
         } else {
             $result         = $this->aps_order->decline_order( $response, $response['response_message'] );
             $payment_status = false;
@@ -671,6 +705,11 @@ class APS_Payment extends APS_Super {
         if ( ! empty( $customer_name ) ) {
             $gateway_params['customer_name'] = $customer_name;
         }
+        // Remember exactly what was asked for, so the response can be checked against it.
+        $this->aps_order->record_expected_payment(
+            isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+            isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+        );
         $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
         $gateway_params['signature'] = $signature;
 
@@ -678,8 +717,11 @@ class APS_Payment extends APS_Super {
         $this->aps_helper->log( 'APS recurring request \n\n' . wp_json_encode( $gateway_params, true ) );
         $response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
         if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-            $this->aps_order->success_order( $response, 'online' );
-            $payment_status = true;
+            // Only treat the renewal as paid when the response passed verification.
+            $payment_status = (bool) $this->aps_order->success_order( $response, 'online' );
+            if ( ! $payment_status ) {
+                $this->aps_helper->log( 'APS recurring payment rejected during verification for order ' . $this->aps_order->get_order_id() );
+            }
         } else {
             $result         = $this->aps_order->decline_order( $response, $response['response_message'] );
             $payment_status = false;
@@ -764,6 +806,11 @@ class APS_Payment extends APS_Super {
 			foreach ( $response_params->data->paymentMethod as $key => $value ) {
 				$gateway_params['apple_paymentMethod'][ 'apple_' . $key ] = $value;
 			}
+			// Remember exactly what was asked for, so the response can be checked against it.
+			$this->aps_order->record_expected_payment(
+				isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+				isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+			);
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request', 'apple_pay' );
 			$gateway_params['signature'] = $signature;
 			$gateway_url                 = $this->aps_config->get_gateway_url( 'api' );
@@ -771,7 +818,10 @@ class APS_Payment extends APS_Super {
 			$response = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'Apple payment response ' . json_encode( $response ) );
 			if ( APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $response['response_code'] || APS_Constants::APS_PAYMENT_AUTHORIZATION_SUCCESS_RESPONSE_CODE === $response['response_code'] ) {
-				$this->aps_order->success_order( $response, 'online' );
+				if ( ! $this->aps_order->success_order( $response, 'online' ) ) {
+					$this->aps_helper->log( 'APS apple pay response failed verification for order ' . $order_id . '; order held for review.' );
+					throw new Exception( __( 'We could not verify this payment. Please contact the store.', 'amazon-payment-services' ) );
+				}
 				$status = 'success';
 			} elseif ( in_array( $response['response_code'], APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ) {
 				$this->aps_order->on_hold_order( $response['response_message'] );
@@ -1124,6 +1174,11 @@ class APS_Payment extends APS_Super {
 			
 			//$plugin_params               = $this->aps_config->plugin_params();
 			//$gateway_params              = array_merge( $gateway_params, $plugin_params );
+			// Remember exactly what was asked for, so the response can be checked against it.
+			$this->aps_order->record_expected_payment(
+				isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+				isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+			);
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
 			$gateway_params['signature'] = $signature;
 			//execute post
@@ -1131,9 +1186,12 @@ class APS_Payment extends APS_Super {
 			$result      = $this->aps_helper->call_rest_api( $gateway_params, $gateway_url );
 			$this->aps_helper->log( 'Valu execute purchase ' . json_encode( $result ) );
 			if ( isset( $result['response_code'] ) && APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+				if ( ! $this->aps_order->success_order( $result, 'online' ) ) {
+					$this->aps_helper->log( 'APS valU response failed verification for order ' . $this->aps_order->get_order_id() . '; order held for review.' );
+					throw new \Exception( __( 'We could not verify this payment. Please contact the store.', 'amazon-payment-services' ) );
+				}
 				$status  = 'success';
 				$message = __( 'Transaction Verified successfully', 'amazon-payment-services' );
-				$this->aps_order->success_order( $result, 'online' );
 			} elseif ( in_array( $response['response_code'], APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ){
 				$this->aps_order->on_hold_order( $response['response_message'] );
 				$aps_error_log = "APS valU on hold stage : \n\n" . wp_json_encode( $response, true );
@@ -1297,6 +1355,11 @@ class APS_Payment extends APS_Super {
                 $gateway_params['otp'] = $otp;
                 $gateway_params['merchant_reference'] = $reference_id;
             }
+            // Remember exactly what was asked for, so the response can be checked against it.
+            $this->aps_order->record_expected_payment(
+                isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',
+                isset( $gateway_params['currency'] ) ? $gateway_params['currency'] : ''
+            );
             $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
             $gateway_params['signature'] = $signature;
             //execute post
@@ -1305,9 +1368,12 @@ class APS_Payment extends APS_Super {
             $this->aps_helper->log( 'STC Pay execute purchase ' . json_encode( $result ) );
             $stc_pay_api_error_message = __( 'STC PAY API failed. Please try again later', 'amazon-payment-services' );
             if ( isset( $result['response_code'] ) && APS_Constants::APS_PAYMENT_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+                if ( ! $this->aps_order->success_order( $result, 'online' ) ) {
+                    $this->aps_helper->log( 'APS STC Pay response failed verification for order ' . $this->aps_order->get_order_id() . '; order held for review.' );
+                    throw new \Exception( __( 'We could not verify this payment. Please contact the store.', 'amazon-payment-services' ) );
+                }
                 $status  = 'success';
                 $message = __( 'Transaction Verified successfully', 'amazon-payment-services' );
-                $this->aps_order->success_order( $result, 'online' );
             } else {
                 $status  = 'error';
                 $message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $stc_pay_api_error_message;
