@@ -3,7 +3,7 @@ Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa
 Requires at least: 5.3
 Tested up to: 6.4.2
 Requires PHP: 7.0
-Stable tag: 2.4.8
+Stable tag: 2.4.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,6 +36,12 @@ Amazon payment services makes it really easy to start accepting online payments 
    * OmanNet
 
 == Changelog ==
+`2.4.9`
+* Fix - valU payment option is shown at checkout when the cart total meets the configured minimum order limit (previously hidden for any minimum above 0).
+* Fix - Tabby maximum order limit is enforced at checkout.
+* Fix - Block checkout scripts for valU and Tabby registered each other's payment method; corrected.
+* Fix - valU mobile number row layout gives the country code more room.
+
 `2.4.8`
 * Fix - Record submitted payment amounts and currencies in order metadata and compare payment responses against the recorded values, with reconstruction for older orders.
 
