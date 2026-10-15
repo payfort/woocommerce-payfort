@@ -60,11 +60,31 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 		if ( 'yes' === $this->aps_config->have_subscription() ) {
 			$available = 'no';
 		}
-		$cart_min_limit = $this->aps_config->get_valu_minimum_order_limit();
-		if ( WC()->cart && floatval( WC()->cart->total ) < $cart_min_limit ) {
-				$available = 'no';
-			}
 		return $available;
+	}
+
+	/**
+	 * Check the order total against the ValU minimum order limit at request time.
+	 *
+	 * The gateways are constructed at init (Blocks support), before the cart is
+	 * loaded from the session on wp_loaded, so this check cannot live in the constructor.
+	 * get_order_total() uses the order on the pay-for-order page and the cart otherwise.
+	 * Before wp_loaded the cart total is not known yet, so the limit is not applied; no
+	 * checkout or payment path runs that early.
+	 *
+	 * @return bool
+	 */
+	public function is_available() {
+		if ( ! parent::is_available() ) {
+			return false;
+		}
+		if ( did_action( 'wp_loaded' ) && WC()->cart ) {
+			$cart_min_limit = floatval( $this->aps_config->get_valu_minimum_order_limit() );
+			if ( $this->get_order_total() < $cart_min_limit ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
