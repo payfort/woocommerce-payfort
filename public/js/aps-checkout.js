@@ -9,6 +9,12 @@
 	//Declarion of checkout object
 	var checkoutForm = $( 'form.checkout' );
 
+	// On the order-pay page installment plans are priced from the stored order.
+	function apsOrderPayKey() {
+		var params = new URLSearchParams( window.location.search );
+		return params.has( 'pay_for_order' ) ? ( params.get( 'key' ) || '' ) : '';
+	}
+
 	//Validation control
 	var APSValidation = {
 		validateCard: function ( card_number ) {
@@ -840,6 +846,7 @@
 						data:{
 							action: 'get_installment_plans',
 							card_bin,
+							order_key: apsOrderPayKey(),
 						},
 						type:'POST',
 						success:function( response ) {
@@ -904,6 +911,7 @@
 						data:{
 							action: 'get_installment_plans',
 							card_bin,
+							order_key: apsOrderPayKey(),
 						},
 						type:'POST',
 						success:function( response ) {
@@ -1041,6 +1049,7 @@
 							data:{
 								action: 'get_installment_plans',
 								card_bin,
+								order_key: apsOrderPayKey(),
 								pay_with_cc: 1,
 							},
 							type:'POST',
@@ -1110,6 +1119,7 @@
 							data:{
 								action: 'get_installment_plans',
 								card_bin,
+								order_key: apsOrderPayKey(),
 								pay_with_cc: 1,
 							},
 							type:'POST',

@@ -21,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class APS_Helper extends APS_Super {
 
+	// Seconds a checkout snapshot may price an installment lookup without a new totals calculation.
+	const CHECKOUT_SNAPSHOT_TTL = 3600;
+
 	private static $instance;
 	private $aps_config;
 	private $aps_order;
@@ -155,6 +158,86 @@ class APS_Helper extends APS_Super {
 			$new_amount = $new_amount * ( pow( 10, $decimal_points ) );
 		}
 		return round( $new_amount, 2 );
+	}
+
+	/**
+	 * Record what the shopper's cart costs, in the currency WooCommerce priced it in,
+	 * whenever WooCommerce calculates the cart totals (0326f912).
+	 *
+	 * The installment plan lookup runs before the order exists, so it signs the amount
+	 * and currency held here instead of reading the storefront currency cookie. The
+	 * currency is WooCommerce's own cart currency (which a multi-currency plugin such as
+	 * CURCY sets server-side), captured together with the totals it applies to.
+	 * One session key is overwritten on every recalculation, so nothing accumulates and
+	 * no order is created.
+	 */
+	public function capture_checkout_snapshot() {
+		if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+			return;
+		}
+		// The lookup only reads the snapshot; a recalculation inside it must not replace it.
+		if ( wp_doing_ajax() && isset( $_REQUEST['action'] ) && 'get_installment_plans' === $_REQUEST['action'] ) {
+			return;
+		}
+		$cart     = WC()->cart;
+		$snapshot = null;
+		if ( $cart && ! $cart->is_empty() ) {
+			$order_currency = strtoupper( (string) get_woocommerce_currency() );
+			$fort_currency  = 'front' === $this->aps_config->get_gateway_currency() ? $order_currency : strtoupper( (string) $this->get_base_currency() );
+			$total          = (float) $cart->get_total( 'edit' );
+			if ( '' !== $order_currency ) {
+				$snapshot = array(
+					'order_currency' => $order_currency,
+					'fort_currency'  => $fort_currency,
+					'order_total'    => $total,
+					'amount_minor'   => (int) round( $this->scale_to_minor( $total, $fort_currency ) ),
+					'cart_hash'      => (string) $cart->get_cart_hash(),
+					'customer_id'    => (int) get_current_user_id(),
+					'expires'        => time() + self::CHECKOUT_SNAPSHOT_TTL,
+				);
+			}
+		}
+		WC()->session->set( 'aps_checkout_snapshot', $snapshot );
+	}
+
+	/**
+	 * Amount and currency an installment plan lookup may sign (0326f912).
+	 *
+	 * For order-pay this is the stored order. Before the order exists it is the
+	 * snapshot from capture_checkout_snapshot(), only while the cart is unchanged.
+	 * The storefront currency cookie is never read.
+	 *
+	 * @param WC_Order|null $order Order being paid on the order-pay page, if any.
+	 * @return array
+	 * @throws Exception When no trustworthy amount is available.
+	 */
+	public function get_installment_amount_context( $order = null ) {
+		$stale = __( 'Your cart has changed. Please refresh the page and try again.', 'amazon-payment-services' );
+		if ( $order ) {
+			$fort_currency = $this->get_order_fort_currency( $order );
+			return array(
+				'order_currency' => strtoupper( (string) $order->get_currency() ),
+				'fort_currency'  => $fort_currency,
+				'order_total'    => (float) $order->get_total(),
+				'amount_minor'   => (int) round( $this->get_order_fort_amount( $order, $fort_currency ) ),
+				'cart_hash'      => '',
+				'customer_id'    => (int) $order->get_customer_id(),
+				'order_id'       => (int) $order->get_id(),
+			);
+		}
+		$cart = WC()->cart;
+		if ( ! $cart || $cart->is_empty() ) {
+			throw new \Exception( 'Cart is empty', 400 );
+		}
+		$snapshot = WC()->session ? WC()->session->get( 'aps_checkout_snapshot' ) : null;
+		if ( ! is_array( $snapshot ) || empty( $snapshot['cart_hash'] )
+			|| ! hash_equals( (string) $snapshot['cart_hash'], (string) $cart->get_cart_hash() )
+			|| (int) $snapshot['customer_id'] !== (int) get_current_user_id()
+			|| empty( $snapshot['expires'] ) || (int) $snapshot['expires'] < time() ) {
+			throw new \Exception( $stale, 409 );
+		}
+		unset( $snapshot['expires'] );
+		return $snapshot + array( 'order_id' => 0 );
 	}
 
 	/**

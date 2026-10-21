@@ -58,7 +58,7 @@ class APS_Ajax {
 	 *
 	 * @return array
 	 */
-	private function get_installment_plan( $card_bin ) {
+	private function get_installment_plan( $card_bin, $context ) {
 		$retarr = array(
 			'status'           => 'success',
 			'installment_data' => array(),
@@ -66,18 +66,13 @@ class APS_Ajax {
 			'message'          => 'List of plans',
 		);
 		try {
-			if ( 0 === WC()->cart->get_cart_contents_count() ) {
-				throw new \Exception( 'Cart is empty', 400 );
-			}
-			$cart_total     = WC()->cart->cart_contents_total;
-			$currency       = $this->aps_helper->get_fort_currency();
 			$gateway_params = array(
 				'query_command'       => APS_Constants::APS_COMMAND_GET_INSTALLMENT_PLANS,
 				'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
 				'access_code'         => $this->aps_config->get_access_code(),
 				'language'            => $this->aps_config->get_language(),
-				'amount'              => $this->aps_helper->convert_fort_amount( $cart_total, 1, $currency ),
-				'currency'            => strtoupper( $currency ),
+				'amount'              => $context['amount_minor'],
+				'currency'            => $context['fort_currency'],
 			);
 			//generate request signature
 			$signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
@@ -114,6 +109,32 @@ class APS_Ajax {
 	}
 
 	/**
+	 * Hooked to woocommerce_after_calculate_totals.
+	 */
+	public function record_checkout_snapshot() {
+		$this->aps_helper->capture_checkout_snapshot();
+	}
+
+	/**
+	 * Order being paid on the order-pay page, identified by its order key.
+	 *
+	 * @param string $order_key
+	 * @return WC_Order|null
+	 * @throws Exception When the key does not identify an order this shopper may pay.
+	 */
+	private function get_order_pay_order( $order_key ) {
+		if ( '' === $order_key ) {
+			return null;
+		}
+		$order = preg_match( '/^wc_order_[A-Za-z0-9]{1,64}$/', $order_key ) ? wc_get_order( wc_get_order_id_by_order_key( $order_key ) ) : false;
+		if ( ! $order || ! hash_equals( (string) $order->get_order_key(), $order_key ) || ! $order->needs_payment()
+			|| ( $order->get_customer_id() > 0 && $order->get_customer_id() !== get_current_user_id() ) ) {
+			throw new \Exception( __( 'This order cannot be paid. Please refresh the page and try again.', 'amazon-payment-services' ), 403 );
+		}
+		return $order;
+	}
+
+	/**
 	 * Get Installment plans ajax handler
 	 */
 	public function get_installment_handler() {
@@ -129,21 +150,30 @@ class APS_Ajax {
 		$card_bin    = filter_input( INPUT_POST, 'card_bin' );
 		$pay_with_cc = intval( filter_input( INPUT_POST, 'pay_with_cc' ) );
 		$pay_full_payment = '';
+		try {
+			$order_key = filter_input( INPUT_POST, 'order_key' );
+			$context   = $this->aps_helper->get_installment_amount_context( $this->get_order_pay_order( is_string( $order_key ) ? $order_key : '' ) );
+		} catch ( \Exception $ex ) {
+			$retarr['status']  = 'error';
+			$retarr['message'] = esc_html( $ex->getMessage() );
+			echo wp_json_encode( $retarr );
+			wp_die();
+		}
 		if ( 1 === $pay_with_cc ) {
 			$cart_min_limit = 0;
 			$currency_check = 0;
-			if ( 'SAR' === $this->aps_helper->get_front_currency() ) {
+			if ( 'SAR' === $context['order_currency'] ) {
 				$currency_check = 1;
 				$cart_min_limit = $this->aps_config->get_installment_sar_minimum_order_limit();
-			} elseif ( 'AED' === $this->aps_helper->get_front_currency() ) {
+			} elseif ( 'AED' === $context['order_currency'] ) {
 				$currency_check = 1;
 				$cart_min_limit = $this->aps_config->get_installment_aed_minimum_order_limit();
-			} elseif ( 'EGP' === $this->aps_helper->get_front_currency() ) {
+			} elseif ( 'EGP' === $context['order_currency'] ) {
 				$currency_check = 1;
 				$cart_min_limit = $this->aps_config->get_installment_egp_minimum_order_limit();
 			}
 
-			if ( 1 === $currency_check && floatval( WC()->cart->total ) < $cart_min_limit ) {
+			if ( 1 === $currency_check && floatval( $context['order_total'] ) < $cart_min_limit ) {
 				$retarr['status']  = 'error';
 				$retarr['message'] = esc_html( 'Currency limit should be great than ' . $cart_min_limit );
 				echo wp_json_encode( $retarr );
@@ -158,7 +188,7 @@ class APS_Ajax {
 		}
 
 		$card_bin = str_replace( array( ' ', '*' ), array( '', '' ), $card_bin );
-		$response = $this->get_installment_plan( $card_bin );
+		$response = $this->get_installment_plan( $card_bin, $context );
 		if ( 'success' === $response['status'] && ! empty( $response['installment_data'] ) ) {
 			// FIX (DOM-based HTML injection):
 			// The installment_data comes from upstream APS installment plans API.
@@ -177,7 +207,7 @@ class APS_Ajax {
 			if ( ! empty( $all_plans ) ) {
 				$plans_html .= $pay_full_payment;
 				foreach ( $all_plans as $key => $plan ) {
-					$interest      = $this->aps_helper->convert_dec_amount( $plan['fee_display_value'], $this->aps_helper->get_fort_currency() );
+					$interest      = $this->aps_helper->convert_dec_amount( $plan['fee_display_value'], $context['fort_currency'] );
 					$fees_type     = isset( $plan['fees_type'] ) ? $plan['fees_type'] : '';
 					$interest_info = $interest . ( 'Percentage' === $fees_type ? '%' : '' ) . ' ' . $interest_text;
 					$plans_html   .= "<div class='slide'>
