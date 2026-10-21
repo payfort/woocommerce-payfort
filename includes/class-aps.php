@@ -287,6 +287,7 @@ class APS {
 
 		$this->loader->add_action( 'wp_ajax_get_installment_plans', $aps_ajax, 'get_installment_handler' );
 		$this->loader->add_action( 'wp_ajax_nopriv_get_installment_plans', $aps_ajax, 'get_installment_handler' );
+		$this->loader->add_action( 'woocommerce_after_calculate_totals', $aps_ajax, 'record_checkout_snapshot' );
 
 		$this->loader->add_action( 'wp_ajax_valu_verify_customer', $aps_ajax, 'valu_verify_customer' );
 		$this->loader->add_action( 'wp_ajax_nopriv_valu_verify_customer', $aps_ajax, 'valu_verify_customer' );
