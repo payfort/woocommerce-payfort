@@ -33,7 +33,10 @@ class APS_WC_Hooks {
 	);
 
 	const APS_WC_SESSION_KEYS = array(
+		'aps_valu_binding',
 		'aps_checkout_snapshot',
+		'aps_installment_offer',
+		'aps_cc_installment_offer',
 	);
 
 	const APS_LOGOUT_PURGE_PREFIX = 'aps_logout_purge_sid_';

@@ -106,13 +106,49 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 	 */
 	public function process_payment( $order_id )
     {
-		$active_tenure = sanitize_text_field( filter_input( INPUT_POST, 'active_tenure' ) );
+		// f22b6b9c: the valU session, OTP and purchase are tied to the order awaiting payment.
+		// Any other order (order-pay sets no session order) would be charged as one order and
+		// recorded as another, so stop before APS is called or either order is touched.
+		if ( (int) $order_id <= 0 || (int) $order_id !== (int) $this->aps_order->get_session_order_id() ) {
+			$message = __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' );
+			wc_add_notice( $message, 'error' );
+			return array(
+				'result'  => 'failure',
+				'status'  => 'genotp_error',
+				'message' => $message,
+			);
+		}
+		// f22b6b9c: raw values only; markup or padding is rejected, not sanitized into a choice.
+		$active_tenure = $this->posted_plan_field( 'active_tenure', 8 );
 		if ( ! empty( $active_tenure ) ) {
-			$tenure_amount     = sanitize_text_field( filter_input( INPUT_POST, 'tenure_amount' ) );
-			$tenure_interest   = sanitize_text_field( filter_input( INPUT_POST, 'tenure_interest' ) );
-			$otp   = sanitize_text_field( filter_input( INPUT_POST, 'aps_otp' ) );
-			update_post_meta( $order_id, 'aps_redirected', 1 );
-			$purchase_response = $this->aps_payment->valu_execute_purchase( $active_tenure, $otp );
+			$tenure_amount     = $this->posted_plan_field( 'tenure_amount', 32 );
+			$tenure_interest   = $this->posted_plan_field( 'tenure_interest', 32 );
+			$otp               = $this->posted_plan_field( 'aps_otp', 16 );
+			session_start();
+			$valu_session = isset( $_SESSION['valu_payment'] ) ? $_SESSION['valu_payment'] : null;
+			session_write_close();
+			// f22b6b9c: the tenure, its monthly amount and its fee must be one APS offered
+			// this shopper; the stored values come from that server-side list.
+			$plan = $this->aps_payment->get_valu_tenure( $valu_session, $active_tenure );
+			if ( ! preg_match( '/^\d{4,10}$/', $otp ) ) {
+				$purchase_response = array(
+					'status'  => 'error',
+					'message' => __( 'Please enter a valid OTP.', 'amazon-payment-services' ),
+				);
+			} elseif ( false === $plan
+				|| ( '' !== $tenure_amount && $this->aps_helper->parse_minor_amount( $tenure_amount, 'EGP' ) !== (int) $plan['amount_minor'] )
+				|| ( '' !== $tenure_interest && $this->aps_helper->parse_minor_amount( $tenure_interest, 'EGP' ) !== (int) $plan['interest_minor'] ) ) {
+				$purchase_response = array(
+					'status'  => 'error',
+					'message' => __( 'The selected valU plan is no longer available. Please select a plan again.', 'amazon-payment-services' ),
+				);
+			} else {
+				$active_tenure   = $plan['tenure'];
+				$tenure_amount   = $plan['amount'];
+				$tenure_interest = $plan['interest'];
+				update_post_meta( $order_id, 'aps_redirected', 1 );
+				$purchase_response = $this->aps_payment->valu_execute_purchase( $order_id, $active_tenure, $otp );
+			}
 			$redirect_link     = '';
 			if ( 'success' === $purchase_response['status'] ) {
 				$order = new WC_Order( $order_id );
@@ -143,12 +179,24 @@ class WC_Gateway_APS_Valu extends WC_Gateway_APS_Super {
 //			wp_send_json( $result );
 		} else {
 			session_start();
-			$reference_id          = wp_kses_data($_SESSION['valu_payment']['reference_id']);
-			$mobile_number         = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
-			$down_payment          = wp_kses_data($_SESSION['valu_payment']['down_payment']);
-            $tou          = wp_kses_data($_SESSION['valu_payment']['tou']);
-            $cash_back          = wp_kses_data($_SESSION['valu_payment']['cash_back']);
+			$valu_session          = isset( $_SESSION['valu_payment'] ) ? $_SESSION['valu_payment'] : null;
 			session_write_close();
+			// f22b6b9c: check the session amounts again before they reach APS or the order.
+			$amounts = $this->aps_payment->validate_valu_session( $valu_session, wc_get_order( $order_id ) );
+			if ( false === $amounts ) {
+				$message = __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' );
+				wc_add_notice( $message, 'error' );
+				return array(
+					'result'  => 'failure',
+					'status'  => 'genotp_error',
+					'message' => $message,
+				);
+			}
+			$reference_id          = wp_kses_data( isset( $valu_session['reference_id'] ) ? $valu_session['reference_id'] : '' );
+			$mobile_number         = wp_kses_data( isset( $valu_session['mobile_number'] ) ? $valu_session['mobile_number'] : '' );
+			$down_payment          = $amounts['down_payment'];
+			$tou                   = $amounts['tou'];
+			$cash_back             = $amounts['cash_back'];
 			$result = $this->aps_payment->valu_generate_otp( $reference_id, $mobile_number, $order_id , $down_payment, $tou, $cash_back);
 			update_post_meta( $order_id, 'valu_reference_id', $reference_id );
             update_post_meta( $order_id, 'valu_down_payment', $down_payment/100 );
