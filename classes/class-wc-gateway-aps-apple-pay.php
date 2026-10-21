@@ -85,8 +85,8 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 			}
 
             // Handle currency gateway option (base / front) in case of multi-currency stores
-            $fort_currency              = $this->aps_helper->get_fort_currency();
-            $order_currency             = $order->get_currency();
+            $fort_currency              = $this->aps_helper->get_order_fort_currency( $order );
+            $order_currency             = strtoupper( (string) $order->get_currency() );
             $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
 
             $apple_order['sub_total']      = $this->aps_helper->convert_to_base_currency($order->get_subtotal(), $currency_conversion_rate);
