@@ -242,6 +242,9 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 		if ( empty( $apple_certificates ) || ! isset( $apple_certificates['apple_certificate_path_file'] ) || ! isset( $apple_certificates['apple_certificate_key_file'] ) ) {
 			$is_enabled = 'no';
 		}
+		if ( ! APS_Certificate_Store::is_ready() ) {
+			$is_enabled = 'no';
+		}
 		if ( 'yes' === $this->aps_config->have_subscription() ) {
 			$is_enabled = 'no';
 		}
