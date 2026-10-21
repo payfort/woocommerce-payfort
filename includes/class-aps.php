@@ -344,7 +344,9 @@ class APS {
 		$this->loader->add_action('woocommerce_get_credit_card_type_label', $aps_wc_hooks, 'aps_wocommerce_credit_card_type_labels', 10, 1);
 
 		//Clear APS session data on logout
-		$this->loader->add_action( 'wp_logout', $aps_wc_hooks, 'aps_clear_session_data' );
+		$this->loader->add_action( 'clear_auth_cookie', $aps_wc_hooks, 'aps_clear_session_data', 1 );
+		$this->loader->add_action( 'wp_logout', $aps_wc_hooks, 'aps_clear_session_data', 10, 1 );
+		$this->loader->add_action( 'init', $aps_wc_hooks, 'aps_purge_logged_out_session', 0 );
 
 	}
 }

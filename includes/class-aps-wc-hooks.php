@@ -21,6 +21,25 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class APS_WC_Hooks {
 
+	const APS_PHP_SESSION_KEYS = array(
+		'valu_payment',
+		'stc_pay_payment',
+		'tabby_payment',
+		'aps_error',
+		'aps_token_error',
+		'aps_token_success',
+		'aps_success_message',
+		'aps_error_messages',
+	);
+
+	const APS_WC_SESSION_KEYS = array(
+		'aps_checkout_snapshot',
+	);
+
+	const APS_LOGOUT_PURGE_PREFIX = 'aps_logout_purge_sid_';
+
+	const APS_LOGOUT_PURGE_PENDING_OPTION = 'aps_logout_purge_pending';
+
 	/**
 	 * APS WC Hooks
 	 */
@@ -269,20 +288,228 @@ class APS_WC_Hooks {
 	}
 
 	/**
-	 * Clear APS data from the PHP session on logout.
+	 * Clear APS data from the PHP and WooCommerce sessions on logout.
+	 *
+	 * Hooked to clear_auth_cookie (before WordPress and WooCommerce tear the
+	 * login down) and wp_logout. When the PHP session cannot be reopened, for
+	 * example because output already started, the session is flagged and
+	 * cleaned at the start of its next request (65bd630e).
+	 *
+	 * @param int $user_id Logged-out user, when the hook provides one.
 	 */
-	public function aps_clear_session_data() {
-		if ( PHP_SESSION_ACTIVE !== session_status() ) {
-			if ( headers_sent() ) {
-				return;
-			}
-			session_start();
+	public function aps_clear_session_data( $user_id = 0 ) {
+		$user_id = (int) $user_id;
+		if ( 0 === $user_id && function_exists( 'get_current_user_id' ) ) {
+			$user_id = (int) get_current_user_id();
 		}
-		foreach ( array( 'valu_payment', 'stc_pay_payment', 'aps_error' ) as $session_key ) {
-			if ( isset( $_SESSION[ $session_key ] ) ) {
-				unset( $_SESSION[ $session_key ] );
+		$this->aps_clear_wc_session_data( $user_id );
+		if ( ! $this->aps_clear_php_session_data() ) {
+			$this->aps_defer_php_session_purge();
+		}
+	}
+
+	/**
+	 * Finish a cleanup that could not reach the PHP session during logout.
+	 *
+	 * Runs at init, before any APS code reads the session. If the session still
+	 * cannot be opened here, later code cannot open it either, so the marker is
+	 * kept until a cleanup actually succeeds.
+	 */
+	public function aps_purge_logged_out_session() {
+		if ( ! function_exists( 'get_option' ) || ! get_option( self::APS_LOGOUT_PURGE_PENDING_OPTION ) ) {
+			return;
+		}
+		$marker = $this->aps_logout_purge_marker();
+		if ( '' === $marker || false === get_option( $marker ) ) {
+			return;
+		}
+		if ( $this->aps_clear_php_session_data() ) {
+			delete_option( $marker );
+			$this->aps_refresh_logout_purge_pending();
+		}
+	}
+
+	/**
+	 * Returns true only once the session store no longer holds APS keys, or
+	 * there is no session to clean.
+	 *
+	 * @return bool
+	 */
+	private function aps_clear_php_session_data() {
+		$status = session_status();
+		if ( PHP_SESSION_DISABLED === $status ) {
+			return true;
+		}
+		$was_active = PHP_SESSION_ACTIVE === $status;
+		if ( ! $was_active ) {
+			// Starting a session for a browser that has none would only create one.
+			if ( '' === $this->aps_php_session_id() ) {
+				return true;
+			}
+			if ( headers_sent() || ! session_start() ) {
+				// Not persisted, but keeps the rest of this request from reusing them.
+				$this->aps_unset_php_session_keys();
+				return false;
 			}
 		}
+		$this->aps_unset_php_session_keys();
+		// Write now: a later session_abort() or fatal error must not bring the keys back.
 		session_write_close();
+		// session_write_close() reports success even when the save handler fails,
+		// so read the store back. After output starts that is impossible; report
+		// unverified so the next request re-checks.
+		if ( headers_sent() || ! session_start( $was_active ? array() : array( 'read_and_close' => true ) ) ) {
+			return false;
+		}
+		$cleared = ! array_intersect_key( $_SESSION, array_flip( self::APS_PHP_SESSION_KEYS ) );
+		$this->aps_unset_php_session_keys();
+		return $cleared;
+	}
+
+	private function aps_unset_php_session_keys() {
+		foreach ( self::APS_PHP_SESSION_KEYS as $session_key ) {
+			unset( $_SESSION[ $session_key ] );
+		}
+	}
+
+	private function aps_defer_php_session_purge() {
+		$marker = $this->aps_logout_purge_marker();
+		if ( '' === $marker || ! function_exists( 'add_option' ) ) {
+			return;
+		}
+		// A plain option, not a transient: session data has no guaranteed expiry, so
+		// the marker must not be evicted or expire before the data is gone.
+		add_option( $marker, time(), '', 'no' );
+		// Written after the marker; see aps_refresh_logout_purge_pending().
+		update_option( self::APS_LOGOUT_PURGE_PENDING_OPTION, 1, true );
+		if ( false === get_option( $marker ) || ! get_option( self::APS_LOGOUT_PURGE_PENDING_OPTION ) ) {
+			$this->aps_log_logout_failure( 'could not record the pending PHP session cleanup; APS data may remain in the stored PHP session' );
+		}
+	}
+
+	/**
+	 * @param string $message Must not contain session identifiers.
+	 */
+	private function aps_log_logout_failure( $message ) {
+		if ( isset( $this->aps_helper ) && is_object( $this->aps_helper ) ) {
+			$this->aps_helper->log( 'APS logout cleanup: ' . $message, true );
+		}
+	}
+
+	/**
+	 * Drops the autoloaded pending flag once no marker remains, so requests skip
+	 * the marker lookup. Deleting before re-checking means a marker added
+	 * concurrently is either seen here or re-sets the flag itself.
+	 */
+	private function aps_refresh_logout_purge_pending() {
+		global $wpdb;
+		if ( ! is_object( $wpdb ) ) {
+			return;
+		}
+		delete_option( self::APS_LOGOUT_PURGE_PENDING_OPTION );
+		$remaining = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 1",
+				$wpdb->esc_like( self::APS_LOGOUT_PURGE_PREFIX ) . '%'
+			)
+		);
+		if ( null !== $remaining ) {
+			update_option( self::APS_LOGOUT_PURGE_PENDING_OPTION, 1, true );
+		}
+	}
+
+	/**
+	 * @return string Marker option name for the current session, or '' without one.
+	 */
+	private function aps_logout_purge_marker() {
+		$session_id = $this->aps_php_session_id();
+		return '' === $session_id ? '' : self::APS_LOGOUT_PURGE_PREFIX . hash( 'sha256', $session_id );
+	}
+
+	/**
+	 * @return string Session ID in use or sent by the browser, '' if none.
+	 */
+	private function aps_php_session_id() {
+		$session_id = session_id();
+		if ( '' === $session_id ) {
+			$name       = session_name();
+			$session_id = isset( $_COOKIE[ $name ] ) && is_string( $_COOKIE[ $name ] ) ? $_COOKIE[ $name ] : '';
+		}
+		return 1 === preg_match( '/^[A-Za-z0-9,-]{1,256}$/', $session_id ) ? $session_id : '';
+	}
+
+	/**
+	 * @param int $user_id Logged-out user.
+	 */
+	private function aps_clear_wc_session_data( $user_id ) {
+		$session = function_exists( 'WC' ) && is_object( WC() ) && ! empty( WC()->session ) ? WC()->session : null;
+		if ( $session ) {
+			$changed = false;
+			foreach ( self::APS_WC_SESSION_KEYS as $session_key ) {
+				if ( null !== $session->get( $session_key ) ) {
+					$session->__unset( $session_key );
+					$changed = true;
+				}
+			}
+			if ( $changed && is_callable( array( $session, 'save_data' ) ) ) {
+				$session->save_data();
+			}
+		}
+		// WooCommerce restores a user's stored session at next login, and is not
+		// always loaded on the request that logs out.
+		$customer_ids = array();
+		if ( $user_id > 0 ) {
+			$customer_ids[] = (string) $user_id;
+		}
+		// Re-check the stored row too: save_data() does not report failures.
+		if ( $session && is_callable( array( $session, 'get_customer_id' ) ) ) {
+			$customer_ids[] = (string) $session->get_customer_id();
+		}
+		foreach ( array_unique( array_filter( $customer_ids, 'strlen' ) ) as $customer_id ) {
+			if ( ! $this->aps_clear_persisted_wc_session( $customer_id ) ) {
+				$this->aps_log_logout_failure( 'could not clear APS data from the stored WooCommerce session' );
+			}
+		}
+	}
+
+	/**
+	 * @param string $customer_id WooCommerce session key.
+	 * @return bool False when stored APS data could not be removed.
+	 */
+	private function aps_clear_persisted_wc_session( $customer_id ) {
+		global $wpdb;
+		if ( ! is_object( $wpdb ) || ! class_exists( 'WC_Cache_Helper' ) || ! defined( 'WC_SESSION_CACHE_GROUP' ) ) {
+			return true;
+		}
+		$table     = $wpdb->prefix . 'woocommerce_sessions';
+		$cache_key = WC_Cache_Helper::get_cache_prefix( WC_SESSION_CACHE_GROUP ) . $customer_id;
+		// Only overwrite the exact row we read, so a concurrent save is retried rather than lost.
+		for ( $attempt = 0; $attempt < 3; $attempt++ ) {
+			$value = $wpdb->get_var( $wpdb->prepare( "SELECT session_value FROM {$table} WHERE session_key = %s", $customer_id ) );
+			if ( ! is_string( $value ) ) {
+				return true;
+			}
+			$data = @unserialize( $value, array( 'allowed_classes' => false ) );
+			if ( ! is_array( $data ) ) {
+				return true;
+			}
+			$aps_data = array_intersect_key( $data, array_flip( self::APS_WC_SESSION_KEYS ) );
+			if ( empty( $aps_data ) ) {
+				return true;
+			}
+			$updated = $wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$table} SET session_value = %s WHERE session_key = %s AND CAST(session_value AS BINARY) = %s",
+					serialize( array_diff_key( $data, $aps_data ) ),
+					$customer_id,
+					$value
+				)
+			);
+			wp_cache_delete( $cache_key, WC_SESSION_CACHE_GROUP );
+			if ( $updated ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
