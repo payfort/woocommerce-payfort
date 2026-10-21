@@ -107,6 +107,167 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Check an installment plan choice against the plans APS returned to this shopper.
+	 *
+	 * The plan, issuer, amount, interest and confirmation fields are hidden inputs the
+	 * browser posts back, so they are only trusted when they match the plan list the
+	 * installment lookup stored server-side (f22b6b9c). The values that get stored on
+	 * the order come from that list, not from the request.
+	 *
+	 * The list is only valid for the gateway, shopper, currency and amount it was priced
+	 * on, for the cart (cart hash) or order-pay order it was fetched for and until it
+	 * expires. The amount and currency are compared with the stored order, so a lookup
+	 * priced in another currency or for another total cannot be used (0326f912). A
+	 * rejected attempt leaves it in place so the shopper can retry;
+	 * consume_installment_offer() removes it once a payment request was issued with it.
+	 *
+	 * @param string   $offer_key   Session key written by APS_Ajax::get_installment_handler().
+	 * @param string   $plan_code   Submitted plan code.
+	 * @param string   $issuer_code Submitted issuer code.
+	 * @param string   $amount      Submitted monthly amount.
+	 * @param string   $interest    Submitted interest label.
+	 * @param WC_Order $order       Order being paid.
+	 * @return array|null Server-side values to store, or null when no plan was chosen.
+	 * @throws Exception When a plan was chosen that this shopper was not offered.
+	 */
+	protected function resolve_installment_selection( $offer_key, $plan_code, $issuer_code, $amount, $interest, $order ) {
+		$plan_code = (string) $plan_code;
+		if ( '' === $plan_code ) {
+			return null;
+		}
+		$invalid  = __( 'The selected installment plan is no longer available. Please select a plan again.', 'amazon-payment-services' );
+		$id_rule  = '/^[A-Za-z0-9._-]{1,64}$/';
+		$offer    = ( function_exists( 'WC' ) && WC()->session ) ? WC()->session->get( $offer_key ) : null;
+		$currency = strtoupper( (string) $this->aps_helper->get_order_fort_currency( $order ) );
+		if ( ! preg_match( $id_rule, $plan_code ) || ! preg_match( $id_rule, (string) $issuer_code )
+			|| ! is_array( $offer ) || empty( $offer['plans'][ $plan_code ] )
+			|| (string) $offer['issuer_code'] !== (string) $issuer_code
+			|| $offer['currency'] !== $currency
+			|| ! isset( $offer['gateway'] ) || $offer['gateway'] !== $this->id
+			|| empty( $offer['expires'] ) || (int) $offer['expires'] < time()
+			|| ! $this->offer_matches_order( $offer, $order, $currency ) ) {
+			$this->aps_helper->log( 'APS installment plan rejected for order ' . $order->get_id() . ': not in the plan list fetched for this shopper.' );
+			throw new \Exception( $invalid );
+		}
+		$plan = $offer['plans'][ $plan_code ];
+		if ( ! isset( $plan['amount_minor'], $plan['rate'], $plan['percent'], $plan['interest'] ) ) {
+			throw new \Exception( $invalid );
+		}
+		if ( '' !== (string) $amount && $this->aps_helper->parse_minor_amount( $amount, $currency ) !== (int) $plan['amount_minor'] ) {
+			$this->aps_helper->log( 'APS installment amount rejected for order ' . $order->get_id() . '.' );
+			throw new \Exception( $invalid );
+		}
+		if ( '' !== (string) $interest && ! $this->interest_matches( $interest, $plan ) ) {
+			$this->aps_helper->log( 'APS installment interest rejected for order ' . $order->get_id() . '.' );
+			throw new \Exception( $invalid );
+		}
+		return array(
+			'plan_code'       => $plan_code,
+			'issuer_code'     => (string) $offer['issuer_code'],
+			'amount'          => (string) $plan['amount'],
+			'interest'        => $plan['interest'],
+			'confirmation_en' => $this->limit_text( $offer['confirmation_en'] ),
+			'confirmation_ar' => $this->limit_text( $offer['confirmation_ar'] ),
+		);
+	}
+
+	/**
+	 * Submitted interest is the label the plan list showed, or the same rate typed as
+	 * "2.5%" / "2.50% ..." (strict decimal, at most two fraction digits).
+	 *
+	 * @param string $interest
+	 * @param array  $plan
+	 * @return bool
+	 */
+	private function interest_matches( $interest, $plan ) {
+		if ( $interest === $plan['interest'] ) {
+			return true;
+		}
+		if ( ! preg_match( '/^(\d{1,5})(?:\.(\d{1,2}))?(%?)(?: [^<>]{0,64})?$/', $interest, $m ) ) {
+			return false;
+		}
+		$rate = (int) $m[1] * 100 + (int) str_pad( isset( $m[2] ) ? $m[2] : '', 2, '0' );
+		return $rate === (int) $plan['rate'] && ( '%' === $m[3] ) === (bool) $plan['percent'];
+	}
+
+	/**
+	 * Raw posted installment field, unchanged, so markup or padding cannot be sanitized
+	 * into a valid value. Arrays and oversized values become an unmatched marker.
+	 *
+	 * @param string $name
+	 * @param int    $max_length
+	 * @return string
+	 */
+	protected function posted_plan_field( $name, $max_length = 128 ) {
+		$value = filter_input( INPUT_POST, $name );
+		if ( ( null === $value || false === $value ) && isset( $_POST[ $name ] ) ) {
+			$value = wp_unslash( $_POST[ $name ] );
+		}
+		if ( null === $value ) {
+			return '';
+		}
+		if ( ! is_string( $value ) || strlen( $value ) > $max_length || sanitize_text_field( $value ) !== $value ) {
+			return "\0";
+		}
+		return $value;
+	}
+
+	/**
+	 * Whether an installment offer was priced for this order, its currency and total.
+	 *
+	 * @param array    $offer
+	 * @param WC_Order $order
+	 * @param string   $currency Gateway currency of the order.
+	 * @return bool
+	 */
+	private function offer_matches_order( $offer, $order, $currency ) {
+		if ( ! isset( $offer['order_currency'], $offer['amount_minor'], $offer['customer_id'], $offer['order_id'] )
+			|| strtoupper( (string) $order->get_currency() ) !== $offer['order_currency'] ) {
+			return false;
+		}
+		try {
+			$amount = (int) round( $this->aps_helper->get_order_fort_amount( $order, $currency ) );
+		} catch ( \Exception $ex ) {
+			return false;
+		}
+		// A guest lookup may become the customer account created at checkout.
+		$customer = (int) $offer['customer_id'];
+		if ( $amount !== (int) $offer['amount_minor'] || ( 0 !== $customer && get_current_user_id() !== $customer ) ) {
+			return false;
+		}
+		if ( (int) $offer['order_id'] > 0 ) {
+			return (int) $offer['order_id'] === (int) $order->get_id();
+		}
+		$cart_hash  = ( function_exists( 'WC' ) && WC()->cart && ! WC()->cart->is_empty() ) ? (string) WC()->cart->get_cart_hash() : '';
+		$order_hash = (string) $order->get_cart_hash();
+		return ! empty( $offer['cart_hash'] ) && '' !== $cart_hash && hash_equals( (string) $offer['cart_hash'], $cart_hash )
+			&& ( '' === $order_hash || hash_equals( (string) $offer['cart_hash'], $order_hash ) );
+	}
+
+	/**
+	 * Forget an installment plan list once a payment request was issued with it.
+	 *
+	 * @param string $offer_key
+	 */
+	protected function consume_installment_offer( $offer_key ) {
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			WC()->session->set( $offer_key, null );
+		}
+	}
+
+	/**
+	 * Plain text, no markup, bounded length.
+	 *
+	 * @param mixed $text
+	 * @param int   $max  Maximum length in characters.
+	 * @return string
+	 */
+	private function limit_text( $text, $max = 1000 ) {
+		$text = sanitize_text_field( (string) $text );
+		return function_exists( 'mb_substr' ) ? mb_substr( $text, 0, $max ) : substr( $text, 0, $max );
+	}
+
+	/**
 	 * Checkout failure for a payment request that could not be built.
 	 *
 	 * get_payment_request_form() returns error_message instead of url/params
@@ -145,12 +306,12 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		$integration_type              = $this->get_integration_type();
 		$payment_option                = isset( $this->api_payment_option ) ? $this->api_payment_option : null;
 		$extras                        = array();
-		$installment_plan_code         = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_plan_code' ) );
-		$installment_issuer_code       = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_issuer_code' ) );
+		$installment_plan_code         = $this->posted_plan_field( 'aps_installment_plan_code' );
+		$installment_issuer_code       = $this->posted_plan_field( 'aps_installment_issuer_code' );
 		$installment_confirmation_en   = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_confirmation_en' ) );
 		$installment_confirmation_ar   = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_confirmation_ar' ) );
-		$aps_installment_interest      = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_interest' ) );
-		$aps_installment_amount        = sanitize_text_field( filter_input( INPUT_POST, 'aps_installment_amount' ) );
+		$aps_installment_interest      = $this->posted_plan_field( 'aps_installment_interest' );
+		$aps_installment_amount        = $this->posted_plan_field( 'aps_installment_amount' );
 	    $aps_payment_token_installment = sanitize_text_field( filter_input( INPUT_POST, 'aps_payment_token_installment' ) );
 		$aps_payment_token_cc          = sanitize_text_field( filter_input( INPUT_POST, 'aps_payment_token_cc' ) );
 		$aps_card_bin                  = sanitize_text_field( filter_input( INPUT_POST, 'aps_card_bin' ) );
@@ -189,55 +350,66 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	        }
         }
 
-		$aps_cc_plan_code       = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_plan_code' ) );
-		$aps_cc_issuer_code     = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_issuer_code' ) );
+		$aps_cc_plan_code       = $this->posted_plan_field( 'aps_cc_plan_code' );
+		$aps_cc_issuer_code     = $this->posted_plan_field( 'aps_cc_issuer_code' );
 		$aps_cc_confirmation_en = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_confirmation_en' ) );
 		$aps_cc_confirmation_ar = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_confirmation_ar' ) );
-		$aps_cc_interest        = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_interest' ) );
-		$aps_cc_amount          = sanitize_text_field( filter_input( INPUT_POST, 'aps_cc_amount' ) );
+		$aps_cc_interest        = $this->posted_plan_field( 'aps_cc_interest' );
+		$aps_cc_amount          = $this->posted_plan_field( 'aps_cc_amount' );
 
-		if ( ! empty( $installment_plan_code ) ) {
-			update_post_meta( $order_id, 'hosted_installment_plan_code', $installment_plan_code );
+		// f22b6b9c: plan details from an earlier attempt on this order must not carry over
+		// into this one, so clear them and store them again only when this attempt's
+		// gateway took a plan that matches the plans fetched for this shopper and cart.
+		$plan_meta_keys = array(
+			'hosted_installment_plan_code',
+			'hosted_installment_issuer_code',
+			'aps_installment_interest',
+			'aps_installment_amount',
+			'aps_installment_confirmation_en',
+			'aps_installment_confirmation_ar',
+			'hosted_cc_plan_code',
+			'hosted_cc_issuer_code',
+			'aps_cc_interest',
+			'aps_cc_amount',
+			'aps_cc_confirmation_en',
+			'aps_cc_confirmation_ar',
+		);
+		foreach ( $plan_meta_keys as $plan_meta_key ) {
+			delete_post_meta( $order_id, $plan_meta_key );
 		}
-		if ( ! empty( $installment_issuer_code ) ) {
-			update_post_meta( $order_id, 'hosted_installment_issuer_code', $installment_issuer_code );
+		$installment_selection = null;
+		$cc_selection          = null;
+		if ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method ) {
+			$installment_selection = $this->resolve_installment_selection( 'aps_installment_offer', $installment_plan_code, $installment_issuer_code, $aps_installment_amount, $aps_installment_interest, $order );
+		} elseif ( APS_Constants::APS_PAYMENT_TYPE_CC === $payment_method ) {
+			$cc_selection = $this->resolve_installment_selection( 'aps_cc_installment_offer', $aps_cc_plan_code, $aps_cc_issuer_code, $aps_cc_amount, $aps_cc_interest, $order );
 		}
-		if ( ! empty( $installment_confirmation_en ) ) {
-			update_post_meta( $order_id, 'aps_installment_confirmation_en', $installment_confirmation_en );
-		}
-		if ( ! empty( $installment_confirmation_ar ) ) {
-			update_post_meta( $order_id, 'aps_installment_confirmation_ar', $installment_confirmation_ar );
-		}
-		if ( ! empty( $aps_installment_interest ) ) {
-			update_post_meta( $order_id, 'aps_installment_interest', $aps_installment_interest );
-		}
-		if ( ! empty( $aps_installment_amount ) ) {
-			update_post_meta( $order_id, 'aps_installment_amount', $aps_installment_amount );
+
+		if ( $installment_selection ) {
+			update_post_meta( $order_id, 'hosted_installment_plan_code', $installment_selection['plan_code'] );
+			update_post_meta( $order_id, 'hosted_installment_issuer_code', $installment_selection['issuer_code'] );
+			update_post_meta( $order_id, 'aps_installment_interest', $installment_selection['interest'] );
+			update_post_meta( $order_id, 'aps_installment_amount', $installment_selection['amount'] );
+			if ( '' !== $installment_selection['confirmation_en'] ) {
+				update_post_meta( $order_id, 'aps_installment_confirmation_en', $installment_selection['confirmation_en'] );
+			}
+			if ( '' !== $installment_selection['confirmation_ar'] ) {
+				update_post_meta( $order_id, 'aps_installment_confirmation_ar', $installment_selection['confirmation_ar'] );
+			}
 		}
 
 		//Credit cards
-		if ( ! empty( $aps_cc_plan_code ) ) {
-			update_post_meta( $order_id, 'hosted_cc_plan_code', $aps_cc_plan_code );
-		} else {
-			$plan_code = get_post_meta( $order_id, 'hosted_cc_plan_code', true);
-			if ( isset( $plan_code ) && ! empty( $plan_code ) ) {
-				delete_post_meta( $order_id, 'hosted_cc_plan_code');
+		if ( $cc_selection ) {
+			update_post_meta( $order_id, 'hosted_cc_plan_code', $cc_selection['plan_code'] );
+			update_post_meta( $order_id, 'hosted_cc_issuer_code', $cc_selection['issuer_code'] );
+			update_post_meta( $order_id, 'aps_cc_interest', $cc_selection['interest'] );
+			update_post_meta( $order_id, 'aps_cc_amount', $cc_selection['amount'] );
+			if ( '' !== $cc_selection['confirmation_en'] ) {
+				update_post_meta( $order_id, 'aps_cc_confirmation_en', $cc_selection['confirmation_en'] );
 			}
-		}
-		if ( ! empty( $aps_cc_issuer_code ) ) {
-			update_post_meta( $order_id, 'hosted_cc_issuer_code', $aps_cc_issuer_code );
-		}
-		if ( ! empty( $aps_cc_confirmation_en ) ) {
-			update_post_meta( $order_id, 'aps_cc_confirmation_en', $aps_cc_confirmation_en );
-		}
-		if ( ! empty( $aps_cc_confirmation_ar ) ) {
-			update_post_meta( $order_id, 'aps_cc_confirmation_ar', $aps_cc_confirmation_ar );
-		}
-		if ( ! empty( $aps_cc_interest ) ) {
-			update_post_meta( $order_id, 'aps_cc_interest', $aps_cc_interest );
-		}
-		if ( ! empty( $aps_cc_amount ) ) {
-			update_post_meta( $order_id, 'aps_cc_amount', $aps_cc_amount );
+			if ( '' !== $cc_selection['confirmation_ar'] ) {
+				update_post_meta( $order_id, 'aps_cc_confirmation_ar', $cc_selection['confirmation_ar'] );
+			}
 		}
 
 		if ( APS_Constants::APS_PAYMENT_TYPE_CC === $payment_method ) {
@@ -299,6 +471,12 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 		$failure      = $this->payment_request_failure( $payment_data );
 		if ( null !== $failure ) {
 			return $failure;
+		}
+		if ( $installment_selection ) {
+			$this->consume_installment_offer( 'aps_installment_offer' );
+		}
+		if ( $cc_selection ) {
+			$this->consume_installment_offer( 'aps_cc_installment_offer' );
 		}
 		$result       = array(
 			'result'                 => 'success',

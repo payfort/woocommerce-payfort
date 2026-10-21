@@ -550,7 +550,8 @@ class APS_Payment extends APS_Super {
 			$gateway_params['command']      = 'PURCHASE';
 		}
 
-		if ( isset( $plan_code ) && ! empty( $plan_code ) ) {
+		// Card installment meta only applies to card payments (f22b6b9c).
+		if ( APS_Constants::APS_PAYMENT_TYPE_CC === $payment_method && ! empty( $plan_code ) ) {
 			$gateway_params['installments'] = 'HOSTED';
 			$gateway_params['plan_code']    = get_post_meta( $order_id, 'hosted_cc_plan_code', true );
 			$gateway_params['issuer_code']  = get_post_meta( $order_id, 'hosted_cc_issuer_code', true );
@@ -946,6 +947,12 @@ class APS_Payment extends APS_Super {
 		$status  = 'success';
 		$message = 'Customer verified';
 		try {
+			// f22b6b9c: only integer minor units (piastres) that are zero or more may enter the session.
+			foreach ( array( $down_payment, $tou, $cash_back ) as $amount ) {
+				if ( ! is_int( $amount ) || $amount < 0 ) {
+					throw new \Exception( __( 'Incorrect valU amount', 'amazon-payment-services' ) );
+				}
+			}
 			unset( WC()->session->order_awaiting_payment );
 			$reference_id                = $this->aps_helper->generate_random_key();
 			$gateway_params              = array(
@@ -965,13 +972,24 @@ class APS_Payment extends APS_Super {
 			$this->aps_helper->log( 'Valu verfiy customer ' . json_encode( $result ) );
 			$valuapi_stop_message = __( 'VALU API failed. Please try again later', 'amazon-payment-services' );
 			if ( isset( $result['status'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
+				// Start a fresh valU session tied to this shopper's WooCommerce session, so
+				// values left over from an earlier attempt or another browser cannot be reused.
+				$binding = bin2hex( random_bytes( 16 ) );
 				session_start();
-				$_SESSION['valu_payment']['reference_id']  = wp_kses_data($reference_id);
-				$_SESSION['valu_payment']['mobile_number'] = wp_kses_data($mobile_number);
-				$_SESSION['valu_payment']['down_payment'] = wp_kses_data($down_payment);
-                $_SESSION['valu_payment']['tou'] = wp_kses_data($tou);
-                $_SESSION['valu_payment']['cash_back'] = wp_kses_data($cash_back);
+				$_SESSION['valu_payment'] = array(
+					'reference_id'  => wp_kses_data( $reference_id ),
+					'mobile_number' => wp_kses_data( $mobile_number ),
+					'down_payment'  => $down_payment,
+					'tou'           => $tou,
+					'cash_back'     => $cash_back,
+					'binding'       => $binding,
+					'user_id'       => (int) get_current_user_id(),
+					'cart_hash'     => $this->current_cart_hash(),
+				);
 				session_write_close();
+				if ( function_exists( 'WC' ) && WC()->session ) {
+					WC()->session->set( 'aps_valu_binding', $binding );
+				}
 			} elseif ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_CUSTOMER_VERIFY_FAILED_RESPONSE_CODE === $result['response_code'] ) {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? 'Customer does not exist.' : $valuapi_stop_message;
@@ -997,6 +1015,191 @@ class APS_Payment extends APS_Super {
 	}
 
 	/**
+	 * Check the valU amounts held in the PHP session before they are used or stored.
+	 *
+	 * The down payment, ToU and cashback reach the session from a shopper request, so
+	 * they are checked again here (f22b6b9c): they must be whole, non-negative minor
+	 * units, belong to this shopper's WooCommerce session, user and unchanged cart, and,
+	 * once an order exists, belong to that EGP order and its customer, match the order
+	 * total recorded at OTP generation and not exceed it.
+	 *
+	 * @param mixed         $valu          Contents of $_SESSION['valu_payment'].
+	 * @param WC_Order|null $order         Order being paid, when known.
+	 * @param bool          $require_order True when the session must already be tied to $order.
+	 * @return array|false Amounts in minor units keyed down_payment, tou, cash_back; false when invalid.
+	 */
+	public function validate_valu_session( $valu, $order = null, $require_order = false ) {
+		if ( ! is_array( $valu ) ) {
+			return false;
+		}
+		$binding = ( function_exists( 'WC' ) && WC()->session ) ? (string) WC()->session->get( 'aps_valu_binding' ) : '';
+		if ( '' === $binding || empty( $valu['binding'] ) || ! hash_equals( $binding, (string) $valu['binding'] ) ) {
+			return false;
+		}
+		// A guest who logs in, or a different account on the same browser, starts again.
+		if ( ! isset( $valu['user_id'] ) || (int) $valu['user_id'] !== (int) get_current_user_id() ) {
+			return false;
+		}
+		$cart_hash = $this->current_cart_hash();
+		if ( empty( $valu['cart_hash'] ) || '' === $cart_hash || ! hash_equals( (string) $valu['cart_hash'], $cart_hash ) ) {
+			return false;
+		}
+		$amounts = array();
+		foreach ( array( 'down_payment', 'tou', 'cash_back' ) as $key ) {
+			$value = isset( $valu[ $key ] ) ? $valu[ $key ] : 0;
+			if ( ! ( is_int( $value ) && $value >= 0 ) && ! ( is_string( $value ) && ctype_digit( $value ) ) ) {
+				return false;
+			}
+			$amounts[ $key ] = (int) $value;
+		}
+		if ( ! $order ) {
+			return $require_order ? false : $amounts;
+		}
+		if ( isset( $valu['order_id'] ) ? (int) $valu['order_id'] !== (int) $order->get_id() : $require_order ) {
+			return false;
+		}
+		if ( (int) $order->get_customer_id() !== (int) get_current_user_id() ) {
+			return false;
+		}
+		$order_cart_hash = (string) $order->get_cart_hash();
+		if ( '' !== $order_cart_hash && ! hash_equals( (string) $valu['cart_hash'], $order_cart_hash ) ) {
+			return false;
+		}
+		$currency = strtoupper( (string) $order->get_currency() );
+		if ( 'EGP' !== $currency ) {
+			return false;
+		}
+		try {
+			$total = (int) round( $this->aps_helper->get_order_fort_amount( $order, $currency ) );
+		} catch ( \Exception $e ) {
+			return false;
+		}
+		if ( isset( $valu['order_total'] ) && (int) $valu['order_total'] !== $total ) {
+			return false;
+		}
+		if ( $require_order && ! isset( $valu['order_total'] ) ) {
+			return false;
+		}
+		if ( array_sum( $amounts ) > $total ) {
+			return false;
+		}
+		return $amounts;
+	}
+
+	/**
+	 * Down payment to send to valU, in piastres.
+	 *
+	 * When the shopper left the field empty the configured default applies. That default
+	 * is entered by the merchant in EGP (it pre-fills the shopper's EGP field), so it is
+	 * parsed and capped like a shopper value instead of being sent as raw piastres.
+	 *
+	 * @param int      $down_payment Shopper down payment in piastres.
+	 * @param int|null $max_minor    Inclusive upper bound in piastres.
+	 * @return int|false
+	 */
+	public function resolve_valu_down_payment( $down_payment, $max_minor = null ) {
+		if ( 'yes' !== $this->aps_config->get_enable_valu_down_payment() ) {
+			return 0;
+		}
+		if ( ! is_int( $down_payment ) || $down_payment < 0 ) {
+			return false;
+		}
+		if ( $down_payment > 0 ) {
+			return ( null !== $max_minor && $down_payment > $max_minor ) ? false : $down_payment;
+		}
+		$default = trim( (string) $this->aps_config->get_valu_down_payment_value() );
+		if ( '' === $default ) {
+			return 0;
+		}
+		return $this->aps_helper->parse_minor_amount( $default, 'EGP', $max_minor );
+	}
+
+	/**
+	 * @return string Hash of the current cart, or '' when there is none.
+	 */
+	private function current_cart_hash() {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart || WC()->cart->is_empty() ) {
+			return '';
+		}
+		return (string) WC()->cart->get_cart_hash();
+	}
+
+	/**
+	 * Tenures APS offered for this valU transaction, keyed by number of installments.
+	 *
+	 * @param array $result OTP_GENERATE / OTP_VERIFY response.
+	 * @return array
+	 */
+	private function extract_valu_tenures( $result ) {
+		$tenures = array();
+		if ( isset( $result['installment_detail']['plan_details'] ) && is_array( $result['installment_detail']['plan_details'] ) ) {
+			foreach ( array_slice( $result['installment_detail']['plan_details'], 0, 48 ) as $ten ) {
+				// f22b6b9c: APS sends piastres; only plain non-negative integers are accepted.
+				$count    = is_array( $ten ) && isset( $ten['number_of_installments'] ) ? $this->aps_helper->parse_installment_count( $ten['number_of_installments'] ) : false;
+				$amount   = is_array( $ten ) && isset( $ten['amount_per_month'] ) ? $this->parse_piastres( $ten['amount_per_month'] ) : false;
+				$interest = is_array( $ten ) && isset( $ten['fees_amount'] ) ? $this->parse_piastres( $ten['fees_amount'] ) : false;
+				if ( false === $count || false === $amount || $amount <= 0 || false === $interest || isset( $tenures[ (string) $count ] ) ) {
+					continue;
+				}
+				$tenures[ (string) $count ] = array(
+					'amount'          => $this->aps_helper->format_minor_amount( $amount, 'EGP' ),
+					'interest'        => $this->aps_helper->format_minor_amount( $interest, 'EGP' ),
+					'amount_minor'    => $amount,
+					'interest_minor'  => $interest,
+				);
+			}
+		}
+		return $tenures;
+	}
+
+	/**
+	 * @param mixed $raw
+	 * @return int|false
+	 */
+	private function parse_piastres( $raw ) {
+		if ( ! ( is_int( $raw ) || is_string( $raw ) ) || ! preg_match( '/^\d{1,12}$/', (string) $raw ) ) {
+			return false;
+		}
+		return (int) $raw;
+	}
+
+	/**
+	 * Tenure choices for the valU wizard, from the validated tenure list only.
+	 *
+	 * @param array $tenures extract_valu_tenures() result.
+	 * @return string
+	 */
+	private function render_valu_tenure_html( $tenures ) {
+		$html = "<div class='tenure_carousel'>";
+		foreach ( $tenures as $count => $ten ) {
+			$html .= '<div class="slide">
+								<div class="tenureBox" data-tenure="' . esc_attr( $count ) . '" data-tenure-amount="' . esc_attr( $ten['amount'] ) . '" data-tenure-interest="' . esc_attr( $ten['interest'] ) . '" >
+									<p class="tenure">' . esc_html( $count ) . ' {months_txt}</p>
+									<p class="emi"><strong>' . esc_html( $ten['amount'] ) . '</strong> EGP/{month_txt}</p>
+									<p class="int_rate"> {interest_txt}' . esc_html( $ten['interest'] ) . '</p>
+								</div>
+							</div>';
+		}
+		return $html . '</div>';
+	}
+
+	/**
+	 * Look up a submitted valU tenure in the tenures APS offered this shopper.
+	 *
+	 * @param mixed  $valu   Contents of $_SESSION['valu_payment'].
+	 * @param string $tenure Submitted number of installments.
+	 * @return array|false tenure, amount and interest from the server-side list; false when not offered.
+	 */
+	public function get_valu_tenure( $valu, $tenure ) {
+		$tenure = (string) $tenure;
+		if ( ! preg_match( '/^[1-9]\d?$/', $tenure ) || ! is_array( $valu ) || empty( $valu['tenures'][ $tenure ] )
+			|| ! isset( $valu['tenures'][ $tenure ]['amount_minor'], $valu['tenures'][ $tenure ]['interest_minor'] ) ) {
+			return false;
+		}
+		return array( 'tenure' => $tenure ) + $valu['tenures'][ $tenure ];
+	}
+
+	/**
 	 * Valu generate OTP
 	 *
 	 * @return array
@@ -1006,16 +1209,23 @@ class APS_Payment extends APS_Super {
 		$message              = 'OTP Generated';
 		$mobile_number_string = null;
 		$tenure_html = '';
-        if($this->aps_config->get_enable_valu_down_payment() =="yes") {
-            if (empty($down_payment) || $down_payment == "") {
-                $down_payment = $this->aps_config->get_valu_down_payment_value();
-            }
-        }else{$down_payment=0;}
 
 		try {
 			$this->aps_order->load_order( $order_id );
 			$products                    = $this->get_valu_products_data();
 			$currency                    = strtoupper( (string) $this->aps_order->get_currency() );
+			// f22b6b9c: the order total is remembered so purchase can tell if the order changed.
+			$order_total                 = (int) round( $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ) );
+			$down_payment                = $this->resolve_valu_down_payment( $down_payment, $order_total );
+			if ( false === $down_payment || 'EGP' !== $currency || $down_payment + $tou + $cash_back > $order_total ) {
+				throw new \Exception( __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' ) );
+			}
+			session_start();
+			$valu_session = isset( $_SESSION['valu_payment'] ) ? $_SESSION['valu_payment'] : null;
+			session_write_close();
+			if ( false === $this->validate_valu_session( $valu_session, $this->aps_order->get_loaded_order() ) ) {
+				throw new \Exception( 'Invalid valU checkout.' );
+			}
 			$gateway_params              = array(
 				'service_command'     => 'OTP_GENERATE',
 				'access_code'         => $this->aps_config->get_access_code(),
@@ -1025,7 +1235,7 @@ class APS_Payment extends APS_Super {
 				'payment_option'      => 'VALU',
 				'merchant_order_id'   => $order_id,
 				'phone_number'        => $mobile_number,
-				'amount'              => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
+				'amount'              => $order_total,
 				'currency'            => $currency,
 				'products'            => $products,
 				'total_downpayment'	  => $down_payment,
@@ -1046,6 +1256,8 @@ class APS_Payment extends APS_Super {
 				session_start();
 				$_SESSION['valu_payment']['order_id']       = wp_kses_data($order_id);
 				$_SESSION['valu_payment']['transaction_id'] = wp_kses_data($result['merchant_order_id']);
+				$_SESSION['valu_payment']['tenures']        = $this->extract_valu_tenures( $result );
+				$_SESSION['valu_payment']['order_total']    = $order_total;
 				session_write_close();
 			} else {
 				$status  = 'genotp_error';
@@ -1057,20 +1269,7 @@ class APS_Payment extends APS_Super {
 			if ( isset( $result['response_code'] ) && APS_Constants::APS_VALU_OTP_GENERATE_SUCCESS_RESPONSE_CODE === $result['response_code'] ) {
 				$status                          = 'success';
 				$message                         = __( 'OTP Verified successfully', 'amazon-payment-services' );
-				$tenure_html                     = "<div class='tenure_carousel'>";
-				if ( isset( $result['installment_detail']['plan_details'] ) ) {
-					foreach ( $result['installment_detail']['plan_details'] as $key => $ten ) {
-						$tenure_html .= '<div class="slide">
-								<div class="tenureBox" data-tenure="' . $ten['number_of_installments'] . '" data-tenure-amount="' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '" data-tenure-interest="' . ( number_format($ten['fees_amount']/100,2,'.','') ) . '" >
-									<p class="tenure">' . $ten['number_of_installments'] . ' {months_txt}</p>
-									<p class="emi"><strong>' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '</strong> EGP/{month_txt}</p>
-									<p class="int_rate"> {interest_txt}' . ( number_format($ten['fees_amount']/100,2,'.','') )  . '</p>
-									
-								</div>
-							</div>';
-					}
-				}
-				$tenure_html .= '</div>';
+				$tenure_html                     = $this->render_valu_tenure_html( $this->extract_valu_tenures( $result ) );
 			} else {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
@@ -1099,11 +1298,18 @@ class APS_Payment extends APS_Super {
 		$tenure_html = '';
 		try {
 			session_start();
-			$reference_id = wp_kses_data($_SESSION['valu_payment']['reference_id']);
-			$order_id     = ! empty( $this->aps_order->get_session_order_id() ) ? $this->aps_order->get_session_order_id() : wp_kses_data($_SESSION['valu_payment']['order_id']);
-			$this->aps_order->load_order( $order_id );
-			$mobile_number = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
+			$valu_session = isset( $_SESSION['valu_payment'] ) ? $_SESSION['valu_payment'] : null;
 			session_write_close();
+			// f22b6b9c: the order comes from this shopper's WooCommerce session only, and the
+			// valU session must belong to that shopper, cart and order.
+			$order_id = $this->aps_order->get_session_order_id();
+			$order    = empty( $order_id ) ? false : wc_get_order( $order_id );
+			if ( ! $order || false === $this->validate_valu_session( $valu_session, $order, true ) ) {
+				throw new \Exception( __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' ) );
+			}
+			$this->aps_order->load_order( $order_id );
+			$reference_id  = wp_kses_data( isset( $valu_session['reference_id'] ) ? $valu_session['reference_id'] : '' );
+			$mobile_number = wp_kses_data( isset( $valu_session['mobile_number'] ) ? $valu_session['mobile_number'] : '' );
 			$currency      = strtoupper( (string) $this->aps_order->get_currency() );
 
 			$gateway_params              = array(
@@ -1132,17 +1338,12 @@ class APS_Payment extends APS_Super {
 				$status  = 'success';
 				$message = __( 'OTP Verified successfully', 'amazon-payment-services' );
 				if ( isset( $result['installment_detail']['plan_details'] ) ) {
-					$tenure_html = "<div class='tenure_carousel'>";
-					foreach ( $result['installment_detail']['plan_details'] as $key => $ten ) {
-						$tenure_html .= '<div class="slide">
-								<div class="tenureBox" data-tenure="' . $ten['number_of_installments'] . '" data-tenure-amount="' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '" data-tenure-interest="' . ( number_format($ten['fees_amount']/100,2,'.','') ) . '" >
-									<p class="tenure">' . $ten['number_of_installments'] . ' {months_txt}</p>
-									<p class="emi"><strong>' . ( number_format($ten['amount_per_month']/100,2,'.','') ) . '</strong> EGP/{month_txt}</p>
-									<p class="int_rate"> {interest_txt}' . ( number_format($ten['fees_amount']/100,2,'.','') ) . '</p>
-								</div>
-							</div>';
+					session_start();
+					if ( isset( $_SESSION['valu_payment'] ) && is_array( $_SESSION['valu_payment'] ) ) {
+						$_SESSION['valu_payment']['tenures'] = $this->extract_valu_tenures( $result );
 					}
-					$tenure_html .= '</div>';
+					session_write_close();
+					$tenure_html = $this->render_valu_tenure_html( $this->extract_valu_tenures( $result ) );
 				}
 			} else {
 				$status  = 'error';
@@ -1165,29 +1366,40 @@ class APS_Payment extends APS_Super {
 	 *
 	 * @return array
 	 */
-	public function valu_execute_purchase( $active_tenure, $otp ) {
+	public function valu_execute_purchase( $order_id, $active_tenure, $otp ) {
 		$status  = 'success';
 		$message = '';
+		$result  = array();
+		$valuapi_stop_message = __( 'VALU API failed. Please contact the store before retrying.', 'amazon-payment-services' );
 		try {
-			$order_id = $this->aps_order->get_session_order_id();
+			// f22b6b9c: charge only the order the gateway was asked to pay, and only when it is
+			// the order awaiting payment that the valU session was opened for.
+			if ( (int) $order_id <= 0 || (int) $order_id !== (int) $this->aps_order->get_session_order_id() ) {
+				throw new \Exception( __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' ) );
+			}
 			$this->aps_order->load_order( $order_id );
 			session_start();
-			$reference_id                = wp_kses_data($_SESSION['valu_payment']['reference_id']);
-			$mobile_number               = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
-			$total_down_payment          = wp_kses_data($_SESSION['valu_payment']['down_payment']);
-            $tou                         = wp_kses_data($_SESSION['valu_payment']['tou']);
-            $cash_back                   = wp_kses_data($_SESSION['valu_payment']['cash_back']);
+			$valu_session                = isset( $_SESSION['valu_payment'] ) ? $_SESSION['valu_payment'] : null;
+			session_write_close();
+			// f22b6b9c: check the session amounts again, and that they belong to this order and shopper.
+			$amounts = $this->validate_valu_session( $valu_session, $this->aps_order->get_loaded_order(), true );
+			if ( false === $amounts ) {
+				throw new \Exception( __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' ) );
+			}
+			$reference_id                = wp_kses_data( isset( $valu_session['reference_id'] ) ? $valu_session['reference_id'] : '' );
+			$mobile_number               = wp_kses_data( isset( $valu_session['mobile_number'] ) ? $valu_session['mobile_number'] : '' );
+			$total_down_payment          = $amounts['down_payment'];
+			$tou                         = $amounts['tou'];
+			$cash_back                   = $amounts['cash_back'];
 			$otp                         = wp_kses_data($otp);
 			$customer_email              = $this->aps_order->get_email();
 			$customer_code               = $mobile_number;
 			$currency                    = strtoupper( (string) $this->aps_order->get_currency() );
-			$transaction_id              = wp_kses_data($_SESSION['valu_payment']['transaction_id']);
-			session_write_close();
-            if($this->aps_config->get_enable_valu_down_payment() =="yes") {
-                if (empty($total_down_payment) || $total_down_payment == "") {
-                    $total_down_payment = $this->aps_config->get_valu_down_payment_value();
-                }
-            }else{$total_down_payment=0;}
+			$transaction_id              = wp_kses_data( isset( $valu_session['transaction_id'] ) ? $valu_session['transaction_id'] : '' );
+			$total_down_payment          = $this->resolve_valu_down_payment( $total_down_payment, (int) $valu_session['order_total'] );
+			if ( false === $total_down_payment ) {
+				throw new \Exception( __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' ) );
+			}
 			$gateway_params              = array(
 				'command'              => 'PURCHASE',
 				'merchant_identifier'  => $this->aps_config->get_merchant_identifier(),
@@ -1241,16 +1453,16 @@ class APS_Payment extends APS_Super {
 				}
 				$status  = 'success';
 				$message = __( 'Transaction Verified successfully', 'amazon-payment-services' );
-			} elseif ( in_array( $response['response_code'], APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ){
-				$this->aps_order->on_hold_order( $response['response_message'] );
-				$aps_error_log = "APS valU on hold stage : \n\n" . wp_json_encode( $response, true );
+			} elseif ( isset( $result['response_code'] ) && in_array( $result['response_code'], APS_Constants::APS_ONHOLD_RESPONSE_CODES, true ) ){
+				$this->aps_order->on_hold_order( $result['response_message'] );
+				$aps_error_log = "APS valU on hold stage : \n\n" . wp_json_encode( $result, true );
 				$this->aps_helper->log( $aps_error_log );
 				$status = 'success';
 				$message = __( 'The transaction has been processed, but failed to receive confirmation. Please contact to verify', 'amazon-payment-services' );
 			} else {
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
-				$this->aps_order->decline_order( $response, $message );
+				$this->aps_order->decline_order( $result, $message );
 				throw new \Exception( $message );
 			}
 			session_start();
@@ -1263,8 +1475,8 @@ class APS_Payment extends APS_Super {
 		return array(
 			'status'  => $status,
 			'message' => $message,
-            'valu_transaction_id' =>$result['valu_transaction_id'],
-            'loan_number' =>$result['loan_number'],
+            'valu_transaction_id' => isset( $result['valu_transaction_id'] ) ? $result['valu_transaction_id'] : '',
+            'loan_number' => isset( $result['loan_number'] ) ? $result['loan_number'] : '',
 		);
 	}
 

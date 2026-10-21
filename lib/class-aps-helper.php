@@ -464,6 +464,94 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Parse a shopper-supplied money value into integer minor units.
+	 *
+	 * Only plain, non-negative decimals are accepted ("12", "12.5", "12.50"), with no
+	 * more fraction digits than the currency allows. Signs, exponents, hex, spaces and
+	 * any other text are rejected instead of coerced: intval()/absint() would quietly
+	 * turn "-5" into 5 or "1e3" into 1, which is exactly what a tampered request relies on.
+	 *
+	 * @param mixed    $raw       Submitted value.
+	 * @param string   $currency  ISO currency code that decides the allowed precision.
+	 * @param int|null $max_minor Optional inclusive upper bound, in minor units.
+	 * @return int|false Minor units, or false when the value is malformed or out of range.
+	 */
+	public function parse_minor_amount( $raw, $currency, $max_minor = null ) {
+		if ( ! is_scalar( $raw ) || is_bool( $raw ) ) {
+			return false;
+		}
+		$raw      = trim( (string) $raw );
+		$decimals = (int) $this->get_currency_decimal_points( strtoupper( (string) $currency ) );
+		$pattern  = 0 === $decimals ? '/^\d{1,12}$/' : '/^\d{1,12}(?:\.\d{1,' . $decimals . '})?$/';
+		if ( ! preg_match( $pattern, $raw ) ) {
+			return false;
+		}
+		$parts = explode( '.', $raw );
+		$frac  = isset( $parts[1] ) ? $parts[1] : '';
+		$minor = (int) $parts[0] * (int) pow( 10, $decimals ) + (int) str_pad( $frac, $decimals, '0' );
+		if ( null !== $max_minor && $minor > (int) $max_minor ) {
+			return false;
+		}
+		return $minor;
+	}
+
+	/**
+	 * Integer minor units back to a plain decimal string ("105.50").
+	 *
+	 * @param int    $minor
+	 * @param string $currency
+	 * @return string
+	 */
+	public function format_minor_amount( $minor, $currency ) {
+		$decimals = (int) $this->get_currency_decimal_points( strtoupper( (string) $currency ) );
+		return number_format( $minor / pow( 10, $decimals ), $decimals, '.', '' );
+	}
+
+	/**
+	 * Installment plan fee from APS (fee_display_value), in hundredths.
+	 *
+	 * APS sends the fee scaled by the currency's decimal places (250 = 2.50 for AED).
+	 * Only integers and plain non-negative decimal strings are accepted; floats, signs,
+	 * exponents, whitespace, text and oversized values are rejected rather than coerced.
+	 *
+	 * @param mixed  $raw
+	 * @param string $currency
+	 * @return int|false
+	 */
+	public function parse_fee_rate( $raw, $currency ) {
+		if ( ! ( is_int( $raw ) || is_string( $raw ) ) || ! preg_match( '/^(\d{1,9})(?:\.(\d{1,4}))?$/', (string) $raw, $m ) ) {
+			return false;
+		}
+		$scaled   = (int) $m[1] * 10000 + (int) str_pad( isset( $m[2] ) ? $m[2] : '', 4, '0' );
+		$divisor  = (int) pow( 10, (int) $this->get_currency_decimal_points( strtoupper( (string) $currency ) ) ) * 100;
+		return intdiv( $scaled + intdiv( $divisor, 2 ), $divisor );
+	}
+
+	/**
+	 * Hundredths as the label number ("2.5", "0").
+	 *
+	 * @param int $hundredths
+	 * @return string
+	 */
+	public function format_rate( $hundredths ) {
+		return rtrim( rtrim( number_format( $hundredths / 100, 2, '.', '' ), '0' ), '.' );
+	}
+
+	/**
+	 * Number of installments: a plain integer 1..99.
+	 *
+	 * @param mixed $raw
+	 * @return int|false
+	 */
+	public function parse_installment_count( $raw ) {
+		if ( ! ( is_int( $raw ) || is_string( $raw ) ) || ! preg_match( '/^\d{1,2}$/', (string) $raw ) ) {
+			return false;
+		}
+		$count = (int) $raw;
+		return $count >= 1 ? $count : false;
+	}
+
+	/**
 	 * Get Valu Products array
 	 *
 	 * @return string
@@ -614,10 +702,14 @@ class APS_Helper extends APS_Super {
 		$response = wp_remote_post( $gateway_url, $options );
 		if ( is_wp_error( $response ) ) {
 			$this->log( 'APS api call error \n\n' . $response->get_error_message() );
+			return false;
+		}
+		if ( ! is_array( $response ) || ! isset( $response['body'] ) || ! is_string( $response['body'] ) ) {
+			return false;
 		}
 		$parsed_response = json_decode( $response['body'], true );
 
-		if ( !$response || empty( $parsed_response) ) {
+		if ( ! is_array( $parsed_response ) || empty( $parsed_response ) ) {
 			return false;
 		}
 		return $parsed_response;
@@ -679,7 +771,7 @@ class APS_Helper extends APS_Super {
 				return false;
 			}
 			$parsed_response = $response['body'];
-			if ( !$response || empty( $parsed_response) ) {
+			if ( ! is_array( $parsed_response ) || empty( $parsed_response ) ) {
 				return false;
 			}
 			return $parsed_response;
