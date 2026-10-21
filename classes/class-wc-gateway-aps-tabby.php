@@ -125,6 +125,10 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
         $extras['order_id'] = $order_id;
         $extras['aps_payment_token'] = '' ;
         $payment_data = $this->aps_payment->get_payment_request_form($payment_method, $integration_type, $payment_option, $extras);
+        $failure = $this->payment_request_failure($payment_data);
+        if (null !== $failure) {
+            return $failure;
+        }
         $result = array(
             'result' => 'success',
             'url' => $payment_data['url'],

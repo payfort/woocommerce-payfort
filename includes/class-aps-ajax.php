@@ -742,7 +742,9 @@ class APS_Ajax {
 					$currency = $this->aps_order->get_currency();
 				}
 				$gateway_params['currency'] = strtoupper( $currency );
-				$total_amount               = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
+				// Convert from the order currency into the currency the payment was
+				// authorised in (Base mode authorises a converted amount, 7d9080c3).
+				$total_amount               = $this->aps_helper->get_order_fort_amount( $order, $currency, $amount );
 				$gateway_params['amount']   = $total_amount;
 				$response_arr['message']    = __( 'Payment Capture successfully ', 'amazon-payment-services' );
 			} else {

@@ -141,19 +141,33 @@ class APS_Helper extends APS_Super {
 	 * Gateway amount, in minor units of $currency, for an amount held in the
 	 * order's own currency.
 	 *
+	 * The order total is stored in the order currency. When the gateway
+	 * currency differs (Base mode with a foreign-currency order) the amount is
+	 * converted with the rate recorded on the order, never reused as-is.
+	 *
 	 * @param WC_Order   $order
 	 * @param string     $currency Gateway currency the amount will be charged in.
 	 * @param float|null $amount   Amount in the order currency. Defaults to the order total.
 	 * @return float
+	 * @throws Exception When no trustworthy conversion rate exists for the order.
 	 */
 	public function get_order_fort_amount( $order, $currency, $amount = null ) {
 		$amount = null === $amount ? (float) $order->get_total() : (float) $amount;
-		return $this->scale_to_minor( $amount, $currency );
+		$rate   = $this->get_order_conversion_rate( $order, $currency );
+		if ( null === $rate ) {
+			$this->log(
+				'APS refused to build a payment for order ' . $order->get_id() . ': no conversion rate from '
+				. strtoupper( (string) $order->get_currency() ) . ' to ' . strtoupper( (string) $currency ) . '.',
+				true
+			);
+			throw new Exception( __( 'This order cannot be paid in the configured payment currency. Please contact the store.', 'amazon-payment-services' ) );
+		}
+		return $this->scale_to_minor( $amount, $rate, $currency );
 	}
 
-	private function scale_to_minor( $amount, $currency ) {
+	private function scale_to_minor( $amount, $rate, $currency ) {
 		$decimal_points = $this->get_currency_decimal_points( $currency );
-		$new_amount     = round( $amount, $decimal_points );
+		$new_amount     = round( $amount * $rate, $decimal_points );
 		if ( 0 !== $decimal_points ) {
 			$new_amount = $new_amount * ( pow( 10, $decimal_points ) );
 		}
@@ -184,13 +198,14 @@ class APS_Helper extends APS_Super {
 		if ( $cart && ! $cart->is_empty() ) {
 			$order_currency = strtoupper( (string) get_woocommerce_currency() );
 			$fort_currency  = 'front' === $this->aps_config->get_gateway_currency() ? $order_currency : strtoupper( (string) $this->get_base_currency() );
+			$rate           = $this->get_conversion_rate( $order_currency, $fort_currency, null );
 			$total          = (float) $cart->get_total( 'edit' );
-			if ( '' !== $order_currency ) {
+			if ( null !== $rate && '' !== $order_currency ) {
 				$snapshot = array(
 					'order_currency' => $order_currency,
 					'fort_currency'  => $fort_currency,
 					'order_total'    => $total,
-					'amount_minor'   => (int) round( $this->scale_to_minor( $total, $fort_currency ) ),
+					'amount_minor'   => (int) round( $this->scale_to_minor( $total, $rate, $fort_currency ) ),
 					'cart_hash'      => (string) $cart->get_cart_hash(),
 					'customer_id'    => (int) get_current_user_id(),
 					'expires'        => time() + self::CHECKOUT_SNAPSHOT_TTL,
@@ -238,6 +253,92 @@ class APS_Helper extends APS_Super {
 		}
 		unset( $snapshot['expires'] );
 		return $snapshot + array( 'order_id' => 0 );
+	}
+
+	/**
+	 * Multiplier that converts an amount in the order currency into $currency.
+	 *
+	 * Only order currency -> same currency and order currency -> store base
+	 * currency are supported. Anything else returns null so callers fail
+	 * closed instead of charging an unconverted figure.
+	 *
+	 * @param WC_Order $order
+	 * @param string   $currency
+	 * @return float|null
+	 */
+	public function get_order_conversion_rate( $order, $currency ) {
+		$order_currency = strtoupper( (string) $order->get_currency() );
+		$currency       = strtoupper( (string) $currency );
+		if ( '' === $currency || $order_currency === $currency ) {
+			return 1.0;
+		}
+		return $this->get_conversion_rate( $order_currency, $currency, $order );
+	}
+
+	/**
+	 * Multiplier from $from to $to; only same currency or to the store base currency.
+	 *
+	 * @param string        $from
+	 * @param string        $to
+	 * @param WC_Order|null $order Order whose recorded CURCY rates take precedence.
+	 * @return float|null
+	 */
+	private function get_conversion_rate( $from, $to, $order ) {
+		$from = strtoupper( (string) $from );
+		$to   = strtoupper( (string) $to );
+		if ( '' === $to || $from === $to ) {
+			return 1.0;
+		}
+		if ( strtoupper( (string) $this->get_base_currency() ) !== $to ) {
+			return null;
+		}
+		$rate = $this->get_order_currency_rate( $order, $from );
+		if ( null === $rate ) {
+			return null;
+		}
+		return 1 / $rate;
+	}
+
+	/**
+	 * Units of the order currency per one unit of the store base currency.
+	 *
+	 * Prefers the rates Multi Currency for WooCommerce (CURCY) stored on the
+	 * order at checkout, so a later rate change does not reprice the order;
+	 * falls back to the current CURCY configuration.
+	 *
+	 * @param WC_Order $order
+	 * @param string   $order_currency
+	 * @return float|null
+	 */
+	private function get_order_currency_rate( $order, $order_currency ) {
+		$base_currency = strtoupper( (string) $this->get_base_currency() );
+
+		$order_info = $order ? $order->get_meta( 'wmc_order_info', true ) : null;
+		if ( is_array( $order_info ) && isset( $order_info[ $order_currency ]['rate'] )
+			&& isset( $order_info[ $base_currency ]['is_main'] ) && 1 === (int) $order_info[ $base_currency ]['is_main'] ) {
+			$rate = $order_info[ $order_currency ]['rate'];
+			if ( is_numeric( $rate ) && (float) $rate > 0 ) {
+				return (float) $rate;
+			}
+		}
+
+		$options = get_option( 'woo_multi_currency_params', array() );
+		if ( is_array( $options ) && ! empty( $options['enable'] )
+			&& isset( $options['currency'], $options['currency_rate'] )
+			&& is_array( $options['currency'] ) && is_array( $options['currency_rate'] ) ) {
+			$index = array_search( $order_currency, array_map( 'strtoupper', $options['currency'] ), true );
+			if ( false !== $index && isset( $options['currency_rate'][ $index ] ) && is_numeric( $options['currency_rate'][ $index ] ) ) {
+				$rate = (float) $options['currency_rate'][ $index ];
+				if ( isset( $options['currency_rate_fee'][ $index ] ) && is_numeric( $options['currency_rate_fee'][ $index ] ) ) {
+					$rate += (float) $options['currency_rate_fee'][ $index ];
+				}
+				if ( $rate > 0 ) {
+					return $rate;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**

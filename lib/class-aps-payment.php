@@ -56,7 +56,18 @@ class APS_Payment extends APS_Super {
 	 * @return array
 	 */
 	public function get_payment_request_form( $payment_method, $integration_type, $payment_option, $extras ) {
-		$payment_request_params = $this->build_payment_gateway_params( $payment_method, $integration_type, $payment_option, $extras );
+		try {
+			$payment_request_params = $this->build_payment_gateway_params( $payment_method, $integration_type, $payment_option, $extras );
+		} catch ( \Exception $e ) {
+			// Fail closed: never send a request whose amount could not be priced correctly.
+			return array(
+				'url'                    => '',
+				'params'                 => array(),
+				'is_hosted_tokenization' => false,
+				'redirect_url'           => null,
+				'error_message'          => $e->getMessage(),
+			);
+		}
 		$aps_data               = array(
 			'url'                    => $payment_request_params['url'],
 			'params'                 => $payment_request_params['params'],
@@ -482,7 +493,8 @@ class APS_Payment extends APS_Super {
 		if ( $loaded_order ) {
 			$this->aps_order->load_order( $order_id );
 		}
-		$currency       = $this->aps_order->get_currency();
+		// Charge in the merchant's configured gateway currency, converted from the order total.
+		$currency       = $this->aps_helper->get_order_fort_currency( $this->aps_order->get_loaded_order() );
 		$payment_method = $this->aps_order->get_payment_method();
 		$command        = APS_Constants::APS_COMMAND_PURCHASE;
 		$plan_code      = get_post_meta( $order_id, 'hosted_cc_plan_code', true );
@@ -570,6 +582,27 @@ class APS_Payment extends APS_Super {
 	}
 
 	/**
+	 * Renewal amount, converted from the renewal order currency into the
+	 * currency the parent payment (and its token) was charged in.
+	 *
+	 * Returns null when no trustworthy rate exists, so the renewal fails
+	 * closed instead of charging an unconverted figure (7d9080c3).
+	 *
+	 * @param WC_Order $renewal_order
+	 * @param string   $currency
+	 * @param float    $recurring_amount
+	 * @return float|null
+	 */
+	private function get_renewal_fort_amount( $renewal_order, $currency, $recurring_amount ) {
+		try {
+			return $this->aps_helper->get_order_fort_amount( $renewal_order, $currency, $recurring_amount );
+		} catch ( \Exception $e ) {
+			$renewal_order->add_order_note( __( 'APS renewal not charged: no conversion rate from the order currency to the payment currency.', 'amazon-payment-services' ) );
+			return null;
+		}
+	}
+
+	/**
 	 * Process subscription payment
 	 */
 	public function process_subscription_payment( $renewal_order, $recurring_amount ) {
@@ -582,6 +615,10 @@ class APS_Payment extends APS_Super {
 		$aps_response           = get_post_meta( $parent_order_id, 'aps_payment_response', true );
 		$currency               = $aps_response['currency'];
 		$language               = $aps_response['language'];
+		$fort_amount            = $this->get_renewal_fort_amount( $renewal_order, $currency, $recurring_amount );
+		if ( null === $fort_amount ) {
+			return false;
+		}
 		$gateway_params         = array(
 			'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
 			'access_code'         => $this->aps_config->get_access_code(),
@@ -589,7 +626,7 @@ class APS_Payment extends APS_Super {
 			'language'            => $language,
 			'command'             => APS_Constants::APS_COMMAND_PURCHASE,
 			'customer_ip'         => $this->aps_helper->get_customer_ip(),
-			'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
+			'amount'              => $fort_amount,
 			'currency'            => strtoupper( $currency ),
 			'customer_email'      => $this->aps_order->get_email(),
 			'eci'                 => APS_Constants::APS_COMMAND_RECURRING,
@@ -636,6 +673,10 @@ class APS_Payment extends APS_Super {
         $aps_response           = get_post_meta( $parent_order_id, 'aps_payment_response', true );
         $currency               = $aps_response['currency'];
         $language               = $aps_response['language'];
+        $fort_amount            = $this->get_renewal_fort_amount( $renewal_order, $currency, $recurring_amount );
+        if ( null === $fort_amount ) {
+            return false;
+        }
         $gateway_params         = array(
             'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
             'access_code'         => $this->aps_config->get_access_code(),
@@ -644,7 +685,7 @@ class APS_Payment extends APS_Super {
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,
             'customer_ip'         => $this->aps_helper->get_customer_ip(),
-            'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
+            'amount'              => $fort_amount,
             'currency'            => strtoupper( $currency ),
             'customer_email'      => $this->aps_order->get_email(),
             'token_name'          => $aps_response['token_name'],
@@ -688,6 +729,10 @@ class APS_Payment extends APS_Super {
         $aps_response           = get_post_meta( $parent_order_id, 'aps_payment_response', true );
         $currency               = $aps_response['currency'];
         $language               = $aps_response['language'];
+        $fort_amount            = $this->get_renewal_fort_amount( $renewal_order, $currency, $recurring_amount );
+        if ( null === $fort_amount ) {
+            return false;
+        }
         $gateway_params         = array(
             'merchant_identifier' => $this->aps_config->get_merchant_identifier(),
             'access_code'         => $this->aps_config->get_access_code(),
@@ -696,7 +741,7 @@ class APS_Payment extends APS_Super {
             'language'            => $language,
             'command'             => APS_Constants::APS_COMMAND_PURCHASE,
             'customer_ip'         => $this->aps_helper->get_customer_ip(),
-            'amount'              => $this->aps_helper->convert_fort_amount( $recurring_amount, 1, $currency ),
+            'amount'              => $fort_amount,
             'currency'            => strtoupper( $currency ),
             'customer_email'      => $this->aps_order->get_email(),
             'token_name'          => $aps_response['token_name'],
@@ -785,7 +830,10 @@ class APS_Payment extends APS_Super {
 			$this->aps_order->load_order( $order_id );
             $fort_currency              = $this->aps_helper->get_order_fort_currency( $this->aps_order->get_loaded_order() );
             $order_currency             = strtoupper( (string) $this->aps_order->get_currency() );
-            $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
+            $currency_conversion_rate   = $this->aps_helper->get_order_conversion_rate( $this->aps_order->get_loaded_order(), $fort_currency );
+            if ( null === $currency_conversion_rate ) {
+                throw new \Exception( __( 'This order cannot be paid in the configured payment currency. Please contact the store.', 'amazon-payment-services' ) );
+            }
 
 			$gateway_params = array(
 				'digital_wallet'      => 'APPLE_PAY',
