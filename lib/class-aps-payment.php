@@ -953,6 +953,7 @@ class APS_Payment extends APS_Super {
 					throw new \Exception( __( 'Incorrect valU amount', 'amazon-payment-services' ) );
 				}
 			}
+			$authorization = APS_Valu_Guard::begin_customer( $mobile_number );
 			unset( WC()->session->order_awaiting_payment );
 			$reference_id                = $this->aps_helper->generate_random_key();
 			$gateway_params              = array(
@@ -977,6 +978,7 @@ class APS_Payment extends APS_Super {
 				$binding = bin2hex( random_bytes( 16 ) );
 				session_start();
 				$_SESSION['valu_payment'] = array(
+					'authorization' => $authorization,
 					'reference_id'  => wp_kses_data( $reference_id ),
 					'mobile_number' => wp_kses_data( $mobile_number ),
 					'down_payment'  => $down_payment,
@@ -1226,6 +1228,7 @@ class APS_Payment extends APS_Super {
 			if ( false === $this->validate_valu_session( $valu_session, $this->aps_order->get_loaded_order() ) ) {
 				throw new \Exception( 'Invalid valU checkout.' );
 			}
+			APS_Valu_Guard::begin( 'generate', $valu_session, $this->aps_order->get_loaded_order() );
 			$gateway_params              = array(
 				'service_command'     => 'OTP_GENERATE',
 				'access_code'         => $this->aps_config->get_access_code(),
@@ -1307,6 +1310,7 @@ class APS_Payment extends APS_Super {
 			if ( ! $order || false === $this->validate_valu_session( $valu_session, $order, true ) ) {
 				throw new \Exception( __( 'Your valU details could not be verified. Please verify your mobile number again.', 'amazon-payment-services' ) );
 			}
+			APS_Valu_Guard::begin( 'verify', $valu_session, $order, $otp );
 			$this->aps_order->load_order( $order_id );
 			$reference_id  = wp_kses_data( isset( $valu_session['reference_id'] ) ? $valu_session['reference_id'] : '' );
 			$mobile_number = wp_kses_data( isset( $valu_session['mobile_number'] ) ? $valu_session['mobile_number'] : '' );
@@ -1346,6 +1350,9 @@ class APS_Payment extends APS_Super {
 					$tenure_html = $this->render_valu_tenure_html( $this->extract_valu_tenures( $result ) );
 				}
 			} else {
+				if ( ! empty( $result['response_code'] ) ) {
+					APS_Valu_Guard::retry_rejected_otp( $valu_session );
+				}
 				$status  = 'error';
 				$message = isset( $result['response_message'] ) && ! empty( $result['response_message'] ) ? $result['response_message'] : $valuapi_stop_message;
 				throw new \Exception( $message );
@@ -1435,6 +1442,7 @@ class APS_Payment extends APS_Super {
 			
 			//$plugin_params               = $this->aps_config->plugin_params();
 			//$gateway_params              = array_merge( $gateway_params, $plugin_params );
+			APS_Valu_Guard::begin( 'purchase', $valu_session, $this->aps_order->get_loaded_order(), $otp );
 			// Remember exactly what was asked for, so the response can be checked against it.
 			$this->aps_order->record_expected_payment(
 				isset( $gateway_params['amount'] ) ? $gateway_params['amount'] : '',

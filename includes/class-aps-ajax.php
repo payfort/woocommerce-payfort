@@ -732,27 +732,8 @@ class APS_Ajax {
 	 * Valu OTP Verfiy
 	 */
 	public function valu_set_tenure() {
-		check_ajax_referer( 'aps_valu_nonce', 'aps_valu_nonce' );
-
-		$response_arr = array(
-			'status'  => 'success',
-			'message' => '',
-		);
-		try {
-			$tenure = filter_input( INPUT_GET, 'tenure' );
-			if ( empty( $tenure ) ) {
-				throw new \Exception( 'Tenure is missing' );
-			}
-			session_start();
-			$_SESSION['valu_payment'] = wp_kses_data($tenure);
-			session_write_close();
-			$response_arr['status']   = 'success';
-		} catch ( \Exception $e ) {
-			$response_arr['status']  = 'error';
-			$response_arr['message'] = $e->getMessage();
-		}
-		echo wp_json_encode( $response_arr );
-		wp_die();
+		// This unused legacy route is disabled. Tenure is validated during checkout.
+		wp_send_json( array( 'status' => 'error', 'message' => 'Unsupported valU route.' ), 410 );
 	}
 
 

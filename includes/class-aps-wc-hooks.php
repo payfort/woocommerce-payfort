@@ -34,6 +34,7 @@ class APS_WC_Hooks {
 
 	const APS_WC_SESSION_KEYS = array(
 		'aps_valu_binding',
+		'aps_valu_authorization',
 		'aps_checkout_snapshot',
 		'aps_installment_offer',
 		'aps_cc_installment_offer',
