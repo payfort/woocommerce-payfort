@@ -106,6 +106,11 @@ class APS {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-constants.php';
 
 		/**
+		 * Location of Apple Pay certificates (kept out of the web root)
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-certificate-store.php';
+
+		/**
 		 * The class responsible for orchestrating the actions and filters of the
 		 * core plugin.
 		 */
@@ -181,6 +186,9 @@ class APS {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		// Move Apple Pay files left in uploads/ by older versions out of the web root (e6f42acf).
+		$this->loader->add_action( 'admin_init', 'APS_Certificate_Store', 'maybe_migrate_on_admin' );
+		$this->loader->add_action( 'admin_notices', 'APS_Certificate_Store', 'render_notice' );
 
 	}
 

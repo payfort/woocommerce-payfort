@@ -186,10 +186,9 @@ class APS_Public {
 		$currency                      = $this->aps_helper->get_fort_currency();
 		$apple_certificates            = get_option( 'aps_apple_pay_certificates' );
 		$apple_pay_merchant_identifier = '';
-		if (!empty($apple_certificates)) {
-			$upload_dir         = wp_upload_dir();
-			$certificate_path              = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
-			$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
+		if ( ! empty( $apple_certificates ) ) {
+			// '' when the certificate store is unavailable (fail closed).
+			$apple_pay_merchant_identifier = APS_Certificate_Store::merchant_identifier();
 		}
 		$supported_networks            = $this->aps_config->get_apple_pay_supported_networks();
 		$apple_vars                    = array(

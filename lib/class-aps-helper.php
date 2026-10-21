@@ -627,15 +627,11 @@ class APS_Helper extends APS_Super {
 		if ( ! $curl_handle ) {
 			return;
 		}
-		$production_key     = $this->aps_config->get_apple_pay_production_key();
-
-		$apple_certificates = get_option( 'aps_apple_pay_certificates' );
-		$upload_dir         = wp_upload_dir();
-		$certificate_path   = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
-		$certificate_key    = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
-		curl_setopt( $curl_handle, CURLOPT_SSLCERT, $certificate_path );
-		curl_setopt( $curl_handle, CURLOPT_SSLKEY, $certificate_key );
-		curl_setopt( $curl_handle, CURLOPT_SSLKEYPASSWD, $production_key );
+		// Resolved at the moment of use: if the files vanished since the readiness check the
+		// handle gets a certificate that cannot exist, so cURL fails instead of sending without it.
+		if ( ! APS_Certificate_Store::apply_client_cert( $curl_handle, $this->aps_config->get_apple_pay_production_key() ) ) {
+			$this->log( 'Apple Pay client certificate unavailable; request will fail closed.' );
+		}
 	}
 
 	/**
@@ -648,11 +644,11 @@ class APS_Helper extends APS_Super {
 			$domain_name                   = $this->aps_config->get_apple_pay_domain_name();
 			$apple_pay_display_name        = $this->aps_config->get_apple_pay_display_name();
 			$production_key                = $this->aps_config->get_apple_pay_production_key();
-			$apple_certificates            = get_option( 'aps_apple_pay_certificates' );
-			$upload_dir         = wp_upload_dir();
-			$certificate_path              = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
-			$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
-			$certificate_key               = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
+			$apple_pay_merchant_identifier = APS_Certificate_Store::merchant_identifier();
+			if ( ! APS_Certificate_Store::is_ready() || '' === $apple_pay_merchant_identifier ) {
+				$this->log( 'Apple Pay merchant validation not sent: certificate store unavailable.' );
+				return false;
+			}
 			$data                          = '{"merchantIdentifier":"' . $apple_pay_merchant_identifier . '", "domainName":"' . $domain_name . '", "displayName":"' . $apple_pay_display_name . '"}';
 
 			$useragent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0';
@@ -671,9 +667,16 @@ class APS_Helper extends APS_Super {
 				'data_format'       => 'body',
 			];
 			add_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
-			$response = wp_remote_post( $apple_url, $options );
+			try {
+				$response = wp_remote_post( $apple_url, $options );
+			} finally {
+				remove_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
+			}
 			if ( is_wp_error( $response ) ) {
 				$this->log( 'APS api call error \n\n' . $response->get_error_message() );
+			}
+			if ( is_wp_error( $response ) ) {
+				return false;
 			}
 			$parsed_response = $response['body'];
 			if ( !$response || empty( $parsed_response) ) {
