@@ -107,6 +107,30 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Checkout failure for a payment request that could not be built.
+	 *
+	 * get_payment_request_form() returns error_message instead of url/params
+	 * when it refuses to build a request (for example no trustworthy currency
+	 * conversion rate, 7d9080c3). Report that as a WooCommerce checkout
+	 * failure so the shopper sees the notice, instead of a "success" result
+	 * with nothing to submit.
+	 *
+	 * @param array $payment_data
+	 * @return array|null Failure result, or null when the request is usable.
+	 */
+	protected function payment_request_failure( $payment_data ) {
+		if ( empty( $payment_data['error_message'] ) ) {
+			return null;
+		}
+		wc_add_notice( $payment_data['error_message'], 'error' );
+		return array(
+			'result'        => 'failure',
+			'status'        => 'failure',
+			'error_message' => $payment_data['error_message'],
+		);
+	}
+
+	/**
 	 * Process the payment and return the result
 	 *
 	 * @param int $order_id
@@ -272,6 +296,10 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 			$order->update_status( 'payment-pending', '' );
 		}
 		$payment_data = $this->aps_payment->get_payment_request_form( $payment_method, $integration_type, $payment_option, $extras );
+		$failure      = $this->payment_request_failure( $payment_data );
+		if ( null !== $failure ) {
+			return $failure;
+		}
 		$result       = array(
 			'result'                 => 'success',
 			'url'                    => $payment_data['url'],
@@ -279,10 +307,6 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 			'is_hosted_tokenization' => $payment_data['is_hosted_tokenization'],
 			'redirect_url'           => $payment_data['redirect_url'],
 		);
-        if ($payment_data['error_message'] ?? null) {
-            $result['status'] = 'failure';
-            $result['error_message'] = $payment_data['error_message'];
-        }
 
 		// save integration type
 		update_post_meta( $order_id, 'APS_INTEGRATION_TYPE', $integration_type );
