@@ -105,9 +105,10 @@ class APS_Payment extends APS_Super {
 			'language'            => $this->aps_config->get_language(),
 		);
 		if ( APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION === $integration_type ) {
-			$currency                            = $this->aps_helper->get_fort_currency();
+			// Currency and amount come from the stored order, never the storefront cookie.
+			$currency                            = $this->aps_helper->get_order_fort_currency( $this->aps_order->get_loaded_order() );
 			$gateway_params['currency']          = strtoupper( $currency );
-			$gateway_params['amount']            = $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency );
+			$gateway_params['amount']            = $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency );
 			$gateway_params['customer_email']    = $this->aps_order->get_email();
 			$gateway_params['command']           = $this->aps_config->get_command( $payment_method );
 			$gateway_params['order_description'] = 'Order#' . $order_id;
@@ -148,10 +149,10 @@ class APS_Payment extends APS_Super {
 			$gateway_params['service_command'] = APS_Constants::APS_COMMAND_TOKENIZATION;
 			$gateway_params['return_url']      = create_wc_api_url( 'aps_merchant_response' );
 			if ( APS_Constants::APS_PAYMENT_TYPE_INSTALLMENT === $payment_method && APS_Constants::APS_INTEGRATION_TYPE_STANDARD_CHECKOUT === $integration_type ) {
-				$currency                       = $this->aps_helper->get_fort_currency();
+				$currency                       = $this->aps_helper->get_order_fort_currency( $this->aps_order->get_loaded_order() );
 				$gateway_params['currency']     = strtoupper( $currency );
 				$gateway_params['installments'] = APS_Constants::APS_COMMAND_STANDALONE;
-				$gateway_params['amount']       = $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency );
+				$gateway_params['amount']       = $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency );
 			}
 			if ( isset( $extras['aps_payment_token'] ) && ! empty( $extras['aps_payment_token'] ) ) {
 				$gateway_params['token_name'] = $extras['aps_payment_token'];
@@ -511,7 +512,7 @@ class APS_Payment extends APS_Super {
 			'language'            => $this->aps_config->get_language(),
 			'command'             => $command,
 			'customer_ip'         => $this->aps_order->get_customer_ip(),
-			'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+			'amount'              => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
 			'currency'            => strtoupper( $currency ),
 			'customer_email'      => $this->aps_order->get_email(),
 			'return_url'          => create_wc_api_url( 'aps_online_response' ),
@@ -782,8 +783,8 @@ class APS_Payment extends APS_Super {
 		try {
 			$order_id = $this->aps_order->get_session_order_id();
 			$this->aps_order->load_order( $order_id );
-            $fort_currency              = $this->aps_helper->get_fort_currency();
-            $order_currency             = $this->aps_helper->get_front_currency();
+            $fort_currency              = $this->aps_helper->get_order_fort_currency( $this->aps_order->get_loaded_order() );
+            $order_currency             = strtoupper( (string) $this->aps_order->get_currency() );
             $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
 
 			$gateway_params = array(
@@ -861,7 +862,7 @@ class APS_Payment extends APS_Super {
 		$order_id      = $this->aps_order->get_session_order_id();
 		$order         = $this->aps_order->get_order_by_id( $order_id );
 		$items         = $order->get_items();
-		$currency      = $this->aps_helper->get_fort_currency();
+		$currency      = strtoupper( (string) $order->get_currency() );
 		foreach ( $items as $item ) {
 			$product_name       = $this->aps_helper->clean_string( $item->get_name() );
 			$product_id         = $item->get_product_id();
@@ -875,13 +876,13 @@ class APS_Payment extends APS_Super {
 		if ( count( $items ) > 1 ) {
 			$products[] = array(
 				'product_name'     => 'MutipleProducts',
-				'product_price'    => $this->aps_helper->convert_fort_amount( $order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+				'product_price'    => $this->aps_helper->get_order_fort_amount( $order, $currency ),
 				'product_category' => $category_name,
 			);
 		} else {
 			$products[] = array(
 				'product_name'     => $product_name,
-				'product_price'    => $this->aps_helper->convert_fort_amount( $order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+				'product_price'    => $this->aps_helper->get_order_fort_amount( $order, $currency ),
 				'product_category' => $category_name,
 			);
 		}
@@ -966,7 +967,7 @@ class APS_Payment extends APS_Super {
 		try {
 			$this->aps_order->load_order( $order_id );
 			$products                    = $this->get_valu_products_data();
-			$currency                    = $this->aps_helper->get_front_currency();
+			$currency                    = strtoupper( (string) $this->aps_order->get_currency() );
 			$gateway_params              = array(
 				'service_command'     => 'OTP_GENERATE',
 				'access_code'         => $this->aps_config->get_access_code(),
@@ -976,7 +977,7 @@ class APS_Payment extends APS_Super {
 				'payment_option'      => 'VALU',
 				'merchant_order_id'   => $order_id,
 				'phone_number'        => $mobile_number,
-				'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+				'amount'              => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
 				'currency'            => $currency,
 				'products'            => $products,
 				'total_downpayment'	  => $down_payment,
@@ -1055,7 +1056,7 @@ class APS_Payment extends APS_Super {
 			$this->aps_order->load_order( $order_id );
 			$mobile_number = wp_kses_data($_SESSION['valu_payment']['mobile_number']);
 			session_write_close();
-			$currency      = $this->aps_helper->get_front_currency();
+			$currency      = strtoupper( (string) $this->aps_order->get_currency() );
 
 			$gateway_params              = array(
 				'service_command'     => 'OTP_VERIFY',
@@ -1065,7 +1066,7 @@ class APS_Payment extends APS_Super {
 				'language'            => $this->aps_config->get_language(),
 				'payment_option'      => 'VALU',
 				'phone_number'        => $mobile_number,
-				'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+				'amount'              => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
 				'merchant_order_id'   => $order_id,
 				'currency'            => $currency,
 				'otp'                 => $otp,
@@ -1131,7 +1132,7 @@ class APS_Payment extends APS_Super {
 			$otp                         = wp_kses_data($otp);
 			$customer_email              = $this->aps_order->get_email();
 			$customer_code               = $mobile_number;
-			$currency                    = $this->aps_helper->get_front_currency();
+			$currency                    = strtoupper( (string) $this->aps_order->get_currency() );
 			$transaction_id              = wp_kses_data($_SESSION['valu_payment']['transaction_id']);
 			session_write_close();
             if($this->aps_config->get_enable_valu_down_payment() =="yes") {
@@ -1147,7 +1148,7 @@ class APS_Payment extends APS_Super {
 				'language'             => $this->aps_config->get_language(),
 				'payment_option'       => 'VALU',
 				'phone_number'         => $mobile_number,
-				'amount'               => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+				'amount'               => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
 				'merchant_order_id'    => $order_id,
 				'currency'             => strtoupper( $currency ),
 				'otp'                  => $otp,
@@ -1166,7 +1167,7 @@ class APS_Payment extends APS_Super {
 				$message = __( 'Please provide the OTP', 'amazon-payment-services' );
 				throw new \Exception( $message );
 			}
-            if($total_down_payment + $tou + $cash_back > $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency )){
+            if($total_down_payment + $tou + $cash_back > $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency )){
             	
                 $message = __( 'Cashback, Downpayment, and ToU amounts sum cannot be greater than Cart Total', 'amazon-payment-services' );
                 throw new \Exception( $message );
@@ -1238,7 +1239,7 @@ class APS_Payment extends APS_Super {
 
             $reference_id = $this->aps_helper->generate_random_key();
             $this->aps_order->load_order( $order_id );
-            $currency                    = $this->aps_helper->get_front_currency();
+            $currency                    = strtoupper( (string) $this->aps_order->get_currency() );
             $gateway_params              = array(
                 'service_command'     => 'GENERATE_OTP',
                 'access_code'         => $this->aps_config->get_access_code(),
@@ -1247,7 +1248,7 @@ class APS_Payment extends APS_Super {
                 'language'            => $this->aps_config->get_language(),
                 'digital_wallet'      => 'STCPAY',
                 'phone_number'        => $mobile_number,
-                'amount'              => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+                'amount'              => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
                 'currency'            => $currency,
             );
             $signature                   = $this->aps_helper->generate_signature( $gateway_params, 'request' );
@@ -1323,7 +1324,7 @@ class APS_Payment extends APS_Super {
             session_write_close();
             $customer_email              = $this->aps_order->get_email();
             $customer_name               = $this->aps_order->get_customer_name();
-            $currency                    = $this->aps_helper->get_front_currency();
+            $currency                    = strtoupper( (string) $this->aps_order->get_currency() );
 
             $gateway_params              = array(
                 'command'              => 'PURCHASE',
@@ -1332,7 +1333,7 @@ class APS_Payment extends APS_Super {
                 'language'             => $this->aps_config->get_language(),
                 'digital_wallet'       => 'STCPAY',
                 'phone_number'         => $mobile_number,
-                'amount'               => $this->aps_helper->convert_fort_amount( $this->aps_order->get_total(), $this->aps_order->get_currency_value(), $currency ),
+                'amount'               => $this->aps_helper->get_order_fort_amount( $this->aps_order->get_loaded_order(), $currency ),
                 'merchant_order_id'    => $order_id,
                 'currency'             => strtoupper( $currency ),
                 'customer_name'        => $customer_name,

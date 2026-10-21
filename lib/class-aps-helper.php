@@ -117,6 +117,47 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Currency an existing order must be charged in.
+	 *
+	 * Uses only the stored order and the merchant's gateway currency setting.
+	 * The storefront currency cookie is never read here, so a shopper cannot
+	 * change the payment currency of an order after it was placed (for example
+	 * by switching currency before retrying a failed order).
+	 *
+	 * @param WC_Order $order
+	 * @return string
+	 */
+	public function get_order_fort_currency( $order ) {
+		if ( 'front' === $this->aps_config->get_gateway_currency() ) {
+			return strtoupper( (string) $order->get_currency() );
+		}
+		return strtoupper( (string) $this->get_base_currency() );
+	}
+
+	/**
+	 * Gateway amount, in minor units of $currency, for an amount held in the
+	 * order's own currency.
+	 *
+	 * @param WC_Order   $order
+	 * @param string     $currency Gateway currency the amount will be charged in.
+	 * @param float|null $amount   Amount in the order currency. Defaults to the order total.
+	 * @return float
+	 */
+	public function get_order_fort_amount( $order, $currency, $amount = null ) {
+		$amount = null === $amount ? (float) $order->get_total() : (float) $amount;
+		return $this->scale_to_minor( $amount, $currency );
+	}
+
+	private function scale_to_minor( $amount, $currency ) {
+		$decimal_points = $this->get_currency_decimal_points( $currency );
+		$new_amount     = round( $amount, $decimal_points );
+		if ( 0 !== $decimal_points ) {
+			$new_amount = $new_amount * ( pow( 10, $decimal_points ) );
+		}
+		return round( $new_amount, 2 );
+	}
+
+	/**
 	 * Log the error on the disk
 	 */
 	public function log( $messages, $force_debug = false ) {
@@ -250,7 +291,7 @@ class APS_Helper extends APS_Super {
 		$order_id      = $this->aps_order->get_session_order_id();
 		$order         = $this->aps_order->get_order_by_id( $order_id );
 		$items         = $order->get_items();
-		$currency      = $this->get_fort_currency();
+		$currency      = strtoupper( (string) $order->get_currency() );
 		foreach ( $items as $item ) {
 			$product_name       = $this->clean_string( $item->get_name() );
 			$product_id         = $item->get_product_id();
@@ -264,7 +305,7 @@ class APS_Helper extends APS_Super {
 		if ( count( $items ) > 1 ) {
 			$product_name = 'MutipleProducts';
 		}
-		$product_price  = $this->convert_fort_amount( $order->get_total(), $this->aps_order->get_currency_value(), $currency );
+		$product_price  = $this->get_order_fort_amount( $order, $currency );
 		$producs_string = '[{product_name=' . $product_name . ', product_price=' . $product_price . ', product_category=' . $category_name . '}]';
 		return $producs_string;
 	}
