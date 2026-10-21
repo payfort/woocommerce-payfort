@@ -390,6 +390,30 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * Whether the current visitor is the shopper who placed the order: the
+	 * logged-in customer, or the browser session that checked the order out.
+	 *
+	 * @param WC_Order $order
+	 * @return bool
+	 */
+	private function visitor_owns_order( $order ) {
+		if ( ! $order || ! $order->get_id() ) {
+			return false;
+		}
+		$user_id = get_current_user_id();
+		if ( $user_id > 0 && (int) $order->get_customer_id() === $user_id ) {
+			return true;
+		}
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			$session_order_id = (int) WC()->session->get( 'order_awaiting_payment' );
+			if ( $session_order_id > 0 && $session_order_id === (int) $order->get_id() ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * APS handle Response
 	 *
 	 * @return void
@@ -471,7 +495,14 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
                 }else{
                 $order = new WC_Order( $response_params['merchant_reference'] );
                 }
-				if ( in_array($order->get_status(), ['processing', 'completed']) ) {
+				// The return URL carries the order key, which unlocks the order-received page.
+				// $success is true only after handle_fort_response() verified the response
+				// signature (a duplicate delivery for an already paid order verifies too and
+				// returns true). Otherwise only the shopper who placed the order gets it;
+				// an anonymous caller replaying an order ID is sent to checkout (a7731736).
+				$signature_verified = (bool) $success;
+				if ( in_array( $order->get_status(), array( 'processing', 'completed' ), true )
+					&& ( $signature_verified || $this->visitor_owns_order( $order ) ) ) {
 					$redirect_url = $this->get_return_url( $order );
 					session_start();
 					unset( $_SESSION['aps_error'] );
@@ -479,11 +510,12 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 				}
 
 				if ( APS_Constants::APS_INTEGRATION_TYPE_STANDARD_CHECKOUT == $integration_type ) {
-					$this->aps_helper->log( '!success redirect \n\n' . $redirect_url );
+					// Never log the redirect: the order-received URL carries the order key (a7731736).
+					$this->aps_helper->log( 'APS response redirect issued (standard checkout) for order ' . (int) $order->get_id() );
 					echo '<script>window.top.location.href = "' . esc_url_raw( $redirect_url ) . '"</script>';
 					exit;
 				} else {
-					$this->aps_helper->log( 'success redirect \n\n' . $redirect_url );
+					$this->aps_helper->log( 'APS response redirect issued for order ' . (int) $order->get_id() );
 					ob_start();
 					header('Location: ' . esc_url_raw($redirect_url));
 					ob_end_flush();
