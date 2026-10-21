@@ -104,6 +104,7 @@ class APS {
 		 * The class responsible for contants
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-constants.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-valu-guard.php';
 
 		/**
 		 * Location of Apple Pay certificates (kept out of the web root)
@@ -303,11 +304,6 @@ class APS {
 		$this->loader->add_action( 'wp_ajax_valu_otp_verify', $aps_ajax, 'valu_otp_verify' );
 		$this->loader->add_action( 'wp_ajax_nopriv_valu_otp_verify', $aps_ajax, 'valu_otp_verify' );
 
-		$this->loader->add_action( 'wp_ajax_valu_proceed_tenure', $aps_ajax, 'valu_otp_verify' );
-		$this->loader->add_action( 'wp_ajax_nopriv_valu_otp_verify', $aps_ajax, 'valu_otp_verify' );
-
-		$this->loader->add_action( 'wp_ajax_valu_set_tenure', $aps_ajax, 'valu_set_tenure' );
-		$this->loader->add_action( 'wp_ajax_nopriv_valu_set_tenure', $aps_ajax, 'valu_set_tenure' );
 
 		$this->loader->add_action( 'wp_ajax_validate_apple_url', $aps_ajax, 'validate_apple_url' );
 

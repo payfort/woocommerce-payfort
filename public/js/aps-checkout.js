@@ -1314,6 +1314,7 @@
 						data: {
 							action:'valu_verify_customer',
 							aps_valu_nonce: aps_info.nonce.valu,
+							aps_valu_authorization: $( '[name=aps_valu_authorization]' ).val(),
 							mobile_number,
 							down_payment,
 							tou,
@@ -1386,6 +1387,7 @@
 					data: {
 						action:'valu_otp_verify',
 						aps_valu_nonce: aps_info.nonce.valu,
+						aps_valu_authorization: $( '[name=aps_valu_authorization]' ).val(),
 						otp,
 					},
 					success: function(response) {

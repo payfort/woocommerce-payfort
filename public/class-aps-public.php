@@ -309,6 +309,7 @@ class APS_Public {
 		ob_start();
 		include 'terms/terms-' . $language . '.html';
 		$terms_modal_text = ob_get_clean();
+		echo '<input type="hidden" name="aps_valu_authorization" value="' . esc_attr( APS_Valu_Guard::issue() ) . '" />';
 		include 'partials/hosted-valu-wizard.php';
 	}
 

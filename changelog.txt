@@ -1,4 +1,11 @@
 ## Changelog
+`2.4.10`
+* Fix - Order retries use the currency stored on the order; Base-mode charges, refunds, captures and renewals use the recorded exchange rate and refuse a missing rate.
+* Fix - Unverified callbacks cannot reveal order keys in redirects, and callback logs redact order-key URLs.
+* Fix - Apple Pay certificates and keys move outside the web root; administrator migration handles legacy files, and Apple Pay fails closed if storage is unsafe or missing.
+* Fix - Installment offers are checked against server-side plans and bound to the shopper cart; valU amounts and tenures are validated, verification/OTP/purchase use single-use atomic claims and bounded rate limits, and payment is bound to the shopper and awaiting order.
+* Fix - Tabby session data is cleared on logout along with existing APS session data.
+
 `2.4.9`
 * Fix - valU payment option is shown at checkout when the cart total meets the configured minimum order limit (previously hidden for any minimum above 0).
 * Fix - Tabby maximum order limit is enforced at checkout.
