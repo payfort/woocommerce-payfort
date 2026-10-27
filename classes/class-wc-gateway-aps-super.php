@@ -765,8 +765,7 @@ class WC_Gateway_APS_Super extends WC_Payment_Gateway {
 					$verify_params[ $k ] = $v;
 				}
 			}
-			$calculated_signature = $this->aps_helper->generate_signature( $verify_params, 'response' );
-			if ( empty( $signature ) || strtolower( $calculated_signature ) !== strtolower( $signature ) ) {
+			if ( ! $this->aps_helper->verify_response_signature( $verify_params, $signature ) ) {
 				$this->aps_helper->log( 'SECURITY: Invalid signature in aps_token_response. Rejecting request.' );
 				session_start();
 				$_SESSION['aps_token_error'] = __( 'Invalid signature. Token creation rejected.', 'amazon-payment-services' );

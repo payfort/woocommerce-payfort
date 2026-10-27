@@ -312,7 +312,7 @@ class APS_Payment extends APS_Super {
 			$excluded_params = array( 'signature', 'wc-ajax', 'wc-api', 'APS_fort', 'integration_type', 'WordApp_launch', 'WordApp_mobile_site', 'WordApp_demo', 'WordApp_demo', 'lang' );
 
 			$response_type           = $response_params['response_message'];
-			$signature               = $response_params['signature'];
+			$signature               = isset( $response_params['signature'] ) ? $response_params['signature'] : '';
 			$response_order_id       = $response_params['merchant_reference'];
 			$response_status         = isset( $response_params['status'] ) ? $response_params['status'] : '';
 			$response_code           = isset( $response_params['response_code'] ) ? $response_params['response_code'] : '';
@@ -359,15 +359,13 @@ class APS_Payment extends APS_Super {
 			// by setting digital_wallet=APPLE_PAY in the webhook request.
 			$signature_type = ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $payment_method ) ? 'apple_pay' : 'regular';
 
-			$response_signature = $this->aps_helper->generate_signature( $response_gateway_params, 'response', $signature_type );
-
             $isTabbyPay = false;
             if ($payment_method == APS_Constants::APS_PAYMENT_TYPE_TABBY || APS_Constants::APS_PAYMENT_METHOD_TABBY === $response_params['payment_option'] ){
                 $isTabbyPay = true;
             }
 
 			// check the signature
-			if ( strtolower( $response_signature ) !== strtolower( $signature ) ) {
+			if ( ! $this->aps_helper->verify_response_signature( $response_gateway_params, $signature, $signature_type ) ) {
 				// FIX: A request whose signature does not verify is untrusted.
 				// Do NOT mutate order state — only log the mismatch and return false.
 				$aps_invalid_signature_log = "APS Response invalid signature ERROR\n\n Original array : " . wp_json_encode( $response_params, true ) . "\n\n\n Final array : " . wp_json_encode( $response_gateway_params, true );
