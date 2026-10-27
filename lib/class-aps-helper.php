@@ -585,9 +585,10 @@ class APS_Helper extends APS_Super {
 	/**
 	 * Generate fort signature
 	 *
-	 * @param array $arrData
-	 * @param sting $signType request or response
-	 * @return string fort signature
+	 * @param array  $arr_data Parameters to sign.
+	 * @param string $sign_type Request or response.
+	 * @param string $type Regular or Apple Pay credentials.
+	 * @return string|false Fort signature, or false when response signing is unavailable.
 	 */
 	public function generate_signature( $arr_data, $sign_type = 'request', $type = 'regular' ) {
 		$sha_string = '';
@@ -628,13 +629,9 @@ class APS_Helper extends APS_Super {
 			}
 		}
 
-		// FIX: Reject empty passphrases for response signature verification.
-		// An empty passphrase means the signature has no secret component, allowing
-		// anyone to forge valid signatures. This prevents key confusion attacks where
-		// unconfigured payment method credentials (e.g., Apple Pay) are exploited.
-		if ( 'response' === $sign_type && empty( $sha_passphrase ) ) {
-			$this->log( 'SECURITY: Attempted signature verification with empty SHA passphrase (type=' . $type . '). Returning unmatchable signature.' );
-			return '___INVALID_EMPTY_PASSPHRASE___';
+		if ( 'response' === $sign_type && ( ! is_string( $sha_passphrase ) || empty( $sha_passphrase ) || '' === trim( $sha_passphrase ) ) ) {
+			$this->log( 'SECURITY: Cannot verify response signature without a configured SHA passphrase (type=' . $type . ').' );
+			return false;
 		}
 
 		$sha_string = $sha_passphrase . $sha_string . $sha_passphrase;
@@ -645,8 +642,26 @@ class APS_Helper extends APS_Super {
 			$signature = hash_hmac( 'sha256', $sha_string, $hmac_key );
 		} elseif ( 'hmac512' === $hash_algorithm ) {
 			$signature = hash_hmac( 'sha512', $sha_string, $hmac_key );
+		} else {
+			return false;
 		}
 		return $signature;
+	}
+
+	/**
+	 * Verify a gateway response using the configured response signing phrase.
+	 *
+	 * @param array  $arr_data  Signed response fields, excluding signature.
+	 * @param mixed  $signature Submitted response signature.
+	 * @param string $type      Regular or Apple Pay credentials.
+	 * @return bool
+	 */
+	public function verify_response_signature( $arr_data, $signature, $type = 'regular' ) {
+		if ( ! is_string( $signature ) || '' === $signature ) {
+			return false;
+		}
+		$expected = $this->generate_signature( $arr_data, 'response', $type );
+		return is_string( $expected ) && hash_equals( $expected, strtolower( $signature ) );
 	}
 
 	/**
