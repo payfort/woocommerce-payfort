@@ -521,10 +521,16 @@ class APS_Order extends APS_Super {
 
 		if ( APS_Constants::APS_PAYMENT_TYPE_APPLE_PAY === $this->get_payment_method() ) {
 			// Apple Pay submits its amount through convert_to_base_currency().
-			$rate   = $aps_helper->get_conversion_rate_to_fort_currency( $currency, $aps_helper->get_front_currency() );
-			$amount = $aps_helper->convert_to_base_currency( (float) $this->get_total(), (float) $rate );
+			$rate   = $aps_helper->get_order_conversion_rate( $this->order, $currency );
+			$amount = null === $rate ? '' : $aps_helper->convert_to_base_currency( (float) $this->get_total(), (float) $rate );
 		} else {
-			$amount = $aps_helper->convert_fort_amount( $this->get_total(), $this->get_currency_value(), $currency );
+			try {
+				// Same conversion as the request builders: order total -> gateway currency.
+				$amount = $aps_helper->get_order_fort_amount( $this->order, $currency );
+			} catch ( \Exception $e ) {
+				// No trustworthy rate: leave the expectation empty so the response is rejected.
+				$amount = '';
+			}
 		}
 
 		return array(
@@ -546,7 +552,9 @@ class APS_Order extends APS_Super {
 			array_filter(
 				array_unique(
 					array(
-						strtoupper( (string) $aps_helper->get_fort_currency() ),
+						// Order-based only: the storefront currency cookie must not
+						// widen what a callback is allowed to settle in.
+						strtoupper( (string) $aps_helper->get_order_fort_currency( $this->order ) ),
 						strtoupper( (string) $aps_helper->get_base_currency() ),
 						strtoupper( (string) $this->get_currency() ),
 					)
@@ -588,7 +596,11 @@ class APS_Order extends APS_Super {
 	 */
 	private function log_amount_encoding_notice( $expected, $response_currency ) {
 		$aps_helper  = APS_Helper::get_instance();
-		$minor_units = $aps_helper->convert_fort_amount( $this->get_total(), $this->get_currency_value(), $response_currency );
+		try {
+			$minor_units = $aps_helper->get_order_fort_amount( $this->order, $response_currency );
+		} catch ( \Exception $e ) {
+			$minor_units = '';
+		}
 
 		if ( $this->amounts_equal( $expected['amount'], $minor_units ) ) {
 			return;

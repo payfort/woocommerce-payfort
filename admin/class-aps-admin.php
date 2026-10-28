@@ -142,93 +142,55 @@ class APS_Admin {
      * Upload apple pay certificates
      */
     public function upload_apple_certificates() {
+        if ( ! current_user_can( 'manage_woocommerce' ) ) {
+            wp_die( esc_html__( 'You are not allowed to manage Apple Pay certificates.', 'amazon-payment-services' ), '', array( 'response' => 403 ) );
+        }
         $aps_error_messages = array();
         $aps_success        = 'success';
         $certificates       = array();
         session_start();
         $nonceToken = sanitize_key($_POST['_upload_apple_certificates_nonce'] ?? '');
         if ( !empty($nonceToken) && wp_verify_nonce( $nonceToken, 'upload_apple_certificates' ) ) {
-            $upload_dir    = wp_upload_dir();
-            $uploding_path = $upload_dir['basedir'] . '/aps-certificates/';
-            if (!file_exists($uploding_path)) {
-                wp_mkdir_p($uploding_path);
-            }
-            if (!file_exists(trailingslashit($uploding_path) . '.htaccess')) {
-                $file_handle = @fopen( trailingslashit($uploding_path) . '.htaccess', 'wb' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_read_fopen
-                if ( $file_handle ) {
-                    fwrite( $file_handle, "Require all denied\n<IfModule !mod_authz_core.c>\ndeny from all\n</IfModule>\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite
-                    fclose( $file_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
-                }
-            }
-            chmod( $uploding_path, 0700 );
-            if (!file_exists(trailingslashit($uploding_path) . 'index.html')) {
-                $file_handle = @fopen( trailingslashit($uploding_path) . 'index.html', 'wb' );
-                if ( $file_handle ) {
-                    fclose( $file_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose
-                }
-            }
-
+            // Certificates and private keys are stored outside the web root (e6f42acf).
+            // The store fails closed: no safe directory, no upload.
+            APS_Certificate_Store::maybe_migrate_on_admin();
+            $certificates              = array();
             $existingAppleCertificates = get_option( 'aps_apple_pay_certificates' );
-            if ( isset( $_FILES['certificate_path_file'] ) && ! empty( $_FILES['certificate_path_file']['tmp_name'] ) ) {
-
-                $certificate_path_file      = isset($_FILES['certificate_path_file']['name']) ? sanitize_file_name($_FILES['certificate_path_file']['name']) : '';
-                $certificate_path_file_info = pathinfo( $certificate_path_file );
-                if ( 'pem' == $certificate_path_file_info['extension'] ) {
-                    $certificateName = hash('md5', $nonceToken . '.apple.crt.' . time());
-                    $certificate_path_filename  = $certificateName.'.crt.' . $certificate_path_file_info['extension'];
-                    if ( file_exists( $uploding_path . $certificate_path_filename ) ) {
-                        unlink( $uploding_path . $certificate_path_filename );
-                    }
-                    $temp_name = sanitize_text_field($_FILES['certificate_path_file']['tmp_name']);
-
-                    if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_path_filename ) ) {
-                        chmod( $uploding_path . $certificate_path_filename, 0600 );
-                        $certificates['apple_certificate_path_file'] = $certificate_path_filename;
-
-                        // if there is an older certificate, delete it
-                        if ( isset( $existingAppleCertificates['apple_certificate_path_file'] ) && file_exists( $uploding_path . $existingAppleCertificates['apple_certificate_path_file'] ) ) {
-                            unlink( $uploding_path . $existingAppleCertificates['apple_certificate_path_file'] );
-                        }
-                    } else {
-                        $aps_error_messages[] = 'Unable to upload certificate path file.';
-                    }
-                } else {
-                    $aps_error_messages[] = 'certificate crt file type not valid.';
+            $upload_fields             = array(
+                'certificate_path_file' => array( 'crt', 'apple_certificate_path_file', 'certificate crt file' ),
+                'certificate_key_file'  => array( 'key', 'apple_certificate_key_file', 'certificate key file' ),
+            );
+            foreach ( $upload_fields as $field => $spec ) {
+                if ( ! isset( $_FILES[ $field ] ) || empty( $_FILES[ $field ]['tmp_name'] ) ) {
+                    continue;
                 }
-            }
-            if ( isset( $_FILES['certificate_key_file'] ) && ! empty( $_FILES['certificate_key_file']['tmp_name'] ) ) {
-                $certificate_key_file      = isset($_FILES['certificate_key_file']['name']) ? sanitize_file_name($_FILES['certificate_key_file']['name']) : '';
-                $certificate_key_file_info = pathinfo( $certificate_key_file );
-                if ( 'pem' == $certificate_key_file_info['extension']) {
-                    $keyName = hash('md5', $nonceToken . '.apple.key.' . time());
-                    $certificate_key_filename  = $keyName.'.key.' . $certificate_key_file_info['extension'];
-                    if ( file_exists( $uploding_path . $certificate_key_filename ) ) {
-                        unlink( $uploding_path . $certificate_key_filename );
-                    }
-                    $temp_name = sanitize_text_field($_FILES['certificate_key_file']['tmp_name']);
-                    if ( move_uploaded_file( $temp_name, $uploding_path . $certificate_key_filename ) ) {
-                        chmod( $uploding_path . $certificate_key_filename, 0600 );
-                        $certificates['apple_certificate_key_file'] = $certificate_key_filename;
-
-                        // if there is an older key, delete it
-                        if ( isset( $existingAppleCertificates['apple_certificate_key_file'] ) && file_exists( $uploding_path . $existingAppleCertificates['apple_certificate_key_file'] ) ) {
-                            unlink( $uploding_path . $existingAppleCertificates['apple_certificate_key_file'] );
-                        }
-                    } else {
-                        $aps_error_messages[] = 'Unable to upload certificate key file.';
-                    }
+                $original  = isset( $_FILES[ $field ]['name'] ) ? sanitize_file_name( $_FILES[ $field ]['name'] ) : '';
+                $extension = strtolower( (string) pathinfo( $original, PATHINFO_EXTENSION ) );
+                if ( 'pem' !== $extension ) {
+                    $aps_error_messages[] = $spec[2] . ' type not valid.';
+                    continue;
+                }
+                $new_name  = APS_Certificate_Store::new_filename( $spec[0] );
+                $temp_name = sanitize_text_field( $_FILES[ $field ]['tmp_name'] );
+                if ( APS_Certificate_Store::store_uploaded_file( $temp_name, $new_name, $spec[0] ) ) {
+                    $certificates[ $spec[1] ] = $new_name;
                 } else {
-                    $aps_error_messages[] = 'certificate key file type not valid.';
+                    $aps_error_messages[] = 'Unable to store the ' . $spec[2] . ' safely (it must be a valid PEM and a directory outside the web root must be available).';
                 }
             }
 
-            if ( empty( $aps_error_messages ) && ! empty( $certificates ) ) {
-                if ( ! empty( get_option( 'aps_apple_pay_certificates' ) ) ) {
-                    $old_certificates = get_option( 'aps_apple_pay_certificates' );
-                    $certificates     = array_merge( $old_certificates, $certificates );
+            if ( ! empty( $aps_error_messages ) ) {
+                // Partial or invalid upload: drop the files stored in this request, keep the current ones.
+                foreach ( $certificates as $new_file ) {
+                    APS_Certificate_Store::delete_file( $new_file );
                 }
-                update_option( 'aps_apple_pay_certificates', $certificates );
-                $aps_success = 'Certificates uploaded successfully';
+            } elseif ( ! empty( $certificates ) ) {
+                $commit_error = APS_Certificate_Store::commit_upload( $existingAppleCertificates, $certificates, (string) APS_Config::get_instance()->get_apple_pay_production_key() );
+                if ( '' !== $commit_error ) {
+                    $aps_error_messages[] = $commit_error;
+                } else {
+                    $aps_success = 'Certificates uploaded successfully';
+                }
             }
         } else {
             $aps_error_messages[] = 'Request Expired. Please try again later.';

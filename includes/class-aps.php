@@ -104,6 +104,12 @@ class APS {
 		 * The class responsible for contants
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-constants.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-valu-guard.php';
+
+		/**
+		 * Location of Apple Pay certificates (kept out of the web root)
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'lib/class-aps-certificate-store.php';
 
 		/**
 		 * The class responsible for orchestrating the actions and filters of the
@@ -181,6 +187,9 @@ class APS {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		// Move Apple Pay files left in uploads/ by older versions out of the web root (e6f42acf).
+		$this->loader->add_action( 'admin_init', 'APS_Certificate_Store', 'maybe_migrate_on_admin' );
+		$this->loader->add_action( 'admin_notices', 'APS_Certificate_Store', 'render_notice' );
 
 	}
 
@@ -287,6 +296,7 @@ class APS {
 
 		$this->loader->add_action( 'wp_ajax_get_installment_plans', $aps_ajax, 'get_installment_handler' );
 		$this->loader->add_action( 'wp_ajax_nopriv_get_installment_plans', $aps_ajax, 'get_installment_handler' );
+		$this->loader->add_action( 'woocommerce_after_calculate_totals', $aps_ajax, 'record_checkout_snapshot' );
 
 		$this->loader->add_action( 'wp_ajax_valu_verify_customer', $aps_ajax, 'valu_verify_customer' );
 		$this->loader->add_action( 'wp_ajax_nopriv_valu_verify_customer', $aps_ajax, 'valu_verify_customer' );
@@ -294,11 +304,6 @@ class APS {
 		$this->loader->add_action( 'wp_ajax_valu_otp_verify', $aps_ajax, 'valu_otp_verify' );
 		$this->loader->add_action( 'wp_ajax_nopriv_valu_otp_verify', $aps_ajax, 'valu_otp_verify' );
 
-		$this->loader->add_action( 'wp_ajax_valu_proceed_tenure', $aps_ajax, 'valu_otp_verify' );
-		$this->loader->add_action( 'wp_ajax_nopriv_valu_otp_verify', $aps_ajax, 'valu_otp_verify' );
-
-		$this->loader->add_action( 'wp_ajax_valu_set_tenure', $aps_ajax, 'valu_set_tenure' );
-		$this->loader->add_action( 'wp_ajax_nopriv_valu_set_tenure', $aps_ajax, 'valu_set_tenure' );
 
 		$this->loader->add_action( 'wp_ajax_validate_apple_url', $aps_ajax, 'validate_apple_url' );
 
@@ -343,7 +348,9 @@ class APS {
 		$this->loader->add_action('woocommerce_get_credit_card_type_label', $aps_wc_hooks, 'aps_wocommerce_credit_card_type_labels', 10, 1);
 
 		//Clear APS session data on logout
-		$this->loader->add_action( 'wp_logout', $aps_wc_hooks, 'aps_clear_session_data' );
+		$this->loader->add_action( 'clear_auth_cookie', $aps_wc_hooks, 'aps_clear_session_data', 1 );
+		$this->loader->add_action( 'wp_logout', $aps_wc_hooks, 'aps_clear_session_data', 10, 1 );
+		$this->loader->add_action( 'init', $aps_wc_hooks, 'aps_purge_logged_out_session', 0 );
 
 	}
 }
