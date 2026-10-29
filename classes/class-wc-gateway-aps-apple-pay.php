@@ -85,9 +85,12 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 			}
 
             // Handle currency gateway option (base / front) in case of multi-currency stores
-            $fort_currency              = $this->aps_helper->get_fort_currency();
-            $order_currency             = $order->get_currency();
-            $currency_conversion_rate   = $this->aps_helper->get_conversion_rate_to_fort_currency($fort_currency, $order_currency);
+            $fort_currency              = $this->aps_helper->get_order_fort_currency( $order );
+            $order_currency             = strtoupper( (string) $order->get_currency() );
+            $currency_conversion_rate   = $this->aps_helper->get_order_conversion_rate( $order, $fort_currency );
+            if ( null === $currency_conversion_rate ) {
+                throw new \Exception( 'No conversion rate from ' . $order_currency . ' to ' . $fort_currency );
+            }
 
             $apple_order['sub_total']      = $this->aps_helper->convert_to_base_currency($order->get_subtotal(), $currency_conversion_rate);
             $apple_order['tax_total']      = $this->aps_helper->convert_to_base_currency($order->get_total_tax(), $currency_conversion_rate);
@@ -237,6 +240,9 @@ class WC_Gateway_APS_Apple_Pay extends WC_Gateway_APS_Super {
 		$apple_certificates = get_option( 'aps_apple_pay_certificates' );
 		$is_enabled         = $this->aps_config->get_enable_apple_pay();
 		if ( empty( $apple_certificates ) || ! isset( $apple_certificates['apple_certificate_path_file'] ) || ! isset( $apple_certificates['apple_certificate_key_file'] ) ) {
+			$is_enabled = 'no';
+		}
+		if ( ! APS_Certificate_Store::is_ready() ) {
 			$is_enabled = 'no';
 		}
 		if ( 'yes' === $this->aps_config->have_subscription() ) {

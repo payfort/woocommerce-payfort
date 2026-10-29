@@ -39,14 +39,14 @@ $terms_text .= __( 'to proceed with the transaction', 'amazon-payment-services' 
         </div>
     </div>
 	<div class="aps-row">
-		<div class="aps-col-sm-1 aps-pad-none">
+		<div class="aps-col-sm-2 aps-pad-none">
 			<span class="country_code"><?php echo esc_html(APS_Constants::APS_VALU_EG_COUNTRY_CODE); ?></span>
 		</div>
-		<div class="aps-col-sm-8 aps-pad-none">
+		<div class="aps-col-sm-6 aps-pad-none">
 			
 			<input type="text" value="" autocomplete="off" maxlength="19" placeholder="<?php echo esc_html__( 'Enter your mobile number', 'amazon-payment-services' ); ?>" class="input-text aps_valu_mob_number onlynum" />
 		</div>
-		<div class="aps-col-sm-3 aps-pad-none">
+		<div class="aps-col-sm-4 aps-pad-none">
 			<button type="button" class="valu_customer_verify aps-btn"><?php echo esc_html__( 'Request OTP', 'amazon-payment-services' ); ?></button>
 		</div>
 	</div>

@@ -33,6 +33,8 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
         $this->method_description = __('Accept Tabby', 'amazon-payment-services'); // will be displayed on the options page
         $this->supported_currencies = array('SAR','AED');
         $this->enabled = $this->check_availability();
+        // Enforced at request time by WC_Payment_Gateway::is_available() against the order total; 0 means no limit.
+        $this->max_amount = floatval($this->aps_config->get_tabby_maximum_order_limit());
         $this->load_dependencies();
         $this->supports = array(
             'products',
@@ -66,10 +68,6 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
     public function check_availability()
     {
         $available = 'yes' === $this->aps_config->get_enable_tabby() && in_array(strtoupper($this->aps_helper->get_front_currency()), $this->supported_currencies, true) ? 'yes' : 'no';
-
-        if ( WC()->cart && floatval( WC()->cart->total ) > $this->aps_config->get_tabby_maximum_order_limit() ) {
-            $available = 'no';
-        }
 
         return $available;
     }
@@ -127,6 +125,10 @@ class WC_Gateway_APS_TABBY extends WC_Gateway_APS_Super
         $extras['order_id'] = $order_id;
         $extras['aps_payment_token'] = '' ;
         $payment_data = $this->aps_payment->get_payment_request_form($payment_method, $integration_type, $payment_option, $extras);
+        $failure = $this->payment_request_failure($payment_data);
+        if (null !== $failure) {
+            return $failure;
+        }
         $result = array(
             'result' => 'success',
             'url' => $payment_data['url'],

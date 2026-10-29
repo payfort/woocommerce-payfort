@@ -5,11 +5,11 @@ import { getSetting } from '@woocommerce/settings';
 import { useEffect } from '@wordpress/element'
 
 const defaultLabel = __(
-    'TABBY',
+    'VALU',
     'amazon-payment-services'
 );
 
-const settings = getSetting( 'aps_tabby_data', {} );
+const settings = getSetting( 'aps_valu_data', {} );
 const label = decodeEntities( settings.title ) || defaultLabel;
 
 const icons = [];
@@ -70,17 +70,19 @@ const Content = ( props ) => {
 };
 
 const ApsPayments = {
-    name: "aps_tabby",
-    paymentMethodId: 'aps_tabby',
+    name: "aps_valu",
+    paymentMethodId: 'aps_valu',
     label: <Label />,
     content: <Content />,
     edit: <Content />,
-    canMakePayment: () => true,
+    // The ValU mobile/OTP/tenure wizard exists only on the classic checkout; without it the
+    // payment cannot complete, so ValU is not offered on the block checkout yet.
+    canMakePayment: () => false,
     ariaLabel: label,
     supports: {
         features: settings.supports,
     },
-    placeOrderButtonLabel: 'Buy it now with Tabby!',
+    placeOrderButtonLabel: 'Buy it now with VALU!',
 };
 
 registerPaymentMethod( ApsPayments );

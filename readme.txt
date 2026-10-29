@@ -3,7 +3,7 @@ Tags: Amazon payment services, Credit/ Debit card, Installments, Apple Pay, Visa
 Requires at least: 5.3
 Tested up to: 6.4.2
 Requires PHP: 7.0
-Stable tag: 2.4.8
+Stable tag: 2.4.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -36,6 +36,19 @@ Amazon payment services makes it really easy to start accepting online payments 
    * OmanNet
 
 == Changelog ==
+`2.4.10`
+* Fix - Order retries use the currency stored on the order; Base-mode charges, refunds, captures and renewals use the recorded exchange rate and refuse a missing rate.
+* Fix - Unverified callbacks cannot reveal order keys in redirects, and callback logs redact order-key URLs.
+* Fix - Apple Pay certificates and keys move outside the web root; administrator migration handles legacy files, and Apple Pay fails closed if storage is unsafe or missing.
+* Fix - Installment offers are checked against server-side plans and bound to the shopper cart; valU amounts and tenures are validated, verification/OTP/purchase use single-use atomic claims and bounded rate limits, and payment is bound to the shopper and awaiting order.
+* Fix - Tabby session data is cleared on logout along with existing APS session data.
+
+`2.4.9`
+* Fix - valU payment option is shown at checkout when the cart total meets the configured minimum order limit (previously hidden for any minimum above 0).
+* Fix - Tabby maximum order limit is enforced at checkout.
+* Fix - Block checkout scripts for valU and Tabby registered each other's payment method; corrected.
+* Fix - valU mobile number row layout gives the country code more room.
+
 `2.4.8`
 * Fix - Record submitted payment amounts and currencies in order metadata and compare payment responses against the recorded values, with reconstruction for older orders.
 
