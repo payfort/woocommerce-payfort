@@ -141,13 +141,18 @@ class WC_Gateway_APS_Visa_Checkout extends WC_Gateway_APS_Super {
 		}
 		$payment_method        = $this->id;
 		$integration_type      = $this->get_integration_type();
-		$extras                = [];
+		// Build the request for the order being paid, not whatever is in the session.
+		$extras                = [ 'order_id' => $order_id ];
 		$visa_checkout_call_id = filter_input( INPUT_POST, 'aps_visa_checkout_callid' );
 		if ( ! empty( $visa_checkout_call_id ) ) {
 			$extras['visa_checkout_call_id'] = $visa_checkout_call_id;
 		}
 		if ( APS_Constants::APS_INTEGRATION_TYPE_REDIRECTION === $integration_type ) {
 			$payment_data = $this->aps_payment->get_payment_request_form( $payment_method, $integration_type, $payment_option, $extras );
+			$failure      = $this->payment_request_failure( $payment_data );
+			if ( null !== $failure ) {
+				return $failure;
+			}
 			$result       = [
 				'result' => 'success',
 				'url'    => $payment_data['url'],

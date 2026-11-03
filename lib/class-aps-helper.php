@@ -21,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class APS_Helper extends APS_Super {
 
+	// Seconds a checkout snapshot may price an installment lookup without a new totals calculation.
+	const CHECKOUT_SNAPSHOT_TTL = 3600;
+
 	private static $instance;
 	private $aps_config;
 	private $aps_order;
@@ -114,6 +117,228 @@ class APS_Helper extends APS_Super {
 			$currency_code = $current_currency_code;
 		}
 		return $currency_code;
+	}
+
+	/**
+	 * Currency an existing order must be charged in.
+	 *
+	 * Uses only the stored order and the merchant's gateway currency setting.
+	 * The storefront currency cookie is never read here, so a shopper cannot
+	 * change the payment currency of an order after it was placed (for example
+	 * by switching currency before retrying a failed order).
+	 *
+	 * @param WC_Order $order
+	 * @return string
+	 */
+	public function get_order_fort_currency( $order ) {
+		if ( 'front' === $this->aps_config->get_gateway_currency() ) {
+			return strtoupper( (string) $order->get_currency() );
+		}
+		return strtoupper( (string) $this->get_base_currency() );
+	}
+
+	/**
+	 * Gateway amount, in minor units of $currency, for an amount held in the
+	 * order's own currency.
+	 *
+	 * The order total is stored in the order currency. When the gateway
+	 * currency differs (Base mode with a foreign-currency order) the amount is
+	 * converted with the rate recorded on the order, never reused as-is.
+	 *
+	 * @param WC_Order   $order
+	 * @param string     $currency Gateway currency the amount will be charged in.
+	 * @param float|null $amount   Amount in the order currency. Defaults to the order total.
+	 * @return float
+	 * @throws Exception When no trustworthy conversion rate exists for the order.
+	 */
+	public function get_order_fort_amount( $order, $currency, $amount = null ) {
+		$amount = null === $amount ? (float) $order->get_total() : (float) $amount;
+		$rate   = $this->get_order_conversion_rate( $order, $currency );
+		if ( null === $rate ) {
+			$this->log(
+				'APS refused to build a payment for order ' . $order->get_id() . ': no conversion rate from '
+				. strtoupper( (string) $order->get_currency() ) . ' to ' . strtoupper( (string) $currency ) . '.',
+				true
+			);
+			throw new Exception( __( 'This order cannot be paid in the configured payment currency. Please contact the store.', 'amazon-payment-services' ) );
+		}
+		return $this->scale_to_minor( $amount, $rate, $currency );
+	}
+
+	private function scale_to_minor( $amount, $rate, $currency ) {
+		$decimal_points = $this->get_currency_decimal_points( $currency );
+		$new_amount     = round( $amount * $rate, $decimal_points );
+		if ( 0 !== $decimal_points ) {
+			$new_amount = $new_amount * ( pow( 10, $decimal_points ) );
+		}
+		return round( $new_amount, 2 );
+	}
+
+	/**
+	 * Record what the shopper's cart costs, in the currency WooCommerce priced it in,
+	 * whenever WooCommerce calculates the cart totals (0326f912).
+	 *
+	 * The installment plan lookup runs before the order exists, so it signs the amount
+	 * and currency held here instead of reading the storefront currency cookie. The
+	 * currency is WooCommerce's own cart currency (which a multi-currency plugin such as
+	 * CURCY sets server-side), captured together with the totals it applies to.
+	 * One session key is overwritten on every recalculation, so nothing accumulates and
+	 * no order is created.
+	 */
+	public function capture_checkout_snapshot() {
+		if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+			return;
+		}
+		// The lookup only reads the snapshot; a recalculation inside it must not replace it.
+		if ( wp_doing_ajax() && isset( $_REQUEST['action'] ) && 'get_installment_plans' === $_REQUEST['action'] ) {
+			return;
+		}
+		$cart     = WC()->cart;
+		$snapshot = null;
+		if ( $cart && ! $cart->is_empty() ) {
+			$order_currency = strtoupper( (string) get_woocommerce_currency() );
+			$fort_currency  = 'front' === $this->aps_config->get_gateway_currency() ? $order_currency : strtoupper( (string) $this->get_base_currency() );
+			$rate           = $this->get_conversion_rate( $order_currency, $fort_currency, null );
+			$total          = (float) $cart->get_total( 'edit' );
+			if ( null !== $rate && '' !== $order_currency ) {
+				$snapshot = array(
+					'order_currency' => $order_currency,
+					'fort_currency'  => $fort_currency,
+					'order_total'    => $total,
+					'amount_minor'   => (int) round( $this->scale_to_minor( $total, $rate, $fort_currency ) ),
+					'cart_hash'      => (string) $cart->get_cart_hash(),
+					'customer_id'    => (int) get_current_user_id(),
+					'expires'        => time() + self::CHECKOUT_SNAPSHOT_TTL,
+				);
+			}
+		}
+		WC()->session->set( 'aps_checkout_snapshot', $snapshot );
+	}
+
+	/**
+	 * Amount and currency an installment plan lookup may sign (0326f912).
+	 *
+	 * For order-pay this is the stored order. Before the order exists it is the
+	 * snapshot from capture_checkout_snapshot(), only while the cart is unchanged.
+	 * The storefront currency cookie is never read.
+	 *
+	 * @param WC_Order|null $order Order being paid on the order-pay page, if any.
+	 * @return array
+	 * @throws Exception When no trustworthy amount is available.
+	 */
+	public function get_installment_amount_context( $order = null ) {
+		$stale = __( 'Your cart has changed. Please refresh the page and try again.', 'amazon-payment-services' );
+		if ( $order ) {
+			$fort_currency = $this->get_order_fort_currency( $order );
+			return array(
+				'order_currency' => strtoupper( (string) $order->get_currency() ),
+				'fort_currency'  => $fort_currency,
+				'order_total'    => (float) $order->get_total(),
+				'amount_minor'   => (int) round( $this->get_order_fort_amount( $order, $fort_currency ) ),
+				'cart_hash'      => '',
+				'customer_id'    => (int) $order->get_customer_id(),
+				'order_id'       => (int) $order->get_id(),
+			);
+		}
+		$cart = WC()->cart;
+		if ( ! $cart || $cart->is_empty() ) {
+			throw new \Exception( 'Cart is empty', 400 );
+		}
+		$snapshot = WC()->session ? WC()->session->get( 'aps_checkout_snapshot' ) : null;
+		if ( ! is_array( $snapshot ) || empty( $snapshot['cart_hash'] )
+			|| ! hash_equals( (string) $snapshot['cart_hash'], (string) $cart->get_cart_hash() )
+			|| (int) $snapshot['customer_id'] !== (int) get_current_user_id()
+			|| empty( $snapshot['expires'] ) || (int) $snapshot['expires'] < time() ) {
+			throw new \Exception( $stale, 409 );
+		}
+		unset( $snapshot['expires'] );
+		return $snapshot + array( 'order_id' => 0 );
+	}
+
+	/**
+	 * Multiplier that converts an amount in the order currency into $currency.
+	 *
+	 * Only order currency -> same currency and order currency -> store base
+	 * currency are supported. Anything else returns null so callers fail
+	 * closed instead of charging an unconverted figure.
+	 *
+	 * @param WC_Order $order
+	 * @param string   $currency
+	 * @return float|null
+	 */
+	public function get_order_conversion_rate( $order, $currency ) {
+		$order_currency = strtoupper( (string) $order->get_currency() );
+		$currency       = strtoupper( (string) $currency );
+		if ( '' === $currency || $order_currency === $currency ) {
+			return 1.0;
+		}
+		return $this->get_conversion_rate( $order_currency, $currency, $order );
+	}
+
+	/**
+	 * Multiplier from $from to $to; only same currency or to the store base currency.
+	 *
+	 * @param string        $from
+	 * @param string        $to
+	 * @param WC_Order|null $order Order whose recorded CURCY rates take precedence.
+	 * @return float|null
+	 */
+	private function get_conversion_rate( $from, $to, $order ) {
+		$from = strtoupper( (string) $from );
+		$to   = strtoupper( (string) $to );
+		if ( '' === $to || $from === $to ) {
+			return 1.0;
+		}
+		if ( strtoupper( (string) $this->get_base_currency() ) !== $to ) {
+			return null;
+		}
+		$rate = $this->get_order_currency_rate( $order, $from );
+		if ( null === $rate ) {
+			return null;
+		}
+		return 1 / $rate;
+	}
+
+	/**
+	 * Units of the order currency per one unit of the store base currency.
+	 *
+	 * Prefers the rates Multi Currency for WooCommerce (CURCY) stored on the
+	 * order at checkout, so a later rate change does not reprice the order;
+	 * falls back to the current CURCY configuration.
+	 *
+	 * @param WC_Order $order
+	 * @param string   $order_currency
+	 * @return float|null
+	 */
+	private function get_order_currency_rate( $order, $order_currency ) {
+		$base_currency = strtoupper( (string) $this->get_base_currency() );
+
+		$order_info = $order ? $order->get_meta( 'wmc_order_info', true ) : null;
+		if ( is_array( $order_info ) && isset( $order_info[ $order_currency ]['rate'] )
+			&& isset( $order_info[ $base_currency ]['is_main'] ) && 1 === (int) $order_info[ $base_currency ]['is_main'] ) {
+			$rate = $order_info[ $order_currency ]['rate'];
+			if ( is_numeric( $rate ) && (float) $rate > 0 ) {
+				return (float) $rate;
+			}
+		}
+
+		$options = get_option( 'woo_multi_currency_params', array() );
+		if ( is_array( $options ) && ! empty( $options['enable'] )
+			&& isset( $options['currency'], $options['currency_rate'] )
+			&& is_array( $options['currency'] ) && is_array( $options['currency_rate'] ) ) {
+			$index = array_search( $order_currency, array_map( 'strtoupper', $options['currency'] ), true );
+			if ( false !== $index && isset( $options['currency_rate'][ $index ] ) && is_numeric( $options['currency_rate'][ $index ] ) ) {
+				$rate = (float) $options['currency_rate'][ $index ];
+				if ( isset( $options['currency_rate_fee'][ $index ] ) && is_numeric( $options['currency_rate_fee'][ $index ] ) ) {
+					$rate += (float) $options['currency_rate_fee'][ $index ];
+				}
+				if ( $rate > 0 ) {
+					return $rate;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -239,6 +464,94 @@ class APS_Helper extends APS_Super {
 	}
 
 	/**
+	 * Parse a shopper-supplied money value into integer minor units.
+	 *
+	 * Only plain, non-negative decimals are accepted ("12", "12.5", "12.50"), with no
+	 * more fraction digits than the currency allows. Signs, exponents, hex, spaces and
+	 * any other text are rejected instead of coerced: intval()/absint() would quietly
+	 * turn "-5" into 5 or "1e3" into 1, which is exactly what a tampered request relies on.
+	 *
+	 * @param mixed    $raw       Submitted value.
+	 * @param string   $currency  ISO currency code that decides the allowed precision.
+	 * @param int|null $max_minor Optional inclusive upper bound, in minor units.
+	 * @return int|false Minor units, or false when the value is malformed or out of range.
+	 */
+	public function parse_minor_amount( $raw, $currency, $max_minor = null ) {
+		if ( ! is_scalar( $raw ) || is_bool( $raw ) ) {
+			return false;
+		}
+		$raw      = trim( (string) $raw );
+		$decimals = (int) $this->get_currency_decimal_points( strtoupper( (string) $currency ) );
+		$pattern  = 0 === $decimals ? '/^\d{1,12}$/' : '/^\d{1,12}(?:\.\d{1,' . $decimals . '})?$/';
+		if ( ! preg_match( $pattern, $raw ) ) {
+			return false;
+		}
+		$parts = explode( '.', $raw );
+		$frac  = isset( $parts[1] ) ? $parts[1] : '';
+		$minor = (int) $parts[0] * (int) pow( 10, $decimals ) + (int) str_pad( $frac, $decimals, '0' );
+		if ( null !== $max_minor && $minor > (int) $max_minor ) {
+			return false;
+		}
+		return $minor;
+	}
+
+	/**
+	 * Integer minor units back to a plain decimal string ("105.50").
+	 *
+	 * @param int    $minor
+	 * @param string $currency
+	 * @return string
+	 */
+	public function format_minor_amount( $minor, $currency ) {
+		$decimals = (int) $this->get_currency_decimal_points( strtoupper( (string) $currency ) );
+		return number_format( $minor / pow( 10, $decimals ), $decimals, '.', '' );
+	}
+
+	/**
+	 * Installment plan fee from APS (fee_display_value), in hundredths.
+	 *
+	 * APS sends the fee scaled by the currency's decimal places (250 = 2.50 for AED).
+	 * Only integers and plain non-negative decimal strings are accepted; floats, signs,
+	 * exponents, whitespace, text and oversized values are rejected rather than coerced.
+	 *
+	 * @param mixed  $raw
+	 * @param string $currency
+	 * @return int|false
+	 */
+	public function parse_fee_rate( $raw, $currency ) {
+		if ( ! ( is_int( $raw ) || is_string( $raw ) ) || ! preg_match( '/^(\d{1,9})(?:\.(\d{1,4}))?$/', (string) $raw, $m ) ) {
+			return false;
+		}
+		$scaled   = (int) $m[1] * 10000 + (int) str_pad( isset( $m[2] ) ? $m[2] : '', 4, '0' );
+		$divisor  = (int) pow( 10, (int) $this->get_currency_decimal_points( strtoupper( (string) $currency ) ) ) * 100;
+		return intdiv( $scaled + intdiv( $divisor, 2 ), $divisor );
+	}
+
+	/**
+	 * Hundredths as the label number ("2.5", "0").
+	 *
+	 * @param int $hundredths
+	 * @return string
+	 */
+	public function format_rate( $hundredths ) {
+		return rtrim( rtrim( number_format( $hundredths / 100, 2, '.', '' ), '0' ), '.' );
+	}
+
+	/**
+	 * Number of installments: a plain integer 1..99.
+	 *
+	 * @param mixed $raw
+	 * @return int|false
+	 */
+	public function parse_installment_count( $raw ) {
+		if ( ! ( is_int( $raw ) || is_string( $raw ) ) || ! preg_match( '/^\d{1,2}$/', (string) $raw ) ) {
+			return false;
+		}
+		$count = (int) $raw;
+		return $count >= 1 ? $count : false;
+	}
+
+	/**
 	 * Get Valu Products array
 	 *
 	 * @return string
@@ -250,7 +563,7 @@ class APS_Helper extends APS_Super {
 		$order_id      = $this->aps_order->get_session_order_id();
 		$order         = $this->aps_order->get_order_by_id( $order_id );
 		$items         = $order->get_items();
-		$currency      = $this->get_fort_currency();
+		$currency      = strtoupper( (string) $order->get_currency() );
 		foreach ( $items as $item ) {
 			$product_name       = $this->clean_string( $item->get_name() );
 			$product_id         = $item->get_product_id();
@@ -264,7 +577,7 @@ class APS_Helper extends APS_Super {
 		if ( count( $items ) > 1 ) {
 			$product_name = 'MutipleProducts';
 		}
-		$product_price  = $this->convert_fort_amount( $order->get_total(), $this->aps_order->get_currency_value(), $currency );
+		$product_price  = $this->get_order_fort_amount( $order, $currency );
 		$producs_string = '[{product_name=' . $product_name . ', product_price=' . $product_price . ', product_category=' . $category_name . '}]';
 		return $producs_string;
 	}
@@ -272,9 +585,10 @@ class APS_Helper extends APS_Super {
 	/**
 	 * Generate fort signature
 	 *
-	 * @param array $arrData
-	 * @param sting $signType request or response
-	 * @return string fort signature
+	 * @param array  $arr_data Parameters to sign.
+	 * @param string $sign_type Request or response.
+	 * @param string $type Regular or Apple Pay credentials.
+	 * @return string|false Fort signature, or false when response signing is unavailable.
 	 */
 	public function generate_signature( $arr_data, $sign_type = 'request', $type = 'regular' ) {
 		$sha_string = '';
@@ -315,13 +629,9 @@ class APS_Helper extends APS_Super {
 			}
 		}
 
-		// FIX: Reject empty passphrases for response signature verification.
-		// An empty passphrase means the signature has no secret component, allowing
-		// anyone to forge valid signatures. This prevents key confusion attacks where
-		// unconfigured payment method credentials (e.g., Apple Pay) are exploited.
-		if ( 'response' === $sign_type && empty( $sha_passphrase ) ) {
-			$this->log( 'SECURITY: Attempted signature verification with empty SHA passphrase (type=' . $type . '). Returning unmatchable signature.' );
-			return '___INVALID_EMPTY_PASSPHRASE___';
+		if ( 'response' === $sign_type && ( ! is_string( $sha_passphrase ) || empty( $sha_passphrase ) || '' === trim( $sha_passphrase ) ) ) {
+			$this->log( 'SECURITY: Cannot verify response signature without a configured SHA passphrase (type=' . $type . ').' );
+			return false;
 		}
 
 		$sha_string = $sha_passphrase . $sha_string . $sha_passphrase;
@@ -332,8 +642,26 @@ class APS_Helper extends APS_Super {
 			$signature = hash_hmac( 'sha256', $sha_string, $hmac_key );
 		} elseif ( 'hmac512' === $hash_algorithm ) {
 			$signature = hash_hmac( 'sha512', $sha_string, $hmac_key );
+		} else {
+			return false;
 		}
 		return $signature;
+	}
+
+	/**
+	 * Verify a gateway response using the configured response signing phrase.
+	 *
+	 * @param array  $arr_data  Signed response fields, excluding signature.
+	 * @param mixed  $signature Submitted response signature.
+	 * @param string $type      Regular or Apple Pay credentials.
+	 * @return bool
+	 */
+	public function verify_response_signature( $arr_data, $signature, $type = 'regular' ) {
+		if ( ! is_string( $signature ) || '' === $signature ) {
+			return false;
+		}
+		$expected = $this->generate_signature( $arr_data, 'response', $type );
+		return is_string( $expected ) && hash_equals( $expected, strtolower( $signature ) );
 	}
 
 	/**
@@ -389,10 +717,14 @@ class APS_Helper extends APS_Super {
 		$response = wp_remote_post( $gateway_url, $options );
 		if ( is_wp_error( $response ) ) {
 			$this->log( 'APS api call error \n\n' . $response->get_error_message() );
+			return false;
+		}
+		if ( ! is_array( $response ) || ! isset( $response['body'] ) || ! is_string( $response['body'] ) ) {
+			return false;
 		}
 		$parsed_response = json_decode( $response['body'], true );
 
-		if ( !$response || empty( $parsed_response) ) {
+		if ( ! is_array( $parsed_response ) || empty( $parsed_response ) ) {
 			return false;
 		}
 		return $parsed_response;
@@ -402,15 +734,11 @@ class APS_Helper extends APS_Super {
 		if ( ! $curl_handle ) {
 			return;
 		}
-		$production_key     = $this->aps_config->get_apple_pay_production_key();
-
-		$apple_certificates = get_option( 'aps_apple_pay_certificates' );
-		$upload_dir         = wp_upload_dir();
-		$certificate_path   = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
-		$certificate_key    = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
-		curl_setopt( $curl_handle, CURLOPT_SSLCERT, $certificate_path );
-		curl_setopt( $curl_handle, CURLOPT_SSLKEY, $certificate_key );
-		curl_setopt( $curl_handle, CURLOPT_SSLKEYPASSWD, $production_key );
+		// Resolved at the moment of use: if the files vanished since the readiness check the
+		// handle gets a certificate that cannot exist, so cURL fails instead of sending without it.
+		if ( ! APS_Certificate_Store::apply_client_cert( $curl_handle, $this->aps_config->get_apple_pay_production_key() ) ) {
+			$this->log( 'Apple Pay client certificate unavailable; request will fail closed.' );
+		}
 	}
 
 	/**
@@ -423,11 +751,11 @@ class APS_Helper extends APS_Super {
 			$domain_name                   = $this->aps_config->get_apple_pay_domain_name();
 			$apple_pay_display_name        = $this->aps_config->get_apple_pay_display_name();
 			$production_key                = $this->aps_config->get_apple_pay_production_key();
-			$apple_certificates            = get_option( 'aps_apple_pay_certificates' );
-			$upload_dir         = wp_upload_dir();
-			$certificate_path              = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_path_file'];
-			$apple_pay_merchant_identifier = openssl_x509_parse( file_get_contents( $certificate_path ) )['subject']['UID'];
-			$certificate_key               = $upload_dir['basedir'] . '/aps-certificates/' . $apple_certificates['apple_certificate_key_file'];
+			$apple_pay_merchant_identifier = APS_Certificate_Store::merchant_identifier();
+			if ( ! APS_Certificate_Store::is_ready() || '' === $apple_pay_merchant_identifier ) {
+				$this->log( 'Apple Pay merchant validation not sent: certificate store unavailable.' );
+				return false;
+			}
 			$data                          = '{"merchantIdentifier":"' . $apple_pay_merchant_identifier . '", "domainName":"' . $domain_name . '", "displayName":"' . $apple_pay_display_name . '"}';
 
 			$useragent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0';
@@ -446,12 +774,19 @@ class APS_Helper extends APS_Super {
 				'data_format'       => 'body',
 			];
 			add_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
-			$response = wp_remote_post( $apple_url, $options );
+			try {
+				$response = wp_remote_post( $apple_url, $options );
+			} finally {
+				remove_action( 'http_api_curl', array( $this, 'set_cert_file' ) );
+			}
 			if ( is_wp_error( $response ) ) {
 				$this->log( 'APS api call error \n\n' . $response->get_error_message() );
 			}
+			if ( is_wp_error( $response ) ) {
+				return false;
+			}
 			$parsed_response = $response['body'];
-			if ( !$response || empty( $parsed_response) ) {
+			if ( ! is_array( $parsed_response ) || empty( $parsed_response ) ) {
 				return false;
 			}
 			return $parsed_response;

@@ -107,7 +107,9 @@ class APS_Refund extends APS_Super {
 				$currency = $this->aps_order->get_currency();
 			}
 			$gateway_params['currency']          = strtoupper( $currency);
-			$total_amount                        = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
+			// Convert from the order currency into the currency the payment was
+			// actually taken in (Base mode charges a converted amount, 7d9080c3).
+			$total_amount                        = $this->aps_helper->get_order_fort_amount( $order, $currency, $amount );
 			$gateway_params['amount']            = $total_amount;
 			$gateway_params['command']           = APS_Constants::APS_COMMAND_REFUND;
 			if ( $payment_details['fort_id'] ) {
@@ -177,7 +179,9 @@ class APS_Refund extends APS_Super {
 				$currency = $this->aps_order->get_currency();
 			}
 			$gateway_params['currency']          = strtoupper( $currency );
-			$total_amount                        = $this->aps_helper->convert_fort_amount( $amount, $this->aps_order->get_currency_value(), $currency );
+			// Convert from the order currency into the currency the payment was
+			// actually taken in (Base mode charges a converted amount, 7d9080c3).
+			$total_amount                        = $this->aps_helper->get_order_fort_amount( $order, $currency, $amount );
 			$gateway_params['amount']            = $total_amount;
 			$gateway_params['command']           = APS_Constants::APS_COMMAND_REFUND;
 			$gateway_params['fort_id']           = $payment_details['fort_id'];

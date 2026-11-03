@@ -6,14 +6,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( isset( $_GET['delete_certificate'] ) ) {
     session_start();
     if ( isset($_GET['_delete_apple_certificates_nonce']) && wp_verify_nonce( sanitize_key($_GET['_delete_apple_certificates_nonce']), 'delete_apple_certificates' ) ) {
-        $upload_dir = wp_upload_dir();
-        $certificate_path = $upload_dir['basedir'] . '/aps-certificates/';
+        APS_Certificate_Store::maybe_migrate_on_admin();
         if ('pathfile' === $_GET['delete_certificate']) {
             $existing_apple_certificates = get_option('aps_apple_pay_certificates');
             if (isset($existing_apple_certificates['apple_certificate_path_file'])) {
-                if (file_exists($certificate_path . $existing_apple_certificates['apple_certificate_path_file'])) {
-                    unlink($certificate_path . $existing_apple_certificates['apple_certificate_path_file']);
-                }
+                APS_Certificate_Store::delete_file($existing_apple_certificates['apple_certificate_path_file']);
                 unset($existing_apple_certificates['apple_certificate_path_file']);
                 update_option('aps_apple_pay_certificates', $existing_apple_certificates);
                 $_SESSION['aps_success_message'] = wp_kses_data('Certificate deleted successfully');
@@ -21,14 +18,9 @@ if ( isset( $_GET['delete_certificate'] ) ) {
         } elseif ('keyfile' === $_GET['delete_certificate']) {
             $existing_apple_certificates = get_option('aps_apple_pay_certificates');
             if (isset($existing_apple_certificates['apple_certificate_key_file'])) {
-                if (file_exists($certificate_path . $existing_apple_certificates['apple_certificate_key_file'])) {
-                    unlink($certificate_path . $existing_apple_certificates['apple_certificate_key_file']);
-                }
+                APS_Certificate_Store::delete_file($existing_apple_certificates['apple_certificate_key_file']);
                 unset($existing_apple_certificates['apple_certificate_key_file']);
                 update_option('aps_apple_pay_certificates', $existing_apple_certificates);
-                if (file_exists($certificate_path . $existing_apple_certificates['apple_certificate_key_file'])) {
-                    unlink($certificate_path . $existing_apple_certificates['apple_certificate_key_file']);
-                }
                 $_SESSION['aps_success_message'] = wp_kses_data('Certificate deleted successfully');
             }
         }
@@ -45,6 +37,7 @@ if ( isset( $_GET['delete_certificate'] ) ) {
 }
 
 $apple_certificates = get_option( 'aps_apple_pay_certificates' );
+APS_Certificate_Store::maybe_migrate_on_admin();
 ?>
 <div id="adminWrapper">
     <form method="POST" class="apple_pay" action="<?php echo esc_url_raw( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">

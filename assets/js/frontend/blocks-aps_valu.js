@@ -153,8 +153,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const defaultLabel = (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('TABBY', 'amazon-payment-services');
-const settings = (0,_woocommerce_settings__WEBPACK_IMPORTED_MODULE_4__.getSetting)('aps_tabby_data', {});
+const defaultLabel = (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_1__.__)('VALU', 'amazon-payment-services');
+const settings = (0,_woocommerce_settings__WEBPACK_IMPORTED_MODULE_4__.getSetting)('aps_valu_data', {});
 const label = (0,_wordpress_html_entities__WEBPACK_IMPORTED_MODULE_3__.decodeEntities)(settings.title) || defaultLabel;
 const icons = [];
 for (let el in settings.icons) {
@@ -212,17 +212,19 @@ const Content = props => {
   return (0,_wordpress_html_entities__WEBPACK_IMPORTED_MODULE_3__.decodeEntities)(settings.description || '');
 };
 const ApsPayments = {
-  name: "aps_tabby",
-  paymentMethodId: 'aps_tabby',
+  name: "aps_valu",
+  paymentMethodId: 'aps_valu',
   label: (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Label, null),
   content: (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Content, null),
   edit: (0,react__WEBPACK_IMPORTED_MODULE_0__.createElement)(Content, null),
-  canMakePayment: () => true,
+  // The ValU mobile/OTP/tenure wizard exists only on the classic checkout; without it the
+  // payment cannot complete, so ValU is not offered on the block checkout yet.
+  canMakePayment: () => false,
   ariaLabel: label,
   supports: {
     features: settings.supports
   },
-  placeOrderButtonLabel: 'Buy it now with Tabby!'
+  placeOrderButtonLabel: 'Buy it now with VALU!'
 };
 (0,_woocommerce_blocks_registry__WEBPACK_IMPORTED_MODULE_2__.registerPaymentMethod)(ApsPayments);
 /******/ })()

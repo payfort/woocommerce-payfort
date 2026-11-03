@@ -5,11 +5,11 @@ import { getSetting } from '@woocommerce/settings';
 import { useEffect } from '@wordpress/element'
 
 const defaultLabel = __(
-    'VALU',
+    'TABBY',
     'amazon-payment-services'
 );
 
-const settings = getSetting( 'aps_valu_data', {} );
+const settings = getSetting( 'aps_tabby_data', {} );
 const label = decodeEntities( settings.title ) || defaultLabel;
 
 const icons = [];
@@ -70,8 +70,8 @@ const Content = ( props ) => {
 };
 
 const ApsPayments = {
-    name: "aps_valu",
-    paymentMethodId: 'aps_valu',
+    name: "aps_tabby",
+    paymentMethodId: 'aps_tabby',
     label: <Label />,
     content: <Content />,
     edit: <Content />,
@@ -80,7 +80,7 @@ const ApsPayments = {
     supports: {
         features: settings.supports,
     },
-    placeOrderButtonLabel: 'Buy it now with VALU!',
+    placeOrderButtonLabel: 'Buy it now with Tabby!',
 };
 
 registerPaymentMethod( ApsPayments );

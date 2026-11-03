@@ -464,6 +464,9 @@ class APS_Config extends APS_Super {
 		if ( empty( $apple_certificates ) || ! isset( $apple_certificates['apple_certificate_path_file'] ) || ! isset( $apple_certificates['apple_certificate_key_file'] ) ) {
 			$is_enabled = 'no';
 		}
+		if ( ! APS_Certificate_Store::is_ready() ) {
+			$is_enabled = 'no';
+		}
 		if ( 'no' === $product_page_enabled ) {
 			$is_enabled = 'no';
 		}
@@ -492,6 +495,9 @@ class APS_Config extends APS_Super {
 		$is_enabled         = $this->get_enable_apple_pay();
 		$cart_page_enabled  = $this->get_enable_apple_pay_cart_page();
 		if ( empty( $apple_certificates ) || ! isset( $apple_certificates['apple_certificate_path_file'] ) || ! isset( $apple_certificates['apple_certificate_key_file'] ) ) {
+			$is_enabled = 'no';
+		}
+		if ( ! APS_Certificate_Store::is_ready() ) {
 			$is_enabled = 'no';
 		}
 		if ( 'no' === $cart_page_enabled ) {
